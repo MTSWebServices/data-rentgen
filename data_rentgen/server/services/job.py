@@ -72,7 +72,7 @@ class JobService:
                         type=job.type,
                         location=job.location,
                     ),
-                    last_run=job.last_run,
+                    last_run=job.last_run,  # type: ignore[attr-defined]
                     tags=[
                         TagData(
                             id=tag.id,

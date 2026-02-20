@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Column, Computed, ForeignKey, Index, String, Table, column, func, select
 from sqlalchemy.dialects.postgresql import TSVECTOR
@@ -11,9 +10,6 @@ from data_rentgen.db.models.base import Base
 from data_rentgen.db.models.job_type import JobType
 from data_rentgen.db.models.location import Location
 from data_rentgen.db.models.tag_value import TagValue
-
-if TYPE_CHECKING:
-    from data_rentgen.db.models.run import Run
 
 JobTagValue: Table = Table(
     "job_tag_value",
@@ -63,19 +59,6 @@ class Job(Base):
         secondary=JobTagValue,
         lazy="noload",
         doc="Job tag values",
-    )
-
-    last_run: Mapped["Run | None"] = relationship(
-        "Run",
-        primaryjoin=(
-            "and_(Job.id == foreign(Run.job_id), "
-            "Run.id == select(Run.id).where(Run.job_id == Job.id)"
-            ".order_by(Run.created_at.desc(), Run.id.desc())"
-            ".limit(1).correlate_except(Run).scalar_subquery())"
-        ),
-        lazy="noload",
-        viewonly=True,
-        uselist=False,
     )
 
     search_vector: Mapped[str] = mapped_column(

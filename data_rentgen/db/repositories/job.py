@@ -27,7 +27,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
-from data_rentgen.db.models import Address, Job, JobTagValue, Location, Run, TagValue
+from data_rentgen.db.models import Address, Job, JobLastRun, JobTagValue, Location, TagValue
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import JobDTO, PaginationDTO
@@ -165,7 +165,7 @@ class JobRepository(Repository[Job]):
         options = [
             selectinload(Job.location).selectinload(Location.addresses),
             selectinload(Job.tag_values).selectinload(TagValue.tag),
-            selectinload(Job.last_run).selectinload(Run.started_by_user),
+            selectinload(Job.last_run).selectinload(JobLastRun.started_by_user),  # type: ignore[attr-defined]
         ]
         return await self._paginate_by_query(
             query=query,

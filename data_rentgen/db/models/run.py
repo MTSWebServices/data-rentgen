@@ -14,9 +14,10 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     SmallInteger,
     String,
+    select,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, aliased, foreign, mapped_column, relationship
 from sqlalchemy_utils import ChoiceType
 
 from data_rentgen.db.models.base import Base
@@ -185,3 +186,17 @@ class Run(Base):
         deferred=True,
         doc="Full-text search vector",
     )
+
+
+# DISTINCT ON is much more efficiend than (run_id == last(run_id) PARTITION BY job_id)
+last_run_query = (
+    select(Run).distinct(Run.job_id).order_by(Run.job_id.asc(), Run.id.desc(), Run.created_at.desc()).alias("last_run")
+)
+JobLastRun = aliased(Run, last_run_query, flat=True)
+Job.last_run = relationship(
+    JobLastRun,
+    primaryjoin=Job.id == foreign(JobLastRun.job_id),
+    lazy="noload",
+    viewonly=True,
+    uselist=False,
+)
