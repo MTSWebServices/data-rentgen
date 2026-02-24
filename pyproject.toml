@@ -65,7 +65,7 @@ exclude = ["docs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  "fastapi>=0.129",
+  "fastapi>=0.133",
   "uvicorn~=0.41.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
@@ -113,7 +113,7 @@ test = [
 ]
 dev = [
   "prek~=0.3.0",
-  "ruff~=0.15.0",
+  "ruff~=0.15.2",
   "mypy~=1.19.0",
   "sqlalchemy[mypy]~=2.0.44",
   "types-pyyaml~=6.0.12",
