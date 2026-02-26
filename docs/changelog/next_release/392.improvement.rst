@@ -1,1 +1,1 @@
-Updated lineage parent relations to use run/job ancestry chains and aligned lineage test expectations with the new response structure.
+Replaced lineage ``relations.parents`` with run ancestry chains. Removed job→run and run→operation parent links. Added recursive run→run parent chain (e.g. Airflow DAG→Task→Spark app).

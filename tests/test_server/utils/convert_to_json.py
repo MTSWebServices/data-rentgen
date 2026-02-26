@@ -49,17 +49,6 @@ def run_parents_to_json(runs: list[Run]):
     return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
 
 
-def operation_parent_to_json(operation: Operation):
-    return {
-        "from": {"kind": "RUN", "id": str(operation.run_id)},
-        "to": {"kind": "OPERATION", "id": str(operation.id)},
-    }
-
-
-def operation_parents_to_json(operations: list[Operation]):
-    return [operation_parent_to_json(run) for run in sorted(operations, key=lambda x: x.id)]
-
-
 def symlink_to_json(symlink: DatasetSymlink):
     return {
         "from": {"kind": "DATASET", "id": str(symlink.from_dataset_id)},
