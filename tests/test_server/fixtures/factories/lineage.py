@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data_rentgen.db.models import DatasetColumnRelationType, DatasetSymlinkType, Job, User
+from data_rentgen.db.models import DatasetColumnRelationType, DatasetSymlinkType, Job, RunStatus, User
 from data_rentgen.db.models.output import OutputType
 from data_rentgen.utils.uuid import generate_static_uuid
 from tests.test_server.fixtures.factories.dataset import create_dataset, make_symlink
@@ -1328,6 +1328,125 @@ async def lineage_for_long_running_operations_with_column_lineage(
                         "fingerprint": generate_static_uuid(f"job_{i}"),
                     },
                 )
+
+    yield lineage
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture()
+async def lineage_with_runs_chain(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+    user: User,
+) -> AsyncGenerator[LineageResult, None]:
+    # Lineage with chain of runs: Airflow Task -> Airflow Job -> Spark Job
+    # R0 -> R1 -> R2
+    lineage = LineageResult()
+    created_at = datetime.now(tz=UTC)
+
+    async with async_session_maker() as async_session:
+        dataset_location = await create_location(async_session, location_kwargs={"type": "hdfs"})
+        dataset = await create_dataset(async_session, location_id=dataset_location.id)
+        lineage.datasets.extend([dataset])
+
+        spark_location = await create_location(async_session)
+        airflow_location = await create_location(async_session)
+
+        spark_application_job_type = await create_job_type(async_session, job_type_kwargs={"type": "SPARK_APPLICATION"})
+        airflow_dag_job_type = await create_job_type(async_session, job_type_kwargs={"type": "AIRFLOW_DAG"})
+        airflow_task_job_type = await create_job_type(async_session, job_type_kwargs={"type": "AIRFLOW_TASK"})
+
+        airflow_dag = await create_job(
+            async_session,
+            location_id=airflow_location.id,
+            job_type_id=airflow_dag_job_type.id,
+            job_kwargs={"name": "airflow_dag_name"},
+        )
+        airflow_task = await create_job(
+            async_session,
+            location_id=airflow_location.id,
+            job_type_id=airflow_task_job_type.id,
+            job_kwargs={"name": "airflow_task_name"},
+        )
+        spark_application = await create_job(
+            async_session,
+            location_id=spark_location.id,
+            job_type_id=spark_application_job_type.id,
+            job_kwargs={"name": "spark_application_name"},
+        )
+        lineage.jobs = [airflow_dag, airflow_task, spark_application]
+
+        airflow_dag_run = await create_run(
+            async_session,
+            run_kwargs={
+                "job_id": airflow_dag.id,
+                "started_by_user_id": user.id,
+                "parent_run_id": None,
+                "status": RunStatus.STARTED,
+                "created_at": created_at + timedelta(seconds=0.3),
+                "started_at": created_at + timedelta(seconds=3),
+                "ended_at": None,
+            },
+        )
+        airflow_task_run = await create_run(
+            async_session,
+            run_kwargs={
+                "job_id": airflow_task.id,
+                "parent_run_id": airflow_dag_run.id,
+                "started_by_user_id": user.id,
+                "status": RunStatus.FAILED,
+                "created_at": created_at + timedelta(seconds=0.4),
+                "started_at": created_at + timedelta(seconds=4),
+                "ended_at": created_at + timedelta(seconds=240),
+            },
+        )
+        spark_app_run1 = await create_run(
+            async_session,
+            run_kwargs={
+                "job_id": spark_application.id,
+                "parent_run_id": airflow_task_run.id,
+                "started_by_user_id": user.id,
+                "status": RunStatus.KILLED,
+                "created_at": created_at + timedelta(seconds=0.1),
+                "started_at": created_at + timedelta(seconds=1),
+                "ended_at": created_at + timedelta(seconds=60),
+            },
+        )
+        spark_app_run2 = await create_run(
+            async_session,
+            run_kwargs={
+                "job_id": spark_application.id,
+                "started_by_user_id": user.id,
+                "parent_run_id": airflow_task_run.id,
+                "status": RunStatus.SUCCEEDED,
+                "created_at": created_at + timedelta(seconds=0.2),
+                "started_at": created_at + timedelta(seconds=2),
+                "ended_at": created_at + timedelta(seconds=120),
+            },
+        )
+        lineage.runs = [airflow_dag_run, airflow_task_run, spark_app_run1, spark_app_run2]
+
+        operation = await create_operation(
+            async_session,
+            operation_kwargs={
+                "created_at": spark_app_run2.created_at + timedelta(seconds=0.2),
+                "run_id": spark_app_run2.id,
+            },
+        )
+        lineage.operations.append(operation)
+
+        input_ = await create_input(
+            async_session,
+            input_kwargs={
+                "created_at": operation.created_at + timedelta(hours=1),
+                "operation_id": operation.id,
+                "run_id": spark_app_run2.id,
+                "job_id": spark_application.id,
+                "dataset_id": dataset.id,
+            },
+        )
+        lineage.inputs.append(input_)
 
     yield lineage
 

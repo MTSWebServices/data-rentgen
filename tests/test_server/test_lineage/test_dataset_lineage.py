@@ -15,10 +15,8 @@ from tests.test_server.utils.convert_to_json import (
     inputs_to_json,
     jobs_to_json,
     location_to_json,
-    operation_parents_to_json,
     operations_to_json,
     outputs_to_json,
-    run_parents_to_json,
     runs_to_json,
     schema_to_json,
     symlinks_to_json,
@@ -139,7 +137,7 @@ async def test_get_dataset_lineage_with_granularity_run(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -260,7 +258,7 @@ async def test_get_dataset_lineage_with_granularity_operation(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -681,7 +679,7 @@ async def test_get_dataset_lineage_with_direction_downstream(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -739,7 +737,7 @@ async def test_get_dataset_lineage_with_direction_upstream(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [
@@ -805,7 +803,7 @@ async def test_get_dataset_lineage_with_until(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -903,7 +901,7 @@ async def test_get_dataset_lineage_with_depth(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1092,7 +1090,7 @@ async def test_get_dataset_lineage_with_depth_and_granularity_operation(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1148,7 +1146,7 @@ async def test_get_dataset_lineage_with_depth_ignore_cycles(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
@@ -1232,7 +1230,7 @@ async def test_get_dataset_lineage_with_depth_ignore_unrelated_datasets(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1311,7 +1309,7 @@ async def test_get_dataset_lineage_with_symlink(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": symlinks_to_json(dataset_symlinks),
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1391,7 +1389,7 @@ async def test_get_dataset_lineage_with_symlink_without_input_output(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": symlinks_to_json(dataset_symlinks),
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1475,7 +1473,7 @@ async def test_get_dataset_lineage_unmergeable_schema_and_output_type(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1590,7 +1588,7 @@ async def test_get_dataset_lineage_empty_io_stats_and_schema(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merged_job_inputs, granularity="JOB"),
@@ -1867,7 +1865,7 @@ async def test_get_dataset_lineage_for_long_running_operations_with_granularity_
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),

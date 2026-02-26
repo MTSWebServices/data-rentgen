@@ -12,10 +12,8 @@ from tests.test_server.utils.convert_to_json import (
     inputs_to_json,
     jobs_to_json,
     location_to_json,
-    operation_parents_to_json,
     operations_to_json,
     outputs_to_json,
-    run_parents_to_json,
     runs_to_json,
     schema_to_json,
 )
@@ -69,7 +67,7 @@ async def test_get_dataset_lineage_with_empty_column_lineage(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -127,7 +125,7 @@ async def test_get_operation_lineage_include_columns_with_combined_transformatio
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -220,7 +218,7 @@ async def test_get_run_lineage_include_columns_with_combined_transformations(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json([run]),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -436,7 +434,7 @@ async def test_get_dataset_lineage_include_columns_with_depth_and_granularity_ru
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -687,7 +685,7 @@ async def test_get_dataset_lineage_include_columns_with_depth_and_granularity_op
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -825,7 +823,7 @@ async def test_get_operation_lineage_include_columns_with_depth(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -985,7 +983,7 @@ async def test_get_run_lineage_include_columns_with_depth(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),

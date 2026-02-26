@@ -37,15 +37,16 @@ def format_datetime(value: datetime):
     return result.replace(".000000", "")
 
 
-def run_parent_to_json(run: Run):
+def run_parent_run_to_json(run: Run):
     return {
-        "from": {"kind": "JOB", "id": str(run.job_id)},
+        "from": {"kind": "RUN", "id": str(run.parent_run_id)},
         "to": {"kind": "RUN", "id": str(run.id)},
     }
 
 
 def run_parents_to_json(runs: list[Run]):
-    return [run_parent_to_json(run) for run in sorted(runs, key=lambda x: x.id)]
+    results = [run_parent_run_to_json(run) for run in runs if run.parent_run_id]
+    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
 
 
 def operation_parent_to_json(operation: Operation):
@@ -245,7 +246,7 @@ def run_to_json(run: Run):
         "id": str(run.id),
         "job_id": str(run.job_id),
         "created_at": format_datetime(run.created_at),
-        "parent_run_id": str(run.parent_run_id),
+        "parent_run_id": str(run.parent_run_id) if run.parent_run_id else None,
         "status": run.status.name,
         "external_id": run.external_id,
         "attempt": run.attempt,

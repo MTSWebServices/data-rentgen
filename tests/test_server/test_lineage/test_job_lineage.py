@@ -413,7 +413,7 @@ async def test_get_job_lineage_with_granularity_run(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -594,7 +594,7 @@ async def test_get_job_lineage_with_depth_and_granularity_run(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1091,6 +1091,54 @@ async def test_get_job_lineage_for_long_running_operations(
             "datasets": datasets_to_json(datasets, outputs, inputs),
             "jobs": jobs_to_json([job]),
             "runs": {},
+            "operations": {},
+        },
+    }
+
+
+async def test_get_job_lineage_with_run_parents_chain(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    lineage_with_runs_chain: LineageResult,
+    mocked_user: MockedUser,
+):
+    lineage = lineage_with_runs_chain
+    run = lineage.runs[-1]
+    job = next(job for job in lineage.jobs if run.job_id == job.id)
+    since = run.created_at
+
+    lineage.runs.pop(-2)
+    runs = await enrich_runs(lineage.runs, async_session)
+    jobs = await enrich_jobs([job], async_session)
+    datasets = await enrich_datasets(lineage.datasets, async_session)
+
+    response = await test_client.get(
+        "v1/jobs/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            "start_node_id": job.id,
+            "granularity": "RUN",
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": run_parents_to_json(runs),
+            "symlinks": [],
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
+                *inputs_to_json(merge_io_by_runs(lineage.inputs), granularity="RUN"),
+            ],
+            "outputs": [],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
             "operations": {},
         },
     }
