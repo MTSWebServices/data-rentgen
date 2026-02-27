@@ -816,7 +816,7 @@ async def test_get_dataset_lineage_with_until(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json(runs),
             "ancestors": [],
             "symlinks": [],
             "inputs": [

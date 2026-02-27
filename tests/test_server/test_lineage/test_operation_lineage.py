@@ -321,7 +321,7 @@ async def test_get_operation_lineage_with_until(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
             "ancestors": [],
             "symlinks": [],
             "inputs": [
@@ -828,7 +828,7 @@ async def test_get_operation_lineage_with_empty_io_stats_and_schema(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
             "ancestors": [],
             "symlinks": [],
             "inputs": [
