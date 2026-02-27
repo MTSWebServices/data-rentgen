@@ -59,6 +59,18 @@ def operation_parents_to_json(operations: list[Operation]):
     return [operation_parent_to_json(run) for run in sorted(operations, key=lambda x: x.id)]
 
 
+def run_ancestor_to_json(run: Run):
+    return {
+        "from": {"kind": "RUN", "id": str(run.parent_run_id)},
+        "to": {"kind": "RUN", "id": str(run.id)},
+    }
+
+
+def runs_ancestors_to_json(runs: list[Run]):
+    results = [run_ancestor_to_json(run) for run in runs if run.parent_run_id]
+    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
+
+
 def symlink_to_json(symlink: DatasetSymlink):
     return {
         "from": {"kind": "DATASET", "id": str(symlink.from_dataset_id)},
@@ -245,7 +257,7 @@ def run_to_json(run: Run):
         "id": str(run.id),
         "job_id": str(run.job_id),
         "created_at": format_datetime(run.created_at),
-        "parent_run_id": str(run.parent_run_id),
+        "parent_run_id": str(run.parent_run_id) if run.parent_run_id else None,
         "status": run.status.name,
         "external_id": run.external_id,
         "attempt": run.attempt,

@@ -14,6 +14,7 @@ from tests.test_server.utils.convert_to_json import (
     jobs_to_json,
     outputs_to_json,
     run_parents_to_json,
+    runs_ancestors_to_json,
     runs_to_json,
     symlinks_to_json,
 )
@@ -77,6 +78,7 @@ async def test_get_job_lineage_no_runs(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [],
@@ -116,6 +118,7 @@ async def test_get_job_lineage_no_operations(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [],
@@ -155,6 +158,7 @@ async def test_get_job_lineage_no_inputs_outputs(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [],
@@ -206,6 +210,7 @@ async def test_get_job_lineage_simple(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -255,6 +260,7 @@ async def test_get_job_lineage_with_direction_downstream(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -304,6 +310,7 @@ async def test_get_job_lineage_with_direction_upstream(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": [],
@@ -357,6 +364,7 @@ async def test_get_job_lineage_with_until(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -414,6 +422,7 @@ async def test_get_job_lineage_with_granularity_run(
     assert response.json() == {
         "relations": {
             "parents": run_parents_to_json(runs),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -504,6 +513,7 @@ async def test_get_job_lineage_with_depth(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -595,6 +605,7 @@ async def test_get_job_lineage_with_depth_and_granularity_run(
     assert response.json() == {
         "relations": {
             "parents": run_parents_to_json(runs),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -648,6 +659,7 @@ async def test_get_job_lineage_with_depth_ignore_cycles(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(lineage.outputs), granularity="JOB"),
@@ -727,6 +739,7 @@ async def test_get_job_lineage_with_depth_ignore_unrelated_datasets(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -789,6 +802,7 @@ async def test_get_job_lineage_with_symlinks(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": symlinks_to_json(dataset_symlinks),
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -850,6 +864,7 @@ async def test_get_job_lineage_with_symlink_without_input_output(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": symlinks_to_json(dataset_symlinks),
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -922,6 +937,7 @@ async def test_get_job_lineage_unmergeable_inputs_and_outputs(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
             "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
@@ -1009,6 +1025,7 @@ async def test_get_job_lineage_empty_io_stats_and_schema(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": inputs_to_json(merged_inputs, granularity="JOB"),
             "outputs": outputs_to_json(merged_outputs, granularity="JOB"),
@@ -1077,6 +1094,7 @@ async def test_get_job_lineage_for_long_running_operations(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -1091,6 +1109,55 @@ async def test_get_job_lineage_for_long_running_operations(
             "datasets": datasets_to_json(datasets, outputs, inputs),
             "jobs": jobs_to_json([job]),
             "runs": {},
+            "operations": {},
+        },
+    }
+
+
+async def test_get_job_lineage_with_granularity_run_and_parent_relations(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    lineage_with_parent_run_relations: LineageResult,
+    mocked_user: MockedUser,
+):
+    lineage = lineage_with_parent_run_relations
+    run = lineage.runs[-1]
+    job = next(job for job in lineage.jobs if run.job_id == job.id)
+    since = run.created_at
+
+    lineage.runs.pop(-2)
+    runs = await enrich_runs(lineage.runs, async_session)
+    jobs = await enrich_jobs([job], async_session)
+    datasets = await enrich_datasets(lineage.datasets, async_session)
+
+    response = await test_client.get(
+        "v1/jobs/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            "start_node_id": job.id,
+            "granularity": "RUN",
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": run_parents_to_json(runs),
+            "ancestors": runs_ancestors_to_json(runs),
+            "symlinks": [],
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
+                *inputs_to_json(merge_io_by_runs(lineage.inputs), granularity="RUN"),
+            ],
+            "outputs": [],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
             "operations": {},
         },
     }
