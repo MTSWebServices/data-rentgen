@@ -16,6 +16,7 @@ from data_rentgen.services.uow import UnitOfWork
 @dataclass
 class JobData:
     id: int
+    parent_job_id: int | None
     name: str
     type: str
     location: Location
@@ -42,6 +43,7 @@ class JobService:
         page: int,
         page_size: int,
         job_ids: Collection[int],
+        parent_job_ids: Collection[int],
         job_types: Collection[str],
         tag_value_ids: Collection[int],
         location_ids: Collection[int],
@@ -52,6 +54,7 @@ class JobService:
             page=page,
             page_size=page_size,
             job_ids=job_ids,
+            parent_job_ids=parent_job_ids,
             job_types=job_types,
             tag_value_ids=tag_value_ids,
             location_ids=location_ids,
@@ -68,6 +71,7 @@ class JobService:
                     id=job.id,
                     data=JobData(
                         id=job.id,
+                        parent_job_id=job.parent_job_id,
                         name=job.name,
                         type=job.type,
                         location=job.location,

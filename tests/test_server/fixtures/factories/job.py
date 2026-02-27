@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 def job_factory(**kwargs):
     data = {
         "id": randint(0, 10000000),
+        "parent_job_id": None,
         "location_id": randint(0, 10000000),
         "name": random_string(32),
         "type_id": randint(0, 10000000),
@@ -292,6 +293,35 @@ async def make_job(async_session_maker: Callable[[], AbstractAsyncContextManager
             return job
 
     yield _create
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture(params=[(5, {})])
+async def jobs_with_same_parent_job(
+    request: pytest.FixtureRequest,
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+    job: Job,
+) -> AsyncGenerator[list[Job], None]:
+    size, params = request.param
+
+    async with async_session_maker() as async_session:
+        items = []
+        for _ in range(size):
+            location = await create_location(async_session)
+            job_type = await create_job_type(async_session)
+            item = await create_job(
+                async_session,
+                location_id=location.id,
+                job_type_id=job_type.id,
+                job_kwargs={"parent_job_id": job.id, **params},
+            )
+            items.append(item)
+
+        async_session.expunge_all()
+
+    yield items
 
     async with async_session_maker() as async_session:
         await clean_db(async_session)

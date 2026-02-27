@@ -96,6 +96,7 @@ class JobRepository(Repository[Job]):
         page: int,
         page_size: int,
         job_ids: Collection[int],
+        parent_job_ids: Collection[int],
         job_types: Collection[str],
         tag_value_ids: Collection[int],
         location_ids: Collection[int],
@@ -106,6 +107,8 @@ class JobRepository(Repository[Job]):
         location_join_clause = Location.id == Job.location_id
         if job_ids:
             where.append(Job.id == any_(list(job_ids)))  # type: ignore[arg-type]
+        if parent_job_ids:
+            where.append(Job.parent_job_id == any_(list(parent_job_ids)))  # type: ignore[arg-type]
         if job_types:
             where.append(Job.type == any_(list(job_types)))  # type: ignore[arg-type]
         if location_ids:
