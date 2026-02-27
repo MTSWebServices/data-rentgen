@@ -37,15 +37,37 @@ def format_datetime(value: datetime):
     return result.replace(".000000", "")
 
 
-def run_parent_run_to_json(run: Run):
+def run_parent_to_json(run: Run):
+    return {
+        "from": {"kind": "JOB", "id": str(run.job_id)},
+        "to": {"kind": "RUN", "id": str(run.id)},
+    }
+
+
+def run_parents_to_json(runs: list[Run]):
+    return [run_parent_to_json(run) for run in sorted(runs, key=lambda x: x.id)]
+
+
+def operation_parent_to_json(operation: Operation):
+    return {
+        "from": {"kind": "RUN", "id": str(operation.run_id)},
+        "to": {"kind": "OPERATION", "id": str(operation.id)},
+    }
+
+
+def operation_parents_to_json(operations: list[Operation]):
+    return [operation_parent_to_json(run) for run in sorted(operations, key=lambda x: x.id)]
+
+
+def run_ancestor_to_json(run: Run):
     return {
         "from": {"kind": "RUN", "id": str(run.parent_run_id)},
         "to": {"kind": "RUN", "id": str(run.id)},
     }
 
 
-def run_parents_to_json(runs: list[Run]):
-    results = [run_parent_run_to_json(run) for run in runs if run.parent_run_id]
+def runs_ancestors_to_json(runs: list[Run]):
+    results = [run_ancestor_to_json(run) for run in runs if run.parent_run_id]
     return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
 
 

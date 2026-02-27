@@ -1336,7 +1336,7 @@ async def lineage_for_long_running_operations_with_column_lineage(
 
 
 @pytest_asyncio.fixture()
-async def lineage_with_runs_chain(
+async def lineage_with_parent_run_relations(
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
     user: User,
 ) -> AsyncGenerator[LineageResult, None]:

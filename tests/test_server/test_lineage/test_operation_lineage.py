@@ -11,9 +11,11 @@ from tests.test_server.utils.convert_to_json import (
     datasets_to_json,
     inputs_to_json,
     jobs_to_json,
+    operation_parents_to_json,
     operations_to_json,
     outputs_to_json,
     run_parents_to_json,
+    runs_ancestors_to_json,
     runs_to_json,
     symlinks_to_json,
 )
@@ -79,7 +81,8 @@ async def test_get_operation_lineage_no_inputs_outputs(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [],
@@ -131,7 +134,8 @@ async def test_get_operation_lineage_simple(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -190,7 +194,8 @@ async def test_get_operation_lineage_with_direction_downstream(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [
@@ -245,7 +250,8 @@ async def test_get_operation_lineage_with_direction_upstream(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -316,6 +322,7 @@ async def test_get_operation_lineage_with_until(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -422,7 +429,8 @@ async def test_get_operation_lineage_with_depth(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -478,7 +486,8 @@ async def test_get_operation_lineage_with_depth_ignore_cycles(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json(runs) + operation_parents_to_json(lineage.operations),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
@@ -565,7 +574,8 @@ async def test_get_operation_lineage_with_depth_ignore_unrelated_datasets(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json(runs) + operation_parents_to_json(lineage.operations),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -636,7 +646,8 @@ async def test_get_operation_lineage_with_symlinks(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": symlinks_to_json(dataset_symlinks),
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -708,7 +719,8 @@ async def test_get_operation_lineage_with_symlink_without_input_output(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": symlinks_to_json(dataset_symlinks),
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -817,6 +829,7 @@ async def test_get_operation_lineage_with_empty_io_stats_and_schema(
     assert response.json() == {
         "relations": {
             "parents": [],
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merged_job_inputs, granularity="JOB"),
@@ -894,7 +907,8 @@ async def test_get_operation_lineage_for_long_running_operations(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [],
+            "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
+            "ancestors": [],
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
@@ -921,10 +935,10 @@ async def test_get_operation_lineage_for_long_running_operations(
 async def test_get_operation_lineage_with_run_parents_chain(
     test_client: AsyncClient,
     async_session: AsyncSession,
-    lineage_with_runs_chain: LineageResult,
+    lineage_with_parent_run_relations: LineageResult,
     mocked_user: MockedUser,
 ):
-    lineage = lineage_with_runs_chain
+    lineage = lineage_with_parent_run_relations
     operation = lineage.operations[0]
     run = next(run for run in lineage.runs if run.id == operation.run_id)
     since = run.created_at
@@ -947,7 +961,8 @@ async def test_get_operation_lineage_with_run_parents_chain(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": run_parents_to_json(runs),
+            "parents": run_parents_to_json(runs) + operation_parents_to_json(lineage.operations),
+            "ancestors": runs_ancestors_to_json(runs),
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),

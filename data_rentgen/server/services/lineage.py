@@ -39,7 +39,7 @@ class LineageServiceResult:
     outputs: dict[tuple[int, int, UUID | None, UUID | None, int | None], OutputRow] = field(default_factory=dict)
     column_lineage: dict[tuple[int, int], list[ColumnLineageRow]] = field(default_factory=dict)
     io_dataset_relations: dict[tuple[int, int], IODatasetRelationRow] = field(default_factory=dict)
-    run_parent_relations: set[tuple[UUID, UUID]] = field(default_factory=set)
+    run_ancestor_relations: set[tuple[UUID, UUID]] = field(default_factory=set)
 
     def merge(self, other: "LineageServiceResult") -> "LineageServiceResult":
         self.jobs.update(other.jobs)
@@ -51,7 +51,7 @@ class LineageServiceResult:
         self.outputs.update(other.outputs)
         self.column_lineage.update(other.column_lineage)
         self.io_dataset_relations.update(other.io_dataset_relations)
-        self.run_parent_relations.update(other.run_parent_relations)
+        self.run_ancestor_relations.update(other.run_ancestor_relations)
         return self
 
 
@@ -1314,11 +1314,11 @@ class LineageService:
             return LineageServiceResult()
         match granularity:
             case "RUN" | "OPERATION":
-                relations = await self._uow.run.list_runs_parents_relations(run_ids)
+                relations = await self._uow.run.list_runs_ancestor_relations(run_ids)
                 parents_run_ids = {p_id for p_id, _ in relations}
                 runs = await self._uow.run.list_by_ids(parents_run_ids)
                 runs_by_id = {run.id: run for run in runs}
-                return LineageServiceResult(run_parent_relations={tuple(r) for r in relations}, runs=runs_by_id)
+                return LineageServiceResult(run_ancestor_relations={tuple(r) for r in relations}, runs=runs_by_id)
             case "JOB":
                 return LineageServiceResult()
             case "DATASET":
