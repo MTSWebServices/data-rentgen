@@ -65,21 +65,21 @@ exclude = ["docs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  "fastapi>=0.133",
+  "fastapi~=0.135.1",
   "uvicorn~=0.41.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
   "pyjwt~=2.11.0",
   "itsdangerous~=2.2.0",
   "python-multipart~=0.0.20",
-  "python-keycloak>=7.0.3,<7.2.0",
+  "python-keycloak~=7.1.1",
 ]
 consumer = [
-  "faststream[kafka,cli]~=0.6.6",
+  "faststream[kafka,cli]~=0.6.7",
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  "fastapi>=0.129",
+  "fastapi~=0.135.1",
   "uvicorn~=0.41.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
