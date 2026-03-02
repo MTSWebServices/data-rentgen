@@ -238,6 +238,7 @@ def datasets_to_json(
 def job_to_json(job: Job):
     return {
         "id": str(job.id),
+        "parent_job_id": str(job.parent_job_id) if job.parent_job_id else None,
         "name": job.name,
         "type": job.type,
         "location": location_to_json(job.location),

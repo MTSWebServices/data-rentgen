@@ -14,6 +14,7 @@ class JobResponseV1(BaseModel):
     """Job response"""
 
     id: str = Field(description="Job id", coerce_numbers_to_str=True)
+    parent_job_id: str | None = Field(description="Parent job id", coerce_numbers_to_str=True, default=None)
     location: LocationResponseV1 = Field(description="Corresponding Location")
     name: str = Field(description="Job name")
     type: str = Field(description="Job type")
@@ -47,6 +48,10 @@ class JobPaginateQueryV1(PaginateQueryV1):
     job_id: list[int] = Field(
         default_factory=list,
         description="Ids of jobs to fetch specific items only",
+    )
+    parent_job_id: list[int] = Field(
+        default_factory=list,
+        description="Parent Jobs ids",
     )
     search_query: str | None = Field(
         default=None,

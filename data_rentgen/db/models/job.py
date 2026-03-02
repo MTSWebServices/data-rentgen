@@ -51,6 +51,20 @@ class Job(Base):
         doc="Job type",
     )
 
+    parent_job_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("job.id"),
+        index=True,
+        nullable=True,
+        doc="Parent job id",
+    )
+    parent_job: Mapped["Job | None"] = relationship(
+        "Job",
+        primaryjoin="Job.parent_job_id == Job.id",
+        lazy="noload",
+        foreign_keys=[parent_job_id],
+    )
+
     type = column_property(
         select(JobType.type).where(Column("type_id") == JobType.id).scalar_subquery(),
     )
