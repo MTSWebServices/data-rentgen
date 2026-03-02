@@ -68,6 +68,8 @@ class HiveExtractor(GenericExtractor):
             external_id=hive_session.sessionId,
             user=user,
         )
+        if run.parent_run:
+            run.job.parent_job = run.parent_run.job
         self._add_engine_version_tag(run, event)
         self._add_openlineage_adapter_version_tag(run, event)
         self._add_openlineage_client_version_tag(run, event)

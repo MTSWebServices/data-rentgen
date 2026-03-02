@@ -93,11 +93,13 @@ async def test_runs_handler_airflow(
     assert len(jobs[0].location.addresses) == 1
     assert jobs[0].location.addresses[0].url == "http://airflow-host:8081"
     assert {tv.tag.name: tv.value for tv in jobs[0].tag_values} == expected_tag_values
+    assert jobs[0].parent_job_id is None
 
     assert jobs[1].name == "mydag.mytask"
     assert jobs[1].type == "AIRFLOW_TASK"
     assert jobs[1].location == jobs[0].location
     assert {tv.tag.name: tv.value for tv in jobs[1].tag_values} == expected_tag_values
+    assert jobs[1].parent_job_id == jobs[0].id
 
     run_query = select(Run).order_by(Run.id)
     run_scalars = await async_session.scalars(run_query)

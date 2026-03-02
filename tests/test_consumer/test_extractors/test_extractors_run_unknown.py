@@ -251,6 +251,15 @@ def test_extractors_extract_run_unknown_with_parent():
         id=run_id,
         job=JobDTO(
             name="myjob",
+            parent_job=JobDTO(
+                name="parentjob",
+                type=None,
+                location=LocationDTO(
+                    type="unknown",
+                    name="anything",
+                    addresses={"unknown://anything"},
+                ),
+            ),
             type=JobTypeDTO(type="UNKNOWN_SOMETHING"),
             location=LocationDTO(
                 type="unknown",

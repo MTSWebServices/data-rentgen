@@ -134,6 +134,8 @@ class BatchExtractionResult:
         job.location = self.add_location(job.location)
         if job.type:
             job.type = self.add_job_type(job.type)
+        if job.parent_job:
+            job.parent_job = self.add_job(job.parent_job)
         job.tag_values = {self.add_tag_value(tag_value) for tag_value in job.tag_values}
         return self._add(self._jobs, job)
 
