@@ -222,6 +222,7 @@ class JobRepository(Repository[Job]):
     async def _create(self, job: JobDTO) -> Job:
         result = Job(
             location_id=job.location.id,
+            parent_job_id=job.parent_job.id if job.parent_job else None,
             name=job.name,
             type_id=job.type.id if job.type else UNKNOWN_JOB_TYPE,
         )

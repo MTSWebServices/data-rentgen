@@ -41,6 +41,8 @@ class RunExtractorMixin(ABC):
             job=self.extract_job(event.job),
             parent_run=self.extract_parent_run(event.run.facets.parent) if event.run.facets.parent else None,
         )
+        if run.parent_run:
+            run.job.parent_job = run.parent_run.job
         self._enrich_run_status(run, event)
         self._add_engine_version_tag(run, event)
         self._add_openlineage_adapter_version_tag(run, event)

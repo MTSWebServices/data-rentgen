@@ -74,6 +74,14 @@ def test_extractors_extract_operation_unknown():
                     name="anything",
                     addresses={"unknown://anything"},
                 ),
+                parent_job=JobDTO(
+                    name="parentjob",
+                    location=LocationDTO(
+                        type="unknown",
+                        name="anything",
+                        addresses={"unknown://anything"},
+                    ),
+                ),
             ),
             parent_run=RunDTO(
                 id=parent_run_id,
@@ -159,6 +167,14 @@ def test_extractors_extract_operation_unknown_finished(
                     type="unknown",
                     name="anything",
                     addresses={"unknown://anything"},
+                ),
+                parent_job=JobDTO(
+                    name="parentjob",
+                    location=LocationDTO(
+                        type="unknown",
+                        name="anything",
+                        addresses={"unknown://anything"},
+                    ),
                 ),
             ),
             parent_run=RunDTO(
