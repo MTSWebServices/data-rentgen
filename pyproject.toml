@@ -56,11 +56,11 @@ exclude = ["docs", "tests"]
 "*" = ["py.typed", "*.yml",  "*.ini", "VERSION"]
 
 [project.urls]  # Optional
-"Homepage" = "https://github.com/MobileTeleSystems/data-rentgen"
+"Homepage" = "https://github.com/MTSWebServices/data-rentgen"
 "Documentation" = "https://data-rentgen.readthedocs.io/"
-"Source" = "https://github.com/MobileTeleSystems/data-rentgen"
-"CI/CD" = "https://github.com/MobileTeleSystems/data-rentgen/actions"
-"Tracker" = "https://github.com/MobileTeleSystems/data-rentgen/issues"
+"Source" = "https://github.com/MTSWebServices/data-rentgen"
+"CI/CD" = "https://github.com/MTSWebServices/data-rentgen/actions"
+"Tracker" = "https://github.com/MTSWebServices/data-rentgen/issues"
 
 
 [project.optional-dependencies]

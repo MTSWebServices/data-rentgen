@@ -14,7 +14,7 @@ jobs:
   wait-code-analysis:
     name: Dev release package
     runs-on: ubuntu-latest
-    if: github.repository == 'MobileTeleSystems/data-rentgen' # prevent running on forks
+    if: github.repository == 'MTSWebServices/data-rentgen' # prevent running on forks
 
     environment:
       name: test-pypi
@@ -41,7 +41,7 @@ jobs:
 
       - name: Fix logo in Readme
         run: |
-          sed -i "s#image:: docs/#image:: https://raw.githubusercontent.com/MobileTeleSystems/data-rentgen/$GITHUB_SHA/docs/#g" README.rst
+          sed -i "s#image:: docs/#image:: https://raw.githubusercontent.com/MTSWebServices/data-rentgen/$GITHUB_SHA/docs/#g" README.rst
           sed -i "s#logo_wide_white_text.svg#logo_wide.svg#g" README.rst
 
       - name: Patch version template
