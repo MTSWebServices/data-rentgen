@@ -231,20 +231,12 @@ class JobRepository(Repository[Job]):
         return result
 
     async def update(self, existing: Job, new: JobDTO) -> Job:
-        # almost of fields are immutable, so we can avoid UPDATE statements if row is unchanged
-        values_to_update: dict[str, int | None] = {}
-        if new.type and new.type.id and existing.type_id != new.type.id:
-            values_to_update["type_id"] = new.type.id
+        if new.type and new.type.id:
+            existing.type_id = new.type.id
+        if new.parent_job:
+            existing.parent_job_id = new.parent_job.id
 
-        if new.parent_job and new.parent_job.id != existing.parent_job_id:
-            values_to_update["parent_job_id"] = new.parent_job.id
-
-        if values_to_update:
-            await self._session.execute(
-                update_job_query.values(**{k: bindparam(k) for k in values_to_update}),
-                {"job_id": existing.id, **values_to_update},
-            )
-
+        await self._session.flush([existing])
         if not new.tag_values:
             # in case when jobs have no tag values we can avoid INSERT statements.
             # also parent jobs may have no tag values, so we skip updating them.
