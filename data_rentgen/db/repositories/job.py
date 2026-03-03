@@ -72,10 +72,7 @@ get_stats_query = (
     .group_by(Job.location_id)
 )
 
-update_job_type_query = update(Job).where(Job.id == bindparam("job_id")).values(type_id=bindparam("type_id"))
-update_job_parent_job_query = (
-    update(Job).where(Job.id == bindparam("job_id")).values(parent_job_id=bindparam("parent_job_id"))
-)
+update_job_query = update(Job).where(Job.id == bindparam("job_id"))
 
 insert_tag_value_query = (
     insert(JobTagValue)
@@ -235,24 +232,23 @@ class JobRepository(Repository[Job]):
 
     async def update(self, existing: Job, new: JobDTO) -> Job:
         # almost of fields are immutable, so we can avoid UPDATE statements if row is unchanged
+        values_to_update: dict[str, int | None] = {}
         if new.type and new.type.id and existing.type_id != new.type.id:
+            values_to_update["type_id"] = new.type.id
+
+        if new.parent_job and new.parent_job.id != existing.parent_job_id:
+            values_to_update["parent_job_id"] = new.parent_job.id
+
+        if values_to_update:
             await self._session.execute(
-                update_job_type_query,
-                {
-                    "job_id": existing.id,
-                    "type_id": new.type.id,
-                },
+                update_job_query.values(**{k: bindparam(k) for k in values_to_update}),
+                {"job_id": existing.id, **values_to_update},
             )
 
         if not new.tag_values:
             # in case when jobs have no tag values we can avoid INSERT statements.
             # also parent jobs may have no tag values, so we skip updating them.
             return existing
-
-        if new.parent_job and new.parent_job.id != existing.parent_job_id:
-            await self._session.execute(
-                update_job_parent_job_query, {"job_id": existing.id, "parent_job_id": new.parent_job.id}
-            )
 
         # Lock to prevent inserting the same rows from multiple workers
         await self._lock(existing.location_id, existing.name)

@@ -98,9 +98,10 @@ class DatabaseSaver:
         # By using topological sort (parent before child) we can be sure that parent_job will be created before child.
         sorter: TopologicalSorter = TopologicalSorter()
         for job_dto, _ in job_pairs:
-            sorter.add(job_dto.unique_key)
             if job_dto.parent_job:
                 sorter.add(job_dto.unique_key, job_dto.parent_job.unique_key)
+            else:
+                sorter.add(job_dto.unique_key)
 
         sorted_job_pairs = [key_to_pair[key] for key in sorter.static_order()]
 
