@@ -22,7 +22,6 @@ from sqlalchemy import (
     select,
     tuple_,
     union,
-    update,
 )
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
@@ -72,7 +71,6 @@ get_stats_query = (
     .group_by(Job.location_id)
 )
 
-update_job_query = update(Job).where(Job.id == bindparam("job_id"))
 
 insert_tag_value_query = (
     insert(JobTagValue)
