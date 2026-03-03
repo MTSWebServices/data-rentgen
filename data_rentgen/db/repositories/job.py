@@ -73,6 +73,9 @@ get_stats_query = (
 )
 
 update_job_type_query = update(Job).where(Job.id == bindparam("job_id")).values(type_id=bindparam("type_id"))
+update_job_parent_job_query = (
+    update(Job).where(Job.id == bindparam("job_id")).values(parent_job_id=bindparam("parent_job_id"))
+)
 
 insert_tag_value_query = (
     insert(JobTagValue)
@@ -245,6 +248,11 @@ class JobRepository(Repository[Job]):
             # in case when jobs have no tag values we can avoid INSERT statements.
             # also parent jobs may have no tag values, so we skip updating them.
             return existing
+
+        if new.parent_job and new.parent_job.id != existing.parent_job_id:
+            await self._session.execute(
+                update_job_parent_job_query, {"job_id": existing.id, "parent_job_id": new.parent_job.id}
+            )
 
         # Lock to prevent inserting the same rows from multiple workers
         await self._lock(existing.location_id, existing.name)
