@@ -23,6 +23,23 @@ def upgrade() -> None:
     op.create_index(op.f("ix__job__parent_job_id"), "job", ["parent_job_id"], unique=False)
     op.create_foreign_key(op.f("fk__job__parent_job_id__job"), "job", "job", ["parent_job_id"], ["id"])
 
+    op.execute(
+        """
+        UPDATE job j
+        SET parent_job_id = parent_run.job_id
+        FROM (
+            SELECT DISTINCT ON (r.job_id)
+                r.job_id,
+                r.parent_run_id
+            FROM run r
+            ORDER BY r.job_id, r.created_at, r.id DESC
+        ) last_run
+        JOIN run parent_run ON parent_run.id = last_run.parent_run_id
+        WHERE j.id = last_run.job_id
+          AND last_run.parent_run_id IS NOT NULL
+        """
+    )
+
 
 def downgrade() -> None:
     op.drop_constraint(op.f("fk__job__parent_job_id__job"), "job", type_="foreignkey")
