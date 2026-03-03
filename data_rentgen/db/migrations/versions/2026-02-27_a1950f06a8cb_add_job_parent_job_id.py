@@ -32,11 +32,11 @@ def upgrade() -> None:
                 r.job_id,
                 r.parent_run_id
             FROM run r
+            WHERE r.parent_run_id IS NOT NULL
             ORDER BY r.job_id, r.created_at, r.id DESC
         ) last_run
         JOIN run parent_run ON parent_run.id = last_run.parent_run_id
         WHERE j.id = last_run.job_id
-          AND last_run.parent_run_id IS NOT NULL
         """
     )
 

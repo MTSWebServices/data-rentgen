@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from graphlib import TopologicalSorter
+
 from faststream import Logger
 from sqlalchemy.exc import DatabaseError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -90,7 +92,19 @@ class DatabaseSaver:
     async def create_jobs(self, data: BatchExtractionResult):
         self.logger.debug("Creating jobs")
         job_pairs = await self.unit_of_work.job.fetch_bulk(data.jobs())
-        for job_dto, job in job_pairs:
+
+        key_to_pair = {job_dto.unique_key: (job_dto, job) for job_dto, job in job_pairs}
+        # It's possible that parent_job doesn't exist yet.
+        # By using topological sort (parent before child) we can be sure that parent_job will be created before child.
+        sorter: TopologicalSorter = TopologicalSorter()
+        for job_dto, _ in job_pairs:
+            sorter.add(job_dto.unique_key)
+            if job_dto.parent_job:
+                sorter.add(job_dto.unique_key, job_dto.parent_job.unique_key)
+
+        sorted_job_pairs = [key_to_pair[key] for key in sorter.static_order()]
+
+        for job_dto, job in sorted_job_pairs:
             async with self.unit_of_work:
                 if not job:
                     job = await self.unit_of_work.job.create_or_update(job_dto)  # noqa: PLW2901
