@@ -227,6 +227,8 @@ class BatchExtractionResult:
         job.location = self.get_location(job.location.unique_key)
         if job.type:
             job.type = self.get_job_type(job.type.unique_key)
+        if job.parent_job:
+            job.parent_job = self.get_job(job.parent_job.unique_key)
         job.tag_values = {self.get_tag_value(tag_value.unique_key) for tag_value in job.tag_values}
         return job
 
