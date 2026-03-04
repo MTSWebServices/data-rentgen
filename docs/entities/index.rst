@@ -175,6 +175,7 @@ It contains following fields:
   - ``DBT_JOB``
   - ``UNKNOWN``
 
+- ``parent_job_id: int`` - parent Job which started this specific Job, e.g. Spark applicationId was started by Airflow Task Instance, or Airflow Task Instance is a started by Airflow DagRun.
 - ``tags: list[Tag]`` - tags of job.
 
 .. image:: job_list.png
@@ -219,7 +220,7 @@ It contains following fields:
 - ``id: uuidv7`` - unique identifier, generated on client.
 - ``created_at: timestamp`` - extracted UUIDv7 timestamp, used for filtering purpose.
 - ``job_id: int`` - bound to specific Job.
-- ``parent_run_id: uuidv7`` - parent Run which triggered this specific Run, e.g. Spark applicationId was triggered by Airflow Task Instance, or Airflow Task Instance is a child of Airflow DagRun.
+- ``parent_run_id: uuidv7`` - parent Run which started this specific Run, e.g. Spark applicationId was started by Airflow Task Instance, or Airflow Task Instance is a started by Airflow DagRun.
 - ``started_at: timestamp | None`` - timestamp when OpenLineage event with ``eventType=START`` was received.
 - ``started_by user: User | None`` - Spark session started as specific OS user/Kerberos principal.
 - ``start_reason: Enum | None`` - "why this Run was started?":

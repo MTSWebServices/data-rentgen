@@ -54,6 +54,7 @@ Database structure
         * location_id: bigint <<FK>>
         * name: varchar(256)
         type: varchar(32)
+        parent_job_id: bigint null
         search_vector: tsvector
     }
 
@@ -63,7 +64,7 @@ Database structure
         ----
         * job_id: bigint
         status: smallint
-        parent_run_id: bigint null
+        parent_run_id: uuid(v7) null
         started_at: timestamptz null
         started_by_user_id: bigint null
         start_reason: varchar(32)
