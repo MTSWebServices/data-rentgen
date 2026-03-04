@@ -1318,7 +1318,14 @@ class LineageService:
                 parents_run_ids = {p_id for p_id, _ in relations}
                 runs = await self._uow.run.list_by_ids(parents_run_ids)
                 runs_by_id = {run.id: run for run in runs}
-                return LineageServiceResult(run_ancestor_relations={tuple(r) for r in relations}, runs=runs_by_id)
+                job_ids = {run.job_id for run in runs}
+                jobs = await self._uow.job.list_by_ids(job_ids)
+                jobs_by_id = {job.id: job for job in jobs}
+                return LineageServiceResult(
+                    run_ancestor_relations={tuple(r) for r in relations},
+                    runs=runs_by_id,
+                    jobs=jobs_by_id,
+                )
             case "JOB":
                 return LineageServiceResult()
             case "DATASET":

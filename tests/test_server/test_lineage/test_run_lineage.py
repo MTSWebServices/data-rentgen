@@ -1235,7 +1235,7 @@ async def test_get_run_lineage_for_long_running_operations(
     }
 
 
-async def test_get_run_lineage_run_parents_chain(
+async def test_get_run_lineage_run_with_ancestor_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,
@@ -1243,13 +1243,12 @@ async def test_get_run_lineage_run_parents_chain(
 ):
     lineage = lineage_with_parent_run_relations
     run = lineage.runs[-1]
-    job = next(job for job in lineage.jobs if job.id == run.job_id)
     since = run.created_at
 
     # Removing other run which one the same level with our
     lineage.runs.pop(-2)
     runs = await enrich_runs(lineage.runs, async_session)
-    jobs = await enrich_jobs([job], async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
     datasets = await enrich_datasets(lineage.datasets, async_session)
 
     response = await test_client.get(
@@ -1284,7 +1283,7 @@ async def test_get_run_lineage_run_parents_chain(
     }
 
 
-async def test_runs_parents_chain_granularity_operation(
+async def test_runs_with_granularity_operation_and_ancestor_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,
@@ -1292,14 +1291,13 @@ async def test_runs_parents_chain_granularity_operation(
 ):
     lineage = lineage_with_parent_run_relations
     run = lineage.runs[-1]
-    job = next(job for job in lineage.jobs if job.id == run.job_id)
     since = run.created_at
 
     # Removing other run which one the same level with our
     lineage.runs.pop(-2)
     datasets = await enrich_datasets(lineage.datasets, async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
     runs = await enrich_runs(lineage.runs, async_session)
-    jobs = await enrich_jobs([job], async_session)
 
     response = await test_client.get(
         "v1/runs/lineage",

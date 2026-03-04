@@ -1114,7 +1114,7 @@ async def test_get_job_lineage_for_long_running_operations(
     }
 
 
-async def test_get_job_lineage_with_granularity_run_and_parent_relations(
+async def test_get_job_lineage_with_granularity_run_and_ancestor_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,
@@ -1127,7 +1127,7 @@ async def test_get_job_lineage_with_granularity_run_and_parent_relations(
 
     lineage.runs.pop(-2)
     runs = await enrich_runs(lineage.runs, async_session)
-    jobs = await enrich_jobs([job], async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
     datasets = await enrich_datasets(lineage.datasets, async_session)
 
     response = await test_client.get(
