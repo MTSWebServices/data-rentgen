@@ -932,7 +932,7 @@ async def test_get_operation_lineage_for_long_running_operations(
     }
 
 
-async def test_get_operation_lineage_with_run_parents_chain(
+async def test_get_operation_lineage_with_run_and_ancestor_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,
@@ -943,9 +943,8 @@ async def test_get_operation_lineage_with_run_parents_chain(
     run = next(run for run in lineage.runs if run.id == operation.run_id)
     since = run.created_at
 
-    job = next(job for job in lineage.jobs if job.id == run.job_id)
-    jobs = await enrich_jobs([job], async_session)
     lineage.runs.pop(-2)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
     runs = await enrich_runs(lineage.runs, async_session)
     datasets = await enrich_datasets(lineage.datasets, async_session)
 
