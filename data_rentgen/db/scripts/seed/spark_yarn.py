@@ -176,10 +176,21 @@ def generate_spark_run_yarn(
     start: datetime,
     end: datetime,
 ) -> BatchExtractionResult:
+    run_created_at = faker.date_time_between(start, end, tzinfo=UTC)
+    run_started_at = run_created_at + timedelta(minutes=faker.pyfloat(min_value=0, max_value=3))
+    run_ended_at = run_started_at + timedelta(minutes=faker.pyfloat(min_value=10, max_value=12))
+    paren_run = generate_airflow_run(
+        "mart_layer_dag",
+        "mart_layer_task",
+        run_created_at - timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
+        run_ended_at + timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
+    )
+
     job = JobDTO(
         name="mart_layer_loader",
         location=LOCATIONS["yarn"],
         type=JobTypeDTO(type="SPARK_APPLICATION"),
+        parent_job=paren_run.job,
         tag_values={
             TagValueDTO(
                 tag=TagDTO(name="spark.version"),
@@ -196,21 +207,13 @@ def generate_spark_run_yarn(
         },
     )
 
-    run_created_at = faker.date_time_between(start, end, tzinfo=UTC)
-    run_started_at = run_created_at + timedelta(minutes=faker.pyfloat(min_value=0, max_value=3))
-    run_ended_at = run_started_at + timedelta(minutes=faker.pyfloat(min_value=10, max_value=12))
     run_id = generate_new_uuid(run_created_at)
     external_id = f"application_{run_created_at.timestamp() * 1000}_0001"
     run = RunDTO(
         id=run_id,
         job=job,
         status=RunStatusDTO.SUCCEEDED,
-        parent_run=generate_airflow_run(
-            "mart_layer_dag",
-            "mart_layer_task",
-            run_created_at - timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
-            run_ended_at + timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
-        ),
+        parent_run=paren_run,
         external_id=external_id,
         running_log_url=f"http://{faker.ipv4_private()}:{faker.port_number(is_user=True)}",
         persistent_log_url=f"http://mn01.hadoop.companyname.com:8088/proxy/{external_id}",

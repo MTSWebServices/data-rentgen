@@ -66,6 +66,7 @@ def generate_airflow_run(dag_id: str, task_id: str, created_at: datetime, ended_
     task_job = JobDTO(
         name=f"{dag_id}.{task_id}",
         location=location,
+        parent_job=dag_job,
         type=JobTypeDTO(type="AIRFLOW_TASK"),
         tag_values={
             TagValueDTO(
