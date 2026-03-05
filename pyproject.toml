@@ -93,7 +93,7 @@ gssapi = [
   "gssapi~=1.11.1",
 ]
 seed = [
-  "faker>=40.1.2,<40.6.0"
+  "faker>=40.1.2,<40.9.0"
 ]
 
 [dependency-groups]
@@ -138,7 +138,7 @@ docs = [
   # uncomment after https://github.com/zqmillet/sphinx-plantuml/pull/4
   # "sphinx-plantuml~=1.0.0",
   "sphinx-argparse~=0.5.2",
-  "sphinx-tabs~=3.4.7",
+  "sphinx-tabs>=3.4.7,<3.6.0",
 ]
 
 [tool.uv]
