@@ -91,9 +91,7 @@ parent_run = aliased(Run, name="parent")
 parents_by_run_base_part = (
     select(
         child_run.id.label("child_run_id"),
-        child_run.job_id.label("child_job_id"),
         parent_run.id.label("parent_run_id"),
-        parent_run.job_id.label("parent_job_id"),
     )
     .select_from(child_run)
     .join(parent_run, child_run.parent_run_id == parent_run.id)
@@ -108,9 +106,7 @@ ancestors_by_run_cte = parents_by_run_base_part.cte("parents_by_run", recursive=
 parents_by_run_recursive_part = (
     select(
         child_run.id.label("child_run_id"),
-        child_run.job_id.label("child_job_id"),
         parent_run.id.label("parent_run_id"),
-        parent_run.job_id.label("parent_job_id"),
     )
     .select_from(child_run)
     .join(parent_run, child_run.parent_run_id == parent_run.id)
@@ -119,6 +115,34 @@ parents_by_run_recursive_part = (
     )
 )
 ancestors_by_run_cte = ancestors_by_run_cte.union(parents_by_run_recursive_part)
+
+childs_by_run_base_part = (
+    select(
+        parent_run.id.label("parent_run_id"),
+        child_run.id.label("child_run_id"),
+    )
+    .select_from(parent_run)
+    .join(child_run, child_run.parent_run_id == parent_run.id)
+    .where(
+        parent_run.id == any_(bindparam("run_ids")),
+        parent_run.created_at >= bindparam("since"),
+        parent_run.created_at <= bindparam("until"),
+    )
+)
+childs_by_run_cte = childs_by_run_base_part.cte("childs_by_run", recursive=True)
+
+childs_by_run_recursive_part = (
+    select(
+        parent_run.id.label("parent_run_id"),
+        child_run.id.label("child_run_id"),
+    )
+    .select_from(parent_run)
+    .join(child_run, child_run.parent_run_id == parent_run.id)
+    .where(
+        parent_run.id == childs_by_run_cte.c.child_run_id,
+    )
+)
+childs_by_run_cte = childs_by_run_cte.union(childs_by_run_recursive_part)
 
 
 class RunRepository(Repository[Run]):
@@ -384,6 +408,21 @@ class RunRepository(Repository[Run]):
         stmt = select(
             ancestors_by_run_cte.c.parent_run_id,
             ancestors_by_run_cte.c.child_run_id,
+        )
+        result = await self._session.execute(
+            stmt,
+            {
+                "since": extract_timestamp_from_uuid(min(run_ids)),
+                "until": extract_timestamp_from_uuid(max(run_ids)),
+                "run_ids": list(run_ids),
+            },
+        )
+        return list(result.fetchall())
+
+    async def list_runs_child_relations(self, run_ids: Collection[UUID]):
+        stmt = select(
+            childs_by_run_cte.c.parent_run_id,
+            childs_by_run_cte.c.child_run_id,
         )
         result = await self._session.execute(
             stmt,

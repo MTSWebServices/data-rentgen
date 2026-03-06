@@ -71,6 +71,18 @@ def runs_ancestors_to_json(runs: list[Run]):
     return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
 
 
+def job_ancestor_to_json(job: Job):
+    return {
+        "from": {"kind": "JOB", "id": str(job.parent_job_id)},
+        "to": {"kind": "JOB", "id": str(job.id)},
+    }
+
+
+def jobs_ancestors_to_json(jobs: list[Job]):
+    results = [job_ancestor_to_json(job) for job in jobs if job.parent_job_id]
+    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
+
+
 def symlink_to_json(symlink: DatasetSymlink):
     return {
         "from": {"kind": "DATASET", "id": str(symlink.from_dataset_id)},
