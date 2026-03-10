@@ -1164,7 +1164,7 @@ async def test_get_job_lineage_with_granularity_run_and_ancestor_relations(
     }
 
 
-async def test_get_job_lineage_with_child_relations(
+async def test_get_job_lineage_with_descendant_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,

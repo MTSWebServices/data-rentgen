@@ -1333,7 +1333,7 @@ async def test_runs_with_granularity_operation_and_ancestor_relations(
     }
 
 
-async def test_get_run_lineage_run_with_child_relations(
+async def test_get_run_lineage_run_with_descendant_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,
