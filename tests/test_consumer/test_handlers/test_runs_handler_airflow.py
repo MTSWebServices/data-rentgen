@@ -17,6 +17,7 @@ from data_rentgen.db.models import (
     DatasetSymlink,
     Input,
     Job,
+    JobDependency,
     Location,
     Operation,
     OperationStatus,
@@ -117,6 +118,21 @@ async def test_runs_handler_airflow(
     assert insert_task_job.location == dag_job.location
     assert {tv.tag.name: tv.value for tv in insert_task_job.tag_values} == expected_tag_values
     assert insert_task_job.parent_job_id == dag_job.id
+
+    job_dependency_query = select(JobDependency).order_by(JobDependency.from_job_id)
+    job_dependency_scalars = await async_session.scalars(job_dependency_query)
+    job_dependencies = job_dependency_scalars.all()
+    assert len(job_dependencies) == 2
+
+    create_to_insert_job_dependency = job_dependencies[0]
+    assert create_to_insert_job_dependency.from_job_id == create_task_job.id
+    assert create_to_insert_job_dependency.to_job_id == insert_task_job.id
+    assert create_to_insert_job_dependency.type == "DIRECT_DEPENDENCY"
+
+    drop_to_create_job_dependency = job_dependencies[1]
+    assert drop_to_create_job_dependency.from_job_id == drop_task_job.id
+    assert drop_to_create_job_dependency.to_job_id == create_task_job.id
+    assert drop_to_create_job_dependency.type == "DIRECT_DEPENDENCY"
 
     run_query = select(Run).order_by(Run.id)
     run_scalars = await async_session.scalars(run_query)

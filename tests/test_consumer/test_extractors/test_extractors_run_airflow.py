@@ -18,6 +18,7 @@ from data_rentgen.dto import (
     TagValueDTO,
     UserDTO,
 )
+from data_rentgen.dto.job_dependency import JobDependencyDTO
 from data_rentgen.openlineage.job import OpenLineageJob
 from data_rentgen.openlineage.job_facets import (
     OpenLineageJobFacets,
@@ -42,6 +43,12 @@ from data_rentgen.openlineage.run_facets import (
     OpenLineageNominalTimeRunFacet,
     OpenLineageProcessingEngineRunFacet,
     OpenLineageRunFacets,
+)
+from data_rentgen.openlineage.run_facets.job_dependency import (
+    OpenLineageJobDependenciesRunFacet,
+    OpenLineageJobDependency,
+    OpenLineageJobIdentifier,
+    OpenLineageRunIdentifier,
 )
 from data_rentgen.openlineage.run_facets.run_tags import OpenLineageRunTagsFacet, OpenLineageRunTagsFacetField
 
@@ -1484,4 +1491,321 @@ def test_extractors_extract_run_airflow_task_nominal_times(
         running_log_url=None,
         expected_start_at=expected_start_at,
         expected_end_at=expected_end_at,
+    )
+
+
+def test_extractors_extract_run_airflow_task_job_dependencies_ol_provider_2_10_plus():
+    # https://github.com/apache/airflow/pull/59521
+    now = datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc)
+    run_id = UUID("01908223-0782-79b8-9495-b1c38aaee839")
+    run = OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.COMPLETE,
+        eventTime=now,
+        job=OpenLineageJob(
+            namespace="http://airflow-host:8081",
+            name="mydag.mytask",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.BATCH,
+                    integration="AIRFLOW",
+                    jobType="TASK",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                processing_engine=OpenLineageProcessingEngineRunFacet(
+                    version=Version("2.9.2"),
+                    name="Airflow",
+                    openlineageAdapterVersion=Version("2.3.0"),
+                ),
+                airflow=OpenLineageAirflowTaskRunFacet(
+                    dag=OpenLineageAirflowDagInfo(dag_id="mydag", owner="airflow"),
+                    dagRun=OpenLineageAirflowDagRunInfo(
+                        run_id="scheduled__2024-07-05T09:04:13:979349+00:00",
+                        run_type=OpenLineageAirflowDagRunType.SCHEDULED,
+                        data_interval_start=datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc),
+                        data_interval_end=datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc),
+                    ),
+                    task=OpenLineageAirflowTaskInfo(
+                        task_id="mytask",
+                        operator_class="BashOperator",
+                    ),
+                    taskInstance=OpenLineageAirflowTaskInstanceInfo(
+                        try_number=1,
+                    ),
+                ),
+                jobDependencies=OpenLineageJobDependenciesRunFacet(
+                    upstream=[
+                        OpenLineageJobDependency(
+                            job=OpenLineageJobIdentifier(
+                                namespace="http://airflow-host:8081",
+                                name="mydag.previous_task",
+                            ),
+                            run=OpenLineageRunIdentifier(
+                                runId=UUID("01908223-0782-79b8-9495-b1c38aaee831"),
+                            ),
+                            dependency_type="IMPLICIT_DEPENDENCY",
+                            sequence_trigger_rule="FINISH_TO_START",
+                            status_trigger_rule="EXECUTE_EVERY_TIME",
+                        ),
+                    ],
+                    downstream=[
+                        OpenLineageJobDependency(
+                            job=OpenLineageJobIdentifier(
+                                namespace="http://airflow-host:8081",
+                                name="mydag.next_task",
+                            ),
+                            dependency_type="IMPLICIT_DEPENDENCY",
+                            sequence_trigger_rule="FINISH_TO_START",
+                            status_trigger_rule="EXECUTE_EVERY_TIME",
+                        ),
+                    ],
+                    trigger_rule="ALL_SUCCESS",
+                ),
+            ),
+        ),
+    )
+
+    assert AirflowTaskExtractor().extract_run(run) == RunDTO(
+        id=run_id,
+        job=JobDTO(
+            name="mydag.mytask",
+            location=LocationDTO(
+                type="http",
+                name="airflow-host:8081",
+                addresses={"http://airflow-host:8081"},
+            ),
+            type=JobTypeDTO(type="AIRFLOW_TASK"),
+            tag_values={
+                TagValueDTO(
+                    tag=TagDTO(name="airflow.version"),
+                    value="2.9.2",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="openlineage_adapter.version"),
+                    value="2.3.0",
+                ),
+            },
+        ),
+        status=RunStatusDTO.SUCCEEDED,
+        started_at=None,
+        start_reason=RunStartReasonDTO.AUTOMATIC,
+        user=None,
+        ended_at=now,
+        external_id="scheduled__2024-07-05T09:04:13:979349+00:00",
+        attempt="1",
+        persistent_log_url=(
+            "http://airflow-host:8081/dags/mydag/grid?tab=logs&dag_run_id=scheduled__2024-07-05T09%3A04%3A13%3A979349%2B00%3A00&task_id=mytask&map_index=-1"
+        ),
+        running_log_url=None,
+        job_dependencies=[
+            JobDependencyDTO(
+                from_job=JobDTO(
+                    name="mydag.previous_task",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                ),
+                to_job=JobDTO(
+                    name="mydag.mytask",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                    type=JobTypeDTO(type="AIRFLOW_TASK"),
+                    tag_values={
+                        TagValueDTO(
+                            tag=TagDTO(name="airflow.version"),
+                            value="2.9.2",
+                        ),
+                        TagValueDTO(
+                            tag=TagDTO(name="openlineage_adapter.version"),
+                            value="2.3.0",
+                        ),
+                    },
+                ),
+                type="IMPLICIT_DEPENDENCY",
+            ),
+            JobDependencyDTO(
+                from_job=JobDTO(
+                    name="mydag.mytask",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                    type=JobTypeDTO(type="AIRFLOW_TASK"),
+                    tag_values={
+                        TagValueDTO(
+                            tag=TagDTO(name="airflow.version"),
+                            value="2.9.2",
+                        ),
+                        TagValueDTO(
+                            tag=TagDTO(name="openlineage_adapter.version"),
+                            value="2.3.0",
+                        ),
+                    },
+                ),
+                to_job=JobDTO(
+                    name="mydag.next_task",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                ),
+                type="IMPLICIT_DEPENDENCY",
+            ),
+        ],
+    )
+
+
+def test_extractors_extract_run_airflow_task_job_dependencies_ol_provider_below_2_10():
+    now = datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc)
+    run_id = UUID("01908223-0782-79b8-9495-b1c38aaee839")
+    run = OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.COMPLETE,
+        eventTime=now,
+        job=OpenLineageJob(
+            namespace="http://airflow-host:8081",
+            name="mydag.mytask",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.BATCH,
+                    integration="AIRFLOW",
+                    jobType="TASK",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                processing_engine=OpenLineageProcessingEngineRunFacet(
+                    version=Version("2.9.2"),
+                    name="Airflow",
+                    openlineageAdapterVersion=Version("2.3.0"),
+                ),
+                airflow=OpenLineageAirflowTaskRunFacet(
+                    dag=OpenLineageAirflowDagInfo(dag_id="mydag", owner="airflow"),
+                    dagRun=OpenLineageAirflowDagRunInfo(
+                        run_id="scheduled__2024-07-05T09:04:13:979349+00:00",
+                        run_type=OpenLineageAirflowDagRunType.SCHEDULED,
+                        data_interval_start=datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc),
+                        data_interval_end=datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc),
+                    ),
+                    task=OpenLineageAirflowTaskInfo(
+                        task_id="mytask",
+                        operator_class="BashOperator",
+                        downstream_task_ids=["next_task"],
+                        upstream_task_ids=["previous_task"],
+                    ),
+                    taskInstance=OpenLineageAirflowTaskInstanceInfo(
+                        try_number=1,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    assert AirflowTaskExtractor().extract_run(run) == RunDTO(
+        id=run_id,
+        job=JobDTO(
+            name="mydag.mytask",
+            location=LocationDTO(
+                type="http",
+                name="airflow-host:8081",
+                addresses={"http://airflow-host:8081"},
+            ),
+            type=JobTypeDTO(type="AIRFLOW_TASK"),
+            tag_values={
+                TagValueDTO(
+                    tag=TagDTO(name="airflow.version"),
+                    value="2.9.2",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="openlineage_adapter.version"),
+                    value="2.3.0",
+                ),
+            },
+        ),
+        status=RunStatusDTO.SUCCEEDED,
+        started_at=None,
+        start_reason=RunStartReasonDTO.AUTOMATIC,
+        user=None,
+        ended_at=now,
+        external_id="scheduled__2024-07-05T09:04:13:979349+00:00",
+        attempt="1",
+        persistent_log_url=(
+            "http://airflow-host:8081/dags/mydag/grid?tab=logs&dag_run_id=scheduled__2024-07-05T09%3A04%3A13%3A979349%2B00%3A00&task_id=mytask&map_index=-1"
+        ),
+        running_log_url=None,
+        job_dependencies=[
+            JobDependencyDTO(
+                from_job=JobDTO(
+                    name="mydag.previous_task",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                    type=JobTypeDTO(type="AIRFLOW_TASK"),
+                ),
+                to_job=JobDTO(
+                    name="mydag.mytask",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                    type=JobTypeDTO(type="AIRFLOW_TASK"),
+                    tag_values={
+                        TagValueDTO(
+                            tag=TagDTO(name="airflow.version"),
+                            value="2.9.2",
+                        ),
+                        TagValueDTO(
+                            tag=TagDTO(name="openlineage_adapter.version"),
+                            value="2.3.0",
+                        ),
+                    },
+                ),
+                type="DIRECT_DEPENDENCY",
+            ),
+            JobDependencyDTO(
+                from_job=JobDTO(
+                    name="mydag.mytask",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                    type=JobTypeDTO(type="AIRFLOW_TASK"),
+                    tag_values={
+                        TagValueDTO(
+                            tag=TagDTO(name="airflow.version"),
+                            value="2.9.2",
+                        ),
+                        TagValueDTO(
+                            tag=TagDTO(name="openlineage_adapter.version"),
+                            value="2.3.0",
+                        ),
+                    },
+                ),
+                to_job=JobDTO(
+                    name="mydag.next_task",
+                    location=LocationDTO(
+                        type="http",
+                        name="airflow-host:8081",
+                        addresses={"http://airflow-host:8081"},
+                    ),
+                    type=JobTypeDTO(type="AIRFLOW_TASK"),
+                ),
+                type="DIRECT_DEPENDENCY",
+            ),
+        ],
     )

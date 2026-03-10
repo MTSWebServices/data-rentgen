@@ -13,6 +13,7 @@ from data_rentgen.dto import (
 )
 from data_rentgen.openlineage.job import OpenLineageJob
 from data_rentgen.openlineage.run_facets import (
+    OpenLineageJobIdentifier,
     OpenLineageParentJob,
 )
 
@@ -29,7 +30,10 @@ class JobExtractorMixin:
         )
         return self._enrich_job_tags(job_dto, job)
 
-    def extract_parent_job(self, job: OpenLineageJob | OpenLineageParentJob) -> JobDTO:
+    def extract_pure_job(
+        self,
+        job: OpenLineageJob | OpenLineageParentJob | OpenLineageJobIdentifier,
+    ) -> JobDTO:
         """
         Extract JobDTO from parent job reference
         """
@@ -38,7 +42,10 @@ class JobExtractorMixin:
             location=self._extract_job_location(job),
         )
 
-    def _extract_job_location(self, job: OpenLineageJob | OpenLineageParentJob) -> LocationDTO:
+    def _extract_job_location(
+        self,
+        job: OpenLineageJob | OpenLineageParentJob | OpenLineageJobIdentifier,
+    ) -> LocationDTO:
         # hostname and scheme are normalized to lowercase for uniqueness
         url = urlparse(job.namespace.lower())
         scheme = url.scheme or "unknown"

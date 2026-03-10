@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from data_rentgen.dto import (
+    JobDependencyDTO,
     JobDTO,
     RunDTO,
     RunStatusDTO,
@@ -17,10 +18,11 @@ from data_rentgen.openlineage.run_event import (
     OpenLineageRunEventType,
 )
 from data_rentgen.openlineage.run_facets import (
+    OpenLineageJobIdentifier,
     OpenLineageParentJob,
     OpenLineageParentRunFacet,
+    OpenLineageRunTagsFacetField,
 )
-from data_rentgen.openlineage.run_facets.run_tags import OpenLineageRunTagsFacetField
 
 
 class RunExtractorMixin(ABC):
@@ -29,18 +31,14 @@ class RunExtractorMixin(ABC):
         pass
 
     @abstractmethod
-    def extract_parent_job(self, job: OpenLineageJob | OpenLineageParentJob) -> JobDTO:
+    def extract_pure_job(self, job: OpenLineageJob | OpenLineageParentJob | OpenLineageJobIdentifier) -> JobDTO:
         pass
 
     def extract_run(self, event: OpenLineageRunEvent) -> RunDTO:
         """
         Extract RunDTO from specific event
         """
-        run = RunDTO(
-            id=event.run.runId,  # type: ignore [arg-type]
-            job=self.extract_job(event.job),
-            parent_run=self.extract_parent_run(event.run.facets.parent) if event.run.facets.parent else None,
-        )
+        run = self.extract_pure_run(event)
         if run.parent_run:
             run.job.parent_job = run.parent_run.job
         self._enrich_run_status(run, event)
@@ -49,7 +47,15 @@ class RunExtractorMixin(ABC):
         self._add_openlineage_client_version_tag(run, event)
         self._enrich_run_tags(run, event)
         self._enrich_nominal_times(run, event)
+        self._enrich_job_dependencies(run, event)
         return run
+
+    def extract_pure_run(self, event: OpenLineageRunEvent) -> RunDTO:
+        return RunDTO(
+            id=event.run.runId,  # type: ignore [arg-type]
+            job=self.extract_job(event.job),
+            parent_run=self.extract_parent_run(event.run.facets.parent) if event.run.facets.parent else None,
+        )
 
     def extract_parent_run(self, facet: OpenLineageParentRunFacet | OpenLineageRunEvent) -> RunDTO:
         """
@@ -57,7 +63,7 @@ class RunExtractorMixin(ABC):
         """
         return RunDTO(
             id=facet.run.runId,
-            job=self.extract_parent_job(facet.job),
+            job=self.extract_pure_job(facet.job),
         )
 
     def _enrich_run_status(self, run: RunDTO, event: OpenLineageRunEvent) -> RunDTO:
@@ -144,5 +150,29 @@ class RunExtractorMixin(ABC):
         run.expected_end_at = event.run.facets.nominalTime.nominalEndTime
         if run.expected_start_at == run.expected_end_at:
             run.expected_end_at = None
+
+        return run
+
+    def _enrich_job_dependencies(self, run: RunDTO, event: OpenLineageRunEvent) -> RunDTO:
+        if not event.run.facets.jobDependencies:
+            return run
+
+        for upstream in event.run.facets.jobDependencies.upstream:
+            run.job_dependencies.append(
+                JobDependencyDTO(
+                    from_job=self.extract_pure_job(upstream.job),
+                    to_job=run.job,
+                    type=upstream.dependency_type,
+                ),
+            )
+
+        for downstream in event.run.facets.jobDependencies.downstream:
+            run.job_dependencies.append(
+                JobDependencyDTO(
+                    from_job=run.job,
+                    to_job=self.extract_pure_job(downstream.job),
+                    type=downstream.dependency_type,
+                ),
+            )
 
         return run

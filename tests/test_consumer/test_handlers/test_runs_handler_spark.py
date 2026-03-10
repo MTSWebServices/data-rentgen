@@ -18,6 +18,7 @@ from data_rentgen.db.models import (
     DatasetSymlinkType,
     Input,
     Job,
+    JobDependency,
     Location,
     Operation,
     OperationStatus,
@@ -88,6 +89,11 @@ async def test_runs_handler_spark(
         "openlineage_adapter.version": "1.19.0",
     }
 
+    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_scalars = await async_session.scalars(job_dependency_query)
+    job_dependencies = job_dependency_scalars.all()
+    assert not job_dependencies
+
     run_query = select(Run).order_by(Run.id).options(selectinload(Run.started_by_user))
     run_scalars = await async_session.scalars(run_query)
     runs = run_scalars.all()
@@ -107,7 +113,7 @@ async def test_runs_handler_spark(
     assert application_run.running_log_url == "http://127.0.0.1:4040"
     assert application_run.persistent_log_url is None
 
-    sql_query = select(SQLQuery).order_by(SQLQuery.id)
+    sql_query = select(SQLQuery).order_by(SQLQuery.fingerprint)
     sql_query_scalars = await async_session.scalars(sql_query)
     sql_queries = sql_query_scalars.all()
     assert len(sql_queries) == 1

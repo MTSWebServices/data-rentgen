@@ -9,6 +9,7 @@ from enum import Enum, IntEnum
 from uuid import UUID
 
 from data_rentgen.dto.job import JobDTO
+from data_rentgen.dto.job_dependency import JobDependencyDTO
 from data_rentgen.dto.user import UserDTO
 from data_rentgen.utils.uuid import extract_timestamp_from_uuid
 
@@ -46,6 +47,7 @@ class RunDTO:
     persistent_log_url: str | None = None
     expected_start_at: datetime | None = None
     expected_end_at: datetime | None = None
+    job_dependencies: list[JobDependencyDTO] = field(default_factory=list)
 
     def __post_init__(self):
         self.created_at = extract_timestamp_from_uuid(self.id)
@@ -65,6 +67,15 @@ class RunDTO:
             self.user = self.user.merge(new.user)
         else:
             self.user = new.user or self.user
+
+        existing_dependencies = {item.unique_key: item for item in self.job_dependencies}
+        merged_dependencies = []
+        for job_dependency in new.job_dependencies:
+            if job_dependency.unique_key in existing_dependencies:
+                merged_dependencies.append(existing_dependencies[job_dependency.unique_key].merge(job_dependency))
+            else:
+                merged_dependencies.append(job_dependency)
+        self.job_dependencies = merged_dependencies
 
         self.status = max(new.status, self.status)
         self.started_at = new.started_at or self.started_at

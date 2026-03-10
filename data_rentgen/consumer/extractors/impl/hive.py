@@ -34,7 +34,7 @@ class HiveExtractor(GenericExtractor):
         # All events produced by Hive integration are queries == operations
         return True
 
-    def extract_run(self, event: OpenLineageRunEvent) -> RunDTO:
+    def extract_pure_run(self, event: OpenLineageRunEvent) -> RunDTO:
         # Hive produce only hive query events, but no events for hive session:
         # https://github.com/OpenLineage/OpenLineage/issues/3784
         # But we treat queries as operations, and operations should be bound to run (session) for grouping.
@@ -55,7 +55,7 @@ class HiveExtractor(GenericExtractor):
         if hive_session.username not in ("anonymous", "hive"):
             user = UserDTO(name=hive_session.username)
 
-        run = RunDTO(
+        return RunDTO(
             id=run_id,
             job=JobDTO(
                 name=job_name,
@@ -68,12 +68,8 @@ class HiveExtractor(GenericExtractor):
             external_id=hive_session.sessionId,
             user=user,
         )
-        if run.parent_run:
-            run.job.parent_job = run.parent_run.job
-        self._add_engine_version_tag(run, event)
-        self._add_openlineage_adapter_version_tag(run, event)
-        self._add_openlineage_client_version_tag(run, event)
-        self._enrich_run_tags(run, event)
+
+    def _enrich_run_status(self, run: RunDTO, event: OpenLineageRunEvent):
         return run
 
     def extract_operation(self, event: OpenLineageRunEvent) -> OperationDTO:
