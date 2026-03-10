@@ -14,6 +14,7 @@ from data_rentgen.db.models.dataset_column_relation import (
 from data_rentgen.db.models.dataset_symlink import DatasetSymlink, DatasetSymlinkType
 from data_rentgen.db.models.input import Input
 from data_rentgen.db.models.job import Job, JobTagValue
+from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.models.job_type import JobType
 from data_rentgen.db.models.location import Location
 from data_rentgen.db.models.operation import Operation, OperationStatus, OperationType
@@ -40,6 +41,7 @@ __all__ = [
     "DatasetTagValue",
     "Input",
     "Job",
+    "JobDependency",
     "JobLastRun",
     "JobTagValue",
     "JobType",

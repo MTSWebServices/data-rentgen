@@ -81,6 +81,29 @@ class OpenLineageAirflowTaskInfo(OpenLineageBase):
     task_id: str = Field(examples=["my_task"])
     operator_class: str | None = Field(default=None, examples=["MyOperator"])
     task_group: OpenLineageAirflowTaskGroupInfo | None = None
+    downstream_task_ids: list[str] = Field(default_factory=list, examples=["downstream_task1", "downstream_task2"])
+    upstream_task_ids: list[str] = Field(default_factory=list, examples=["upstream_task1", "upstream_task2"])
+
+    @field_validator("downstream_task_ids", "upstream_task_ids", mode="before")
+    @classmethod
+    def _validate_task_ids(cls, value: list[str] | str) -> list[str]:
+        """
+
+        At different moments time tags could be passed in formats:
+        * ``["task1", "task2"]`` - as expected by JSON spec
+        * ``"['task1', 'task2']"`` - `str(list)` representation
+        * ``'["task1", "task2"]'`` - `str(list)` representation if tag contains single quotes
+
+        See:
+        * https://github.com/apache/airflow/pull/40371
+        * https://github.com/apache/airflow/pull/40854
+        * https://github.com/apache/airflow/pull/41786
+        """
+        if isinstance(value, list):
+            return value
+        with suppress(SyntaxError):
+            return ast.literal_eval(value)
+        return []
 
 
 class OpenLineageAirflowTaskInstanceInfo(OpenLineageBase):

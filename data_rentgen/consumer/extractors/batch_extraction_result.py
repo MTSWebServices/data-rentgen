@@ -10,6 +10,7 @@ from data_rentgen.dto import (
     DatasetDTO,
     DatasetSymlinkDTO,
     InputDTO,
+    JobDependencyDTO,
     JobDTO,
     JobTypeDTO,
     LocationDTO,
@@ -29,6 +30,7 @@ T = TypeVar(
     DatasetDTO,
     DatasetSymlinkDTO,
     InputDTO,
+    JobDependencyDTO,
     JobDTO,
     JobTypeDTO,
     LocationDTO,
@@ -67,6 +69,7 @@ class BatchExtractionResult:
         self._dataset_symlinks: dict[tuple, DatasetSymlinkDTO] = {}
         self._job_types: dict[tuple, JobTypeDTO] = {}
         self._jobs: dict[tuple, JobDTO] = {}
+        self._job_dependencies: dict[tuple, JobDependencyDTO] = {}
         self._runs: dict[tuple, RunDTO] = {}
         self._operations: dict[tuple, OperationDTO] = {}
         self._inputs: dict[tuple, InputDTO] = {}
@@ -86,6 +89,7 @@ class BatchExtractionResult:
             f"dataset_symlinks={len(self._dataset_symlinks)}, "
             f"job_types={len(self._job_types)}, "
             f"jobs={len(self._jobs)}, "
+            f"job_dependencies={len(self._job_dependencies)}, "
             f"runs={len(self._runs)}, "
             f"operations={len(self._operations)}, "
             f"inputs={len(self._inputs)}, "
@@ -139,12 +143,19 @@ class BatchExtractionResult:
         job.tag_values = {self.add_tag_value(tag_value) for tag_value in job.tag_values}
         return self._add(self._jobs, job)
 
+    def add_job_dependency(self, job_dependency: JobDependencyDTO):
+        job_dependency.from_job = self.add_job(job_dependency.from_job)
+        job_dependency.to_job = self.add_job(job_dependency.to_job)
+        return self._add(self._job_dependencies, job_dependency)
+
     def add_run(self, run: RunDTO):
         run.job = self.add_job(run.job)
         if run.parent_run:
             run.parent_run = self.add_run(run.parent_run)
         if run.user:
             run.user = self.add_user(run.user)
+        for job_dependency in run.job_dependencies:
+            self.add_job_dependency(job_dependency)
         return self._add(self._runs, run)
 
     def add_operation(self, operation: OperationDTO):
@@ -232,6 +243,12 @@ class BatchExtractionResult:
         job.tag_values = {self.get_tag_value(tag_value.unique_key) for tag_value in job.tag_values}
         return job
 
+    def get_job_dependency(self, job_dependency_key: tuple) -> JobDependencyDTO:
+        job_dependency = self._job_dependencies[job_dependency_key]
+        job_dependency.from_job = self.get_job(job_dependency.from_job.unique_key)
+        job_dependency.to_job = self.get_job(job_dependency.to_job.unique_key)
+        return job_dependency
+
     def get_run(self, run_key: tuple) -> RunDTO:
         run = self._runs[run_key]
         run.job = self.get_job(run.job.unique_key)
@@ -289,6 +306,9 @@ class BatchExtractionResult:
 
     def jobs(self) -> list[JobDTO]:
         return self._resolve(self.get_job, self._jobs)
+
+    def job_dependencies(self) -> list[JobDependencyDTO]:
+        return self._resolve(self.get_job_dependency, self._job_dependencies)
 
     def runs(self) -> list[RunDTO]:
         return self._resolve(self.get_run, self._runs)

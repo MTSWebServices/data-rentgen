@@ -197,6 +197,14 @@ Database structure
         revoked_at: timestamptz
     }
 
+    entity job_dependency {
+        * id: bigint
+        ----
+        * from_dataset_id: bigint
+        * to_dataset_id: bigint
+        type: text null
+    }
+
     address ||--o{ location
 
     dataset ||--o{ location
@@ -232,9 +240,12 @@ Database structure
     column_lineage "fingerprint" ||--o{ dataset_column_relation
 
     tag_value ||--o{ tag
-    dataset_tagvalue ||--o{ tag_value
-    job_tagvalue ||--o{ tag_value
+    dataset_tag_value ||--o{ tag_value
+    job_tag_value ||--o{ tag_value
 
     personal_token ||--o{ user
+
+    job_dependency "from_job_id" ||--o{ job
+    job_dependency "to_job_id" ||--o{ job
 
     @enduml

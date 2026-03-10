@@ -10,6 +10,7 @@ from data_rentgen.dto.dataset_column_relation import (
 from data_rentgen.dto.dataset_symlink import DatasetSymlinkDTO, DatasetSymlinkTypeDTO
 from data_rentgen.dto.input import InputDTO
 from data_rentgen.dto.job import JobDTO
+from data_rentgen.dto.job_dependency import JobDependencyDTO
 from data_rentgen.dto.job_type import JobTypeDTO
 from data_rentgen.dto.location import LocationDTO
 from data_rentgen.dto.operation import (
@@ -34,6 +35,7 @@ __all__ = [
     "DatasetSymlinkTypeDTO",
     "InputDTO",
     "JobDTO",
+    "JobDependencyDTO",
     "JobTypeDTO",
     "LocationDTO",
     "OperationDTO",

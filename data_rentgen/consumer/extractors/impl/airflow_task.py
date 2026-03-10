@@ -8,7 +8,8 @@ from packaging.version import Version
 
 from data_rentgen.consumer.extractors.generic import GenericExtractor
 from data_rentgen.consumer.extractors.impl.utils import parse_kv_tag
-from data_rentgen.dto import JobDTO, OperationDTO, RunDTO, RunStartReasonDTO, UserDTO
+from data_rentgen.dto import JobDTO, JobTypeDTO, OperationDTO, RunDTO, RunStartReasonDTO, UserDTO
+from data_rentgen.dto.job_dependency import JobDependencyDTO
 from data_rentgen.openlineage.job import OpenLineageJob
 from data_rentgen.openlineage.job_facets import OpenLineageJobTagsFacetField
 from data_rentgen.openlineage.run_event import OpenLineageRunEvent
@@ -211,3 +212,36 @@ class AirflowTaskExtractor(GenericExtractor):
         # facets are immutable
         object.__setattr__(event.run.facets, "tags", OpenLineageRunTagsFacet(tags=run_tags))
         return super()._enrich_run_tags(run, event)
+
+    def _enrich_job_dependencies(self, run: RunDTO, event: OpenLineageRunEvent) -> RunDTO:
+        run = super()._enrich_job_dependencies(run, event)
+        if event.run.facets.airflow:
+            # https://github.com/apache/airflow/pull/59521 brings up jobDependency facet,
+            # but it still doesn't contain direct task -> task dependencies
+            dag_info = event.run.facets.airflow.dag
+            task_info = event.run.facets.airflow.task
+            for upstream_task_id in task_info.upstream_task_ids:
+                run.job_dependencies.append(
+                    JobDependencyDTO(
+                        from_job=JobDTO(
+                            name=f"{dag_info.dag_id}.{upstream_task_id}",
+                            location=run.job.location,
+                            type=JobTypeDTO("AIRFLOW_TASK"),
+                        ),
+                        to_job=run.job,
+                        type="DIRECT_DEPENDENCY",
+                    ),
+                )
+            for downstream_task_id in task_info.downstream_task_ids:
+                run.job_dependencies.append(
+                    JobDependencyDTO(
+                        from_job=run.job,
+                        to_job=JobDTO(
+                            name=f"{dag_info.dag_id}.{downstream_task_id}",
+                            location=run.job.location,
+                            type=JobTypeDTO("AIRFLOW_TASK"),
+                        ),
+                        type="DIRECT_DEPENDENCY",
+                    ),
+                )
+        return run

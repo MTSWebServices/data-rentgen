@@ -16,6 +16,7 @@ from data_rentgen.db.models import (
     DatasetSymlink,
     Input,
     Job,
+    JobDependency,
     Location,
     Operation,
     OperationStatus,
@@ -84,6 +85,11 @@ async def test_runs_handler_flink(
         "flink.version": "1.19.0",
         "openlineage_adapter.version": "1.34.0",
     }
+
+    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_scalars = await async_session.scalars(job_dependency_query)
+    job_dependencies = job_dependency_scalars.all()
+    assert not job_dependencies
 
     run_query = select(Run).order_by(Run.id).options(selectinload(Run.started_by_user))
     run_scalars = await async_session.scalars(run_query)
