@@ -85,78 +85,148 @@ async def test_runs_handler_airflow(
         "environment": "production",
     }
 
-    assert len(jobs) == 2
-    assert jobs[0].name == "mydag"
-    assert jobs[0].type == "AIRFLOW_DAG"
-    assert jobs[0].location.type == "http"
-    assert jobs[0].location.name == "airflow-host:8081"
-    assert len(jobs[0].location.addresses) == 1
-    assert jobs[0].location.addresses[0].url == "http://airflow-host:8081"
-    assert {tv.tag.name: tv.value for tv in jobs[0].tag_values} == expected_tag_values
-    assert jobs[0].parent_job_id is None
+    assert len(jobs) == 4
 
-    assert jobs[1].name == "mydag.mytask"
-    assert jobs[1].type == "AIRFLOW_TASK"
-    assert jobs[1].location == jobs[0].location
-    assert {tv.tag.name: tv.value for tv in jobs[1].tag_values} == expected_tag_values
-    assert jobs[1].parent_job_id == jobs[0].id
+    dag_job = jobs[0]
+    assert dag_job.name == "mydag"
+    assert dag_job.type == "AIRFLOW_DAG"
+    assert dag_job.location.type == "http"
+    assert dag_job.location.name == "airflow-host:8081"
+    assert len(dag_job.location.addresses) == 1
+    assert dag_job.location.addresses[0].url == "http://airflow-host:8081"
+    assert {tv.tag.name: tv.value for tv in dag_job.tag_values} == expected_tag_values
+    assert dag_job.parent_job_id is None
+
+    create_task_job = jobs[1]
+    assert create_task_job.name == "mydag.create_task"
+    assert create_task_job.type == "AIRFLOW_TASK"
+    assert create_task_job.location == dag_job.location
+    assert {tv.tag.name: tv.value for tv in create_task_job.tag_values} == expected_tag_values
+    assert create_task_job.parent_job_id == dag_job.id
+
+    drop_task_job = jobs[2]
+    assert drop_task_job.name == "mydag.drop_task"
+    assert drop_task_job.type == "AIRFLOW_TASK"
+    assert drop_task_job.location == dag_job.location
+    assert {tv.tag.name: tv.value for tv in drop_task_job.tag_values} == expected_tag_values
+    assert drop_task_job.parent_job_id == dag_job.id
+
+    insert_task_job = jobs[3]
+    assert insert_task_job.name == "mydag.insert_task"
+    assert insert_task_job.type == "AIRFLOW_TASK"
+    assert insert_task_job.location == dag_job.location
+    assert {tv.tag.name: tv.value for tv in insert_task_job.tag_values} == expected_tag_values
+    assert insert_task_job.parent_job_id == dag_job.id
 
     run_query = select(Run).order_by(Run.id)
     run_scalars = await async_session.scalars(run_query)
     runs = run_scalars.all()
-    assert len(runs) == 2
+    assert len(runs) == 4
 
     user_query = select(User).where(User.name == "myuser")
     user_scalars = await async_session.scalars(user_query)
     user = user_scalars.one_or_none()
 
     dag_run = runs[0]
-    assert dag_run.id == UUID("01908223-0782-79b8-9495-b1c38aaee839")
-    assert dag_run.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
-    assert dag_run.job_id == jobs[0].id
+    assert dag_run.id == UUID("01908222-d800-7e0d-afea-386c5e206957")
+    assert dag_run.created_at == datetime(2024, 7, 5, 9, 4, 0, 0, tzinfo=timezone.utc)
+    assert dag_run.job_id == dag_job.id
     assert dag_run.status == RunStatus.SUCCEEDED
-    assert dag_run.started_at == datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc)
+    assert dag_run.started_at == datetime(2024, 7, 5, 9, 4, 1, 463567, tzinfo=timezone.utc)
     assert dag_run.ended_at == datetime(2024, 7, 5, 9, 8, 5, 691973, tzinfo=timezone.utc)
     assert dag_run.started_by_user_id is not None
     assert dag_run.started_by_user_id == user.id
     assert dag_run.start_reason == RunStartReason.MANUAL
     assert dag_run.end_reason is None
-    assert dag_run.external_id == "manual__2024-07-05T09:04:12.162809+00:00"
+    assert dag_run.external_id == "manual__2024-07-05T09:04:00.000000+00:00"
     assert dag_run.attempt is None
     assert dag_run.persistent_log_url == (
-        "http://airflow-host:8081/dags/mydag/grid?dag_run_id=manual__2024-07-05T09%3A04%3A12.162809%2B00%3A00"
+        "http://airflow-host:8081/dags/mydag/grid?dag_run_id=manual__2024-07-05T09%3A04%3A00.000000%2B00%3A00"
     )
-    assert dag_run.expected_start_at == datetime(2024, 7, 5, 9, 4, 12, 162809, tzinfo=timezone.utc)
+    assert dag_run.expected_start_at == datetime(2024, 7, 5, 9, 4, 0, 0, tzinfo=timezone.utc)
     assert dag_run.expected_end_at is None
 
-    task_run = runs[1]
-    assert task_run.id == UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")
-    assert task_run.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
-    assert task_run.job_id == jobs[1].id
-    assert task_run.parent_run_id == dag_run.id
-    assert task_run.status == RunStatus.SUCCEEDED
-    assert task_run.started_at == datetime(2024, 7, 5, 9, 4, 20, 783845, tzinfo=timezone.utc)
-    assert task_run.ended_at == datetime(2024, 7, 5, 9, 7, 37, 858423, tzinfo=timezone.utc)
-    assert task_run.started_by_user_id is not None
-    assert task_run.started_by_user_id == user.id
-    assert task_run.start_reason == RunStartReason.MANUAL
-    assert task_run.end_reason is None
-    assert task_run.external_id == "manual__2024-07-05T09:04:12.162809+00:00"
-    assert task_run.attempt == "1"
-    assert task_run.persistent_log_url == (
-        "http://airflow-host:8081/dags/mydag/grid?tab=logs&dag_run_id=manual__2024-07-05T09%3A04%3A12.162809%2B00%3A00&task_id=mytask&map_index=-1"
+    drop_task_run = runs[1]
+    assert drop_task_run.id == UUID("01908222-d908-77bb-b819-ea816c74e780")
+    assert drop_task_run.created_at == datetime(2024, 7, 5, 9, 4, 0, 264000, tzinfo=timezone.utc)
+    assert drop_task_run.job_id == drop_task_job.id
+    assert drop_task_run.parent_run_id == dag_run.id
+    assert drop_task_run.status == RunStatus.SUCCEEDED
+    assert drop_task_run.started_at == datetime(2024, 7, 5, 9, 4, 5, 264563, tzinfo=timezone.utc)
+    assert drop_task_run.ended_at == datetime(2024, 7, 5, 9, 4, 5, 264564, tzinfo=timezone.utc)
+    assert drop_task_run.started_by_user_id is not None
+    assert drop_task_run.started_by_user_id == user.id
+    assert drop_task_run.start_reason == RunStartReason.MANUAL
+    assert drop_task_run.end_reason is None
+    assert drop_task_run.external_id == "manual__2024-07-05T09:04:00.000000+00:00"
+    assert drop_task_run.attempt == "1"
+    assert drop_task_run.persistent_log_url == (
+        "http://airflow-host:8081/dags/mydag/grid?tab=logs&dag_run_id=manual__2024-07-05T09%3A04%3A00.000000%2B00%3A00&task_id=drop_task&map_index=-1"
     )
-    assert task_run.running_log_url is None
-    assert task_run.expected_start_at == datetime(2024, 7, 5, 9, 4, 12, 162809, tzinfo=timezone.utc)
-    assert task_run.expected_end_at is None
+    assert drop_task_run.running_log_url is None
+    assert drop_task_run.expected_start_at == datetime(2024, 7, 5, 9, 4, 0, 264000, tzinfo=timezone.utc)
+    assert drop_task_run.expected_end_at is None
 
-    sql_query = select(SQLQuery).order_by(SQLQuery.id)
+    create_task_run = runs[2]
+    assert create_task_run.id == UUID("01908223-007d-7b3b-8558-9016bde64a0d")
+    assert create_task_run.created_at == datetime(2024, 7, 5, 9, 4, 10, 365000, tzinfo=timezone.utc)
+    assert create_task_run.job_id == create_task_job.id
+    assert create_task_run.parent_run_id == dag_run.id
+    assert create_task_run.status == RunStatus.SUCCEEDED
+    assert create_task_run.started_at == datetime(2024, 7, 5, 9, 4, 10, 365672, tzinfo=timezone.utc)
+    assert create_task_run.ended_at == datetime(2024, 7, 5, 9, 4, 10, 365673, tzinfo=timezone.utc)
+    assert create_task_run.started_by_user_id is not None
+    assert create_task_run.started_by_user_id == user.id
+    assert create_task_run.start_reason == RunStartReason.MANUAL
+    assert create_task_run.end_reason is None
+    assert create_task_run.external_id == "manual__2024-07-05T09:04:00.000000+00:00"
+    assert create_task_run.attempt == "1"
+    assert create_task_run.persistent_log_url == (
+        "http://airflow-host:8081/dags/mydag/grid?tab=logs&dag_run_id=manual__2024-07-05T09%3A04%3A00.000000%2B00%3A00&task_id=create_task&map_index=-1"
+    )
+    assert create_task_run.running_log_url is None
+    assert create_task_run.expected_start_at == datetime(2024, 7, 5, 9, 4, 10, 365672, tzinfo=timezone.utc)
+    assert create_task_run.expected_end_at is None
+
+    insert_task_run = runs[3]
+    assert insert_task_run.id == UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")
+    assert insert_task_run.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
+    assert insert_task_run.job_id == insert_task_job.id
+    assert insert_task_run.parent_run_id == dag_run.id
+    assert insert_task_run.status == RunStatus.SUCCEEDED
+    assert insert_task_run.started_at == datetime(2024, 7, 5, 9, 4, 20, 783845, tzinfo=timezone.utc)
+    assert insert_task_run.ended_at == datetime(2024, 7, 5, 9, 7, 37, 858423, tzinfo=timezone.utc)
+    assert insert_task_run.started_by_user_id is not None
+    assert insert_task_run.started_by_user_id == user.id
+    assert insert_task_run.start_reason == RunStartReason.MANUAL
+    assert insert_task_run.end_reason is None
+    assert insert_task_run.external_id == "manual__2024-07-05T09:04:00.000000+00:00"
+    assert insert_task_run.attempt == "1"
+    assert insert_task_run.persistent_log_url == (
+        "http://airflow-host:8081/dags/mydag/grid?tab=logs&dag_run_id=manual__2024-07-05T09%3A04%3A00.000000%2B00%3A00&task_id=insert_task&map_index=-1"
+    )
+    assert insert_task_run.running_log_url is None
+    assert insert_task_run.expected_start_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
+    assert insert_task_run.expected_end_at is None
+
+    sql_query = select(SQLQuery).order_by(SQLQuery.fingerprint)
     sql_query_scalars = await async_session.scalars(sql_query)
     sql_queries = sql_query_scalars.all()
-    assert len(sql_queries) == 1
+    assert len(sql_queries) == 3
 
-    operation_sql_query = sql_queries[0]
-    assert operation_sql_query.query == (
+    create_sql_query = sql_queries[0]
+    assert create_sql_query.query == (
+        "CREATE TABLE popular_orders_day_of_week(order_day_of_week INT, order_placed_on DATE, orders_placed INT)"
+    )
+    assert create_sql_query.fingerprint is not None
+
+    drop_sql_query = sql_queries[1]
+    assert drop_sql_query.query == "DROP TABLE popular_orders_day_of_week"
+    assert drop_sql_query.fingerprint is not None
+    assert drop_sql_query.fingerprint != create_sql_query.fingerprint
+
+    insert_sql_query = sql_queries[2]
+    assert insert_sql_query.query == (
         "INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n"
         "SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n"
         "       order_placed_on,\n"
@@ -164,30 +234,60 @@ async def test_runs_handler_airflow(
         "  FROM top_delivery_times\n"
         " GROUP BY order_placed_on"
     )
-    assert operation_sql_query.fingerprint is not None
+    assert insert_sql_query.fingerprint is not None
+    assert insert_sql_query.fingerprint != create_sql_query.fingerprint
+    assert insert_sql_query.fingerprint != drop_sql_query.fingerprint
 
     operation_query = select(Operation).order_by(Operation.id)
     operation_scalars = await async_session.scalars(operation_query)
     operations = operation_scalars.all()
-    assert len(operations) == 1
+    assert len(operations) == 3
 
-    operation_query = select(Operation)
+    operation_query = select(Operation).order_by(Operation.id)
     operation_scalars = await async_session.scalars(operation_query)
     operations = operation_scalars.all()
 
-    task_operation = operations[0]
-    assert task_operation.id == UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")  # same id and created_at
-    assert task_operation.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
-    assert task_operation.run_id == task_run.id
-    assert task_operation.name == "mytask"
-    assert task_operation.type == OperationType.BATCH
-    assert task_operation.status == OperationStatus.SUCCEEDED
-    assert task_operation.started_at == datetime(2024, 7, 5, 9, 4, 20, 783845, tzinfo=timezone.utc)
-    assert task_operation.sql_query_id == operation_sql_query.id
-    assert task_operation.ended_at == datetime(2024, 7, 5, 9, 7, 37, 858423, tzinfo=timezone.utc)
-    assert task_operation.description == "SQLExecuteQueryOperator"
-    assert task_operation.position is None
-    assert task_operation.group is None
+    drop_task_operation = operations[0]
+    assert drop_task_operation.id == UUID("01908222-d908-77bb-b819-ea816c74e780")  # same id and created_at
+    assert drop_task_operation.created_at == datetime(2024, 7, 5, 9, 4, 0, 264000, tzinfo=timezone.utc)
+    assert drop_task_operation.run_id == drop_task_run.id
+    assert drop_task_operation.name == "drop_task"
+    assert drop_task_operation.type == OperationType.BATCH
+    assert drop_task_operation.status == OperationStatus.SUCCEEDED
+    assert drop_task_operation.started_at == datetime(2024, 7, 5, 9, 4, 5, 264563, tzinfo=timezone.utc)
+    assert drop_task_operation.sql_query_id == drop_sql_query.id
+    assert drop_task_operation.ended_at == datetime(2024, 7, 5, 9, 4, 5, 264564, tzinfo=timezone.utc)
+    assert drop_task_operation.description == "SQLExecuteQueryOperator"
+    assert drop_task_operation.position is None
+    assert drop_task_operation.group is None
+
+    create_task_operation = operations[1]
+    assert create_task_operation.id == UUID("01908223-007d-7b3b-8558-9016bde64a0d")  # same id and created_at
+    assert create_task_operation.created_at == datetime(2024, 7, 5, 9, 4, 10, 365000, tzinfo=timezone.utc)
+    assert create_task_operation.run_id == create_task_run.id
+    assert create_task_operation.name == "create_task"
+    assert create_task_operation.type == OperationType.BATCH
+    assert create_task_operation.status == OperationStatus.SUCCEEDED
+    assert create_task_operation.started_at == datetime(2024, 7, 5, 9, 4, 10, 365672, tzinfo=timezone.utc)
+    assert create_task_operation.sql_query_id == create_sql_query.id
+    assert create_task_operation.ended_at == datetime(2024, 7, 5, 9, 4, 10, 365673, tzinfo=timezone.utc)
+    assert create_task_operation.description == "SQLExecuteQueryOperator"
+    assert create_task_operation.position is None
+    assert create_task_operation.group is None
+
+    insert_task_operation = operations[2]
+    assert insert_task_operation.id == UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")  # same id and created_at
+    assert insert_task_operation.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
+    assert insert_task_operation.run_id == insert_task_run.id
+    assert insert_task_operation.name == "insert_task"
+    assert insert_task_operation.type == OperationType.BATCH
+    assert insert_task_operation.status == OperationStatus.SUCCEEDED
+    assert insert_task_operation.started_at == datetime(2024, 7, 5, 9, 4, 20, 783845, tzinfo=timezone.utc)
+    assert insert_task_operation.sql_query_id == insert_sql_query.id
+    assert insert_task_operation.ended_at == datetime(2024, 7, 5, 9, 7, 37, 858423, tzinfo=timezone.utc)
+    assert insert_task_operation.description == "SQLExecuteQueryOperator"
+    assert insert_task_operation.position is None
+    assert insert_task_operation.group is None
 
     dataset_query = (
         select(Dataset)
@@ -245,32 +345,68 @@ async def test_runs_handler_airflow(
     assert len(inputs) == 1
 
     postgres_input = inputs[0]
+    assert postgres_input.operation_id == insert_task_operation.id
     assert postgres_input.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
-    assert postgres_input.operation_id == task_operation.id
-    assert postgres_input.run_id == task_run.id
-    assert postgres_input.job_id == task_run.job_id
+    assert postgres_input.run_id == insert_task_run.id
+    assert postgres_input.job_id == insert_task_run.job_id
     assert postgres_input.dataset_id == input_table.id
     assert postgres_input.schema_id == input_schema.id
     assert postgres_input.num_bytes is None
     assert postgres_input.num_rows is None
     assert postgres_input.num_files is None
 
-    output_query = select(Output).order_by(Output.dataset_id)
+    output_query = select(Output).order_by(Output.operation_id, Output.dataset_id, Output.schema_id)
     output_scalars = await async_session.scalars(output_query)
     outputs = output_scalars.all()
-    assert len(outputs) == 1
+    assert len(outputs) == 4
 
-    postgres_output = outputs[0]
-    assert postgres_output.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
-    assert postgres_output.operation_id == task_operation.id
-    assert postgres_output.run_id == task_run.id
-    assert postgres_output.job_id == task_run.job_id
-    assert postgres_output.dataset_id == output_table.id
-    assert postgres_output.type == OutputType.APPEND
-    assert postgres_output.schema_id == output_schema.id
-    assert postgres_output.num_bytes is None
-    assert postgres_output.num_rows is None
-    assert postgres_output.num_files is None
+    drop_postgres_output = outputs[0]
+    assert drop_postgres_output.operation_id == drop_task_operation.id
+    assert drop_postgres_output.created_at == datetime(2024, 7, 5, 9, 4, 0, 264000, tzinfo=timezone.utc)
+    assert drop_postgres_output.run_id == drop_task_run.id
+    assert drop_postgres_output.job_id == drop_task_job.id
+    assert drop_postgres_output.dataset_id == output_table.id
+    assert drop_postgres_output.type == OutputType.DROP
+    assert drop_postgres_output.schema_id is None
+    assert drop_postgres_output.num_bytes is None
+    assert drop_postgres_output.num_rows is None
+    assert drop_postgres_output.num_files is None
+
+    create_postgres_output_after = outputs[1]
+    assert create_postgres_output_after.operation_id == create_task_operation.id
+    assert create_postgres_output_after.created_at == datetime(2024, 7, 5, 9, 4, 10, 365000, tzinfo=timezone.utc)
+    assert create_postgres_output_after.run_id == create_task_run.id
+    assert create_postgres_output_after.job_id == create_task_job.id
+    assert create_postgres_output_after.dataset_id == output_table.id
+    assert create_postgres_output_after.type == OutputType.CREATE
+    assert create_postgres_output_after.schema_id == output_schema.id
+    assert create_postgres_output_after.num_bytes is None
+    assert create_postgres_output_after.num_rows is None
+    assert create_postgres_output_after.num_files is None
+
+    create_postgres_output_before = outputs[2]
+    assert create_postgres_output_before.operation_id == create_task_operation.id
+    assert create_postgres_output_before.created_at == datetime(2024, 7, 5, 9, 4, 10, 365000, tzinfo=timezone.utc)
+    assert create_postgres_output_before.run_id == create_task_run.id
+    assert create_postgres_output_before.job_id == create_task_job.id
+    assert create_postgres_output_before.dataset_id == output_table.id
+    assert create_postgres_output_before.type == OutputType.CREATE
+    assert create_postgres_output_before.schema_id is None
+    assert create_postgres_output_before.num_bytes is None
+    assert create_postgres_output_before.num_rows is None
+    assert create_postgres_output_before.num_files is None
+
+    insert_postgres_output = outputs[3]
+    assert insert_postgres_output.operation_id == insert_task_operation.id
+    assert insert_postgres_output.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
+    assert insert_postgres_output.run_id == insert_task_run.id
+    assert insert_postgres_output.job_id == insert_task_run.job_id
+    assert insert_postgres_output.dataset_id == output_table.id
+    assert insert_postgres_output.type == OutputType.APPEND
+    assert insert_postgres_output.schema_id == output_schema.id
+    assert insert_postgres_output.num_bytes is None
+    assert insert_postgres_output.num_rows is None
+    assert insert_postgres_output.num_files is None
 
     column_lineage_query = select(ColumnLineage).order_by(ColumnLineage.id)
     column_lineage_scalars = await async_session.scalars(column_lineage_query)
@@ -279,9 +415,9 @@ async def test_runs_handler_airflow(
 
     direct_column_lineage = column_lineage[0]
     assert direct_column_lineage.created_at == datetime(2024, 7, 5, 9, 4, 12, 162000, tzinfo=timezone.utc)
-    assert direct_column_lineage.operation_id == task_operation.id
-    assert direct_column_lineage.run_id == task_run.id
-    assert direct_column_lineage.job_id == task_run.job_id
+    assert direct_column_lineage.operation_id == insert_task_operation.id
+    assert direct_column_lineage.run_id == insert_task_run.id
+    assert direct_column_lineage.job_id == insert_task_job.id
     assert direct_column_lineage.source_dataset_id == input_table.id
     assert direct_column_lineage.target_dataset_id == output_table.id
 
