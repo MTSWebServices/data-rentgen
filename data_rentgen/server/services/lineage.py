@@ -247,7 +247,7 @@ class LineageService:
             }
 
         if level == 0:
-            result.merge(await self._populate_parents(result.runs.keys(), granularity=granularity))
+            result.merge(await self._populate_parents(result, granularity=granularity))
             if include_column_lineage:
                 result.column_lineage.update(
                     await self._get_column_lineage(
@@ -459,7 +459,7 @@ class LineageService:
             }
 
         if level == 0:
-            result.merge(await self._populate_parents(result.runs.keys(), granularity=granularity))
+            result.merge(await self._populate_parents(result, granularity=granularity))
             if include_column_lineage:
                 result.column_lineage.update(
                     await self._get_column_lineage(current_result=result, since=since, until=until, granularity="RUN"),
@@ -620,7 +620,7 @@ class LineageService:
             }
 
         if level == 0:
-            result.merge(await self._populate_parents(result.runs.keys(), granularity="OPERATION"))
+            result.merge(await self._populate_parents(result, granularity="OPERATION"))
             if include_column_lineage:
                 result.column_lineage.update(
                     await self._get_column_lineage(
@@ -741,7 +741,7 @@ class LineageService:
                 raise ValueError(msg)
 
         if level == 0:
-            result.merge(await self._populate_parents(result.runs.keys(), granularity=granularity))
+            result.merge(await self._populate_parents(result, granularity=granularity))
             if include_column_lineage:
                 result.column_lineage.update(
                     await self._get_column_lineage(
@@ -1328,15 +1328,13 @@ class LineageService:
 
     async def _populate_parents(
         self,
-        run_ids: Collection[UUID],
+        result: LineageServiceResult,
         granularity: Literal["OPERATION", "RUN", "JOB", "DATASET"],
     ) -> LineageServiceResult:
         """Returns a LineageServiceResult with only run_parent_relations or job_parent_relations populated."""
-        if not run_ids:
-            return LineageServiceResult()
         match granularity:
             case "RUN" | "OPERATION":
-                relations = await self._uow.run.list_ancestor_relations(run_ids)
+                relations = await self._uow.run.list_ancestor_relations(result.runs.keys())
                 parents_run_ids = {p_id for p_id, _ in relations}
                 runs = await self._uow.run.list_by_ids(parents_run_ids)
                 runs_by_id = {run.id: run for run in runs}
@@ -1348,8 +1346,17 @@ class LineageService:
                     runs=runs_by_id,
                     jobs=jobs_by_id,
                 )
+
             case "JOB":
-                return LineageServiceResult()
+                relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
+                parents_job_ids = {p_id for p_id, _ in relations}
+                jobs = await self._uow.job.list_by_ids(parents_job_ids)
+                jobs_by_id = {job.id: job for job in jobs}
+                return LineageServiceResult(
+                    job_ancestor_relations={tuple(r) for r in relations},
+                    jobs=jobs_by_id,
+                )
+
             case "DATASET":
                 return LineageServiceResult()
             case _:
