@@ -118,7 +118,7 @@ class LineageService:
         # Always include all requested jobs.
         jobs_by_id = {job.id: job for job in jobs}
         if level == 0:
-            relations = await self._uow.job.list_jobs_child_relations(start_node_ids)
+            relations = await self._uow.job.list_descendant_relations(start_node_ids)
             child_jobs_ids = {c_id for _, c_id in relations}
             child_jobs = await self._uow.job.list_by_ids(child_jobs_ids)
             jobs.extend(child_jobs)
@@ -308,7 +308,7 @@ class LineageService:
         runs_by_id = {run.id: run for run in runs}
         # Include child runs
         if level == 0:
-            relations = await self._uow.run.list_runs_child_relations(start_node_ids)
+            relations = await self._uow.run.list_descendant_relations(start_node_ids)
             child_runs_ids = {c_id for _, c_id in relations}
             child_runs = await self._uow.run.list_by_ids(child_runs_ids)
             runs.extend(child_runs)
@@ -1336,7 +1336,7 @@ class LineageService:
             return LineageServiceResult()
         match granularity:
             case "RUN" | "OPERATION":
-                relations = await self._uow.run.list_runs_ancestor_relations(run_ids)
+                relations = await self._uow.run.list_ancestor_relations(run_ids)
                 parents_run_ids = {p_id for p_id, _ in relations}
                 runs = await self._uow.run.list_by_ids(parents_run_ids)
                 runs_by_id = {run.id: run for run in runs}

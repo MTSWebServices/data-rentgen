@@ -88,7 +88,7 @@ insert_statement = insert_statement.on_conflict_do_update(
 child_run = aliased(Run, name="child")
 parent_run = aliased(Run, name="parent")
 
-parents_by_run_base_part = (
+ancestors_by_run_base_part = (
     select(
         child_run.id.label("child_run_id"),
         parent_run.id.label("parent_run_id"),
@@ -101,9 +101,9 @@ parents_by_run_base_part = (
         child_run.created_at <= bindparam("until"),
     )
 )
-ancestors_by_run_cte = parents_by_run_base_part.cte("parents_by_run", recursive=True)
+ancestors_by_run_cte = ancestors_by_run_base_part.cte("ancestors_by_run", recursive=True)
 
-parents_by_run_recursive_part = (
+ancestors_by_run_recursive_part = (
     select(
         child_run.id.label("child_run_id"),
         parent_run.id.label("parent_run_id"),
@@ -114,9 +114,9 @@ parents_by_run_recursive_part = (
         child_run.id == ancestors_by_run_cte.c.parent_run_id,
     )
 )
-ancestors_by_run_cte = ancestors_by_run_cte.union(parents_by_run_recursive_part)
+ancestors_by_run_cte = ancestors_by_run_cte.union(ancestors_by_run_recursive_part)
 
-childs_by_run_base_part = (
+descendants_by_run_base_part = (
     select(
         parent_run.id.label("parent_run_id"),
         child_run.id.label("child_run_id"),
@@ -129,9 +129,9 @@ childs_by_run_base_part = (
         parent_run.created_at <= bindparam("until"),
     )
 )
-childs_by_run_cte = childs_by_run_base_part.cte("childs_by_run", recursive=True)
+descendants_by_run_cte = descendants_by_run_base_part.cte("descendants_by_run", recursive=True)
 
-childs_by_run_recursive_part = (
+descendants_by_run_recursive_part = (
     select(
         parent_run.id.label("parent_run_id"),
         child_run.id.label("child_run_id"),
@@ -139,10 +139,10 @@ childs_by_run_recursive_part = (
     .select_from(parent_run)
     .join(child_run, child_run.parent_run_id == parent_run.id)
     .where(
-        parent_run.id == childs_by_run_cte.c.child_run_id,
+        parent_run.id == descendants_by_run_cte.c.child_run_id,
     )
 )
-childs_by_run_cte = childs_by_run_cte.union(childs_by_run_recursive_part)
+descendants_by_run_cte = descendants_by_run_cte.union(descendants_by_run_recursive_part)
 
 
 class RunRepository(Repository[Run]):
@@ -402,7 +402,7 @@ class RunRepository(Repository[Run]):
             ],
         )
 
-    async def list_runs_ancestor_relations(self, run_ids: Collection[UUID]):
+    async def list_ancestor_relations(self, run_ids: Collection[UUID]):
         if not run_ids:
             return []
         stmt = select(
@@ -419,10 +419,10 @@ class RunRepository(Repository[Run]):
         )
         return list(result.fetchall())
 
-    async def list_runs_child_relations(self, run_ids: Collection[UUID]):
+    async def list_descendant_relations(self, run_ids: Collection[UUID]):
         stmt = select(
-            childs_by_run_cte.c.parent_run_id,
-            childs_by_run_cte.c.child_run_id,
+            descendants_by_run_cte.c.parent_run_id,
+            descendants_by_run_cte.c.child_run_id,
         )
         result = await self._session.execute(
             stmt,
