@@ -1367,13 +1367,13 @@ async def lineage_with_parent_run_relations(
             async_session,
             location_id=airflow_location.id,
             job_type_id=airflow_task_job_type.id,
-            job_kwargs={"name": "airflow_task_name"},
+            job_kwargs={"name": "airflow_task_name", "parent_job_id": airflow_dag.id},
         )
         spark_application = await create_job(
             async_session,
             location_id=spark_location.id,
             job_type_id=spark_application_job_type.id,
-            job_kwargs={"name": "spark_application_name"},
+            job_kwargs={"name": "spark_application_name", "parent_job_id": airflow_task.id},
         )
         lineage.jobs = [airflow_dag, airflow_task, spark_application]
 

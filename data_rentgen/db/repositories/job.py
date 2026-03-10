@@ -24,7 +24,7 @@ from sqlalchemy import (
     union,
 )
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from data_rentgen.db.models import Address, Job, JobLastRun, JobTagValue, Location, TagValue
 from data_rentgen.db.repositories.base import Repository
@@ -86,6 +86,61 @@ delete_tag_value_query = delete(JobTagValue).where(
     JobTagValue.c.job_id == bindparam("job_id"),
     ~(JobTagValue.c.tag_value_id == any_(bindparam("tag_value_ids"))),
 )
+
+child_job = aliased(Job, name="child")
+parent_job = aliased(Job, name="parent")
+
+ancestors_by_job_base_part = (
+    select(
+        child_job.id.label("child_job_id"),
+        parent_job.id.label("parent_job_id"),
+    )
+    .select_from(child_job)
+    .join(parent_job, child_job.parent_job_id == parent_job.id)
+    .where(
+        child_job.id == any_(bindparam("job_ids")),
+    )
+)
+ancestors_by_job_cte = ancestors_by_job_base_part.cte("ancestors_by_job", recursive=True)
+
+ancestors_by_job_recursive_part = (
+    select(
+        child_job.id.label("child_job_id"),
+        parent_job.id.label("parent_job_id"),
+    )
+    .select_from(child_job)
+    .join(parent_job, child_job.parent_job_id == parent_job.id)
+    .where(
+        child_job.id == ancestors_by_job_cte.c.parent_job_id,
+    )
+)
+ancestors_by_job_cte = ancestors_by_job_cte.union(ancestors_by_job_recursive_part)
+
+descendants_by_job_base_part = (
+    select(
+        parent_job.id.label("parent_job_id"),
+        child_job.id.label("child_job_id"),
+    )
+    .select_from(parent_job)
+    .join(child_job, child_job.parent_job_id == parent_job.id)
+    .where(
+        parent_job.id == any_(bindparam("job_ids")),
+    )
+)
+descendants_by_job_cte = descendants_by_job_base_part.cte("descendants_by_job", recursive=True)
+
+descendants_by_job_recursive_part = (
+    select(
+        parent_job.id.label("parent_job_id"),
+        child_job.id.label("child_job_id"),
+    )
+    .select_from(parent_job)
+    .join(child_job, child_job.parent_job_id == parent_job.id)
+    .where(
+        parent_job.id == descendants_by_job_cte.c.child_job_id,
+    )
+)
+descendants_by_job_cte = descendants_by_job_cte.union(descendants_by_job_recursive_part)
 
 
 class JobRepository(Repository[Job]):
@@ -275,3 +330,31 @@ class JobRepository(Repository[Job]):
 
         query_result = await self._session.execute(get_stats_query, {"location_ids": list(location_ids)})
         return {row.location_id: row for row in query_result.all()}
+
+    async def list_ancestor_relations(self, job_ids: Collection[int]):
+        if not job_ids:
+            return []
+        stmt = select(
+            ancestors_by_job_cte.c.parent_job_id,
+            ancestors_by_job_cte.c.child_job_id,
+        )
+        result = await self._session.execute(
+            stmt,
+            {
+                "job_ids": list(job_ids),
+            },
+        )
+        return list(result.fetchall())
+
+    async def list_descendant_relations(self, job_ids: Collection[int]):
+        stmt = select(
+            descendants_by_job_cte.c.parent_job_id,
+            descendants_by_job_cte.c.child_job_id,
+        )
+        result = await self._session.execute(
+            stmt,
+            {
+                "job_ids": list(job_ids),
+            },
+        )
+        return list(result.fetchall())
