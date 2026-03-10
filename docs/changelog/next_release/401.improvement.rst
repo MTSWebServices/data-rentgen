@@ -1,0 +1,1 @@
+Include job ancestor relations in lineage response when granularity is ``JOB``. The ``ancestors`` field now contains job→job ancestry chains for job-level lineage in addition to run→run chains for run/operation granularity.
