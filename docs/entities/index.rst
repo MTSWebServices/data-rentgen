@@ -303,7 +303,7 @@ It contains following fields:
     Currently, OpenLineage sends only symlinks ``HDFS location → Hive table`` which `do not exist in the real world <https://github.com/OpenLineage/OpenLineage/issues/2718#issuecomment-2134746258>`_.
     Message consumer automatically adds a reverse symlink ``Hive table → HDFS location`` to simplify building lineage graph, but this is temporary solution.
 
-.. image:: dataset_symlinks.png
+.. image:: symlink_relation.png
 
 Parent Relation
 ~~~~~~~~~~~~~~~
@@ -319,7 +319,7 @@ It contains following fields:
 - ``from: Job | Run`` - parent entity.
 - ``to: Job | Run | Operation`` - child entity.
 
-.. image:: parent.png
+.. image:: parent_relation.png
 
 Input relation
 ~~~~~~~~~~~~~~
@@ -336,7 +336,7 @@ It contains following fields:
 - ``num_bytes: int | None`` - number of bytes read from dataset. For ``granularity=JOB|RUN`` it is a sum of all read bytes from this dataset. For ``granularity=DATASET`` always ``None``.
 - ``num_files: int | None`` - number of files read from dataset. For ``granularity=JOB|RUN`` it is a sum of all read files from this dataset. For ``granularity=DATASET`` always ``None``.
 
-.. image:: input.png
+.. image:: input_relation.png
 
 Output relation
 ~~~~~~~~~~~~~~~
@@ -365,7 +365,7 @@ It contains following fields:
 - ``num_bytes: int | None`` - number of bytes written from dataset. For ``granularity=JOB|RUN`` it is a sum of all written bytes to this dataset.
 - ``num_files: int | None`` - number of files written from dataset. For ``granularity=JOB|RUN`` it is a sum of all written files to this dataset.
 
-.. image:: output.png
+.. image:: output_relation.png
 
 Direct Column Lineage relation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
