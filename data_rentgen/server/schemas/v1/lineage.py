@@ -236,7 +236,6 @@ class IndirectLineageColumnRelationV1(BaseModel):
 
 class LineageRelationsResponseV1(BaseModel):
     parents: list[LineageParentRelationV1] = Field(description="Parent relations", default_factory=list)
-    ancestors: list[LineageParentRelationV1] = Field(description="Ancestors relations", default_factory=list)
     symlinks: list[LineageSymlinkRelationV1] = Field(description="Symlink relations", default_factory=list)
     inputs: list[LineageInputRelationV1] = Field(description="Input relations", default_factory=list)
     outputs: list[LineageOutputRelationV1] = Field(description="Input relations", default_factory=list)

@@ -35,6 +35,7 @@ Entities
         [Operation] --> [Run]: PARENT
         [Run] --> [User]: started by
         [Run] --> [Run]: PARENT
+        [Job] --> [Job]: PARENT
         [Dataset1] ..> [Operation]: INPUT
         [Operation] ..> [Dataset1]: OUTPUT
 
@@ -309,15 +310,14 @@ Parent Relation
 
 Relation between child run/operation and its parent. For example:
 
-- Spark applicationName is parent for all its runs (applicationId).
-- Spark applicationId is parent for all its Spark job or Spark execution.
+- Spark job (applicationName) is parent for all its runs (applicationId).
 - Airflow DAG is parent of Airflow task.
-- Airflow Task Instance triggered a Spark applicationId, dbt run, and so on.
+- Airflow Task Instance can start a Spark run (applicationId), dbt run, and so on.
 
 It contains following fields:
 
 - ``from: Job | Run`` - parent entity.
-- ``to: Run | Operation`` - child entity.
+- ``to: Job | Run | Operation`` - child entity.
 
 .. image:: parent.png
 
