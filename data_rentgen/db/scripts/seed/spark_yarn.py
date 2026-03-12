@@ -208,11 +208,11 @@ def generate_spark_run_yarn(
         },
     )
 
-    # add Airflow Task mart_layer_dag.mart_layer_dbt -> mart_layer_dag.mart_layer_task_spark dependency
+    # add Airflow Task mart_layer_dag.mart_layer_task_dbt -> mart_layer_dag.mart_layer_task_spark dependency
     parent_run.job_dependencies.append(
         JobDependencyDTO(
             from_job=JobDTO(
-                name="mart_layer_dag.mart_layer_dbt",
+                name="mart_layer_dag.mart_layer_task_dbt",
                 parent_job=parent_run.job.parent_job,  # DAG
                 location=parent_run.job.location,
                 type=JobTypeDTO(type="AIRFLOW_TASK"),
