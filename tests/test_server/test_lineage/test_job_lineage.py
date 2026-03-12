@@ -1190,7 +1190,7 @@ async def test_get_job_lineage_with_granularity_run_and_ancestor_relations(
     assert response.json() == {
         "relations": {
             "parents": run_parents_to_json(runs),
-            "ancestors": runs_ancestors_to_json(runs),
+            "ancestors": jobs_ancestors_to_json(jobs) + runs_ancestors_to_json(runs),
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),

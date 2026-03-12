@@ -59,8 +59,8 @@ def build_lineage_response(lineage: LineageServiceResult) -> LineageResponseV1:
         ),
         relations=LineageRelationsResponseV1(
             parents=_get_run_parent_relations(lineage.runs) + _get_operation_parent_relations(lineage.operations),
-            ancestors=_get_runs_hierarchy_chain(lineage.run_ancestor_relations)
-            + _get_jobs_hierarchy_chain(lineage.job_ancestor_relations),
+            ancestors=_get_jobs_hierarchy_chain(lineage.job_ancestor_relations)
+            + _get_runs_hierarchy_chain(lineage.run_ancestor_relations),
             symlinks=_get_symlink_relations(lineage.dataset_symlinks),
             inputs=_get_input_relations(lineage.inputs),
             outputs=_get_output_relations(lineage.outputs),

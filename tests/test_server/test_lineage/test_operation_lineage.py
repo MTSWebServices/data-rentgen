@@ -10,6 +10,7 @@ from tests.fixtures.mocks import MockedUser
 from tests.test_server.utils.convert_to_json import (
     datasets_to_json,
     inputs_to_json,
+    jobs_ancestors_to_json,
     jobs_to_json,
     operation_parents_to_json,
     operations_to_json,
@@ -961,7 +962,7 @@ async def test_get_operation_lineage_with_run_and_ancestor_relations(
     assert response.json() == {
         "relations": {
             "parents": run_parents_to_json(runs) + operation_parents_to_json(lineage.operations),
-            "ancestors": runs_ancestors_to_json(runs),
+            "ancestors": jobs_ancestors_to_json(jobs) + runs_ancestors_to_json(runs),
             "symlinks": [],
             "inputs": [
                 *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
