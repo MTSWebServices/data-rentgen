@@ -90,7 +90,6 @@ async def test_get_lineage_missing_id(
     assert response.json() == {
         "relations": {
             "parents": [],
-            "ancestors": [],
             "symlinks": [],
             "inputs": [],
             "outputs": [],

@@ -28,8 +28,6 @@ Added ``ancestors`` field to lineage ``relations`` response. It contains run→r
                 "parents": [
                     {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "run-uuid"}},
                     {"from": {"kind": "RUN", "id": "run-uuid"}, "to": {"kind": "OPERATION", "id": "op-uuid"}}
-                ],
-                "ancestors": [
                     {"from": {"kind": "RUN", "id": "parent-run-uuid"}, "to": {"kind": "RUN", "id": "run-uuid"}}
                 ],
                 "symlinks": [],
