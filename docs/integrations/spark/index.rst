@@ -303,4 +303,4 @@ It is possible to provide custom job tags using OpenLineage configuration:
 .. code-block:: python
     :caption: etl.py
 
-    SparkSession.builder.config("spark.openlineage.jobs.tags", "environment:production;layer:bronze")
+    SparkSession.builder.config("spark.openlineage.job.tags", "environment:production;layer:bronze")
