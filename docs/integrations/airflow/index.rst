@@ -192,6 +192,10 @@ Task run details page
 
 .. image:: ./task_run_details.png
 
+Job level lineage
+~~~~~~~~~~~~~~~~~
+
+.. image:: ./job_lineage.png
 
 Extra configuration
 -------------------
