@@ -308,8 +308,8 @@ class LineageService:
         runs_by_id = {run.id: run for run in runs}
         # Include child runs
         if level == 0:
-            relations = await self._uow.run.list_descendant_relations(start_node_ids)
-            child_runs_ids = {c_id for _, c_id in relations}
+            run_relations = await self._uow.run.list_descendant_relations(start_node_ids)
+            child_runs_ids = {c_id for _, c_id in run_relations}
             child_runs = await self._uow.run.list_by_ids(child_runs_ids)
             runs.extend(child_runs)
             child_runs_by_id = {run.id: run for run in child_runs}
@@ -413,7 +413,10 @@ class LineageService:
             },
         )
         if level == 0:
-            result.run_ancestor_relations.update({tuple(r) for r in relations})
+            result.run_ancestor_relations.update({tuple(r) for r in run_relations})
+
+            job_relations = await self._uow.job.list_ancestor_relations(job_ids)
+            result.job_ancestor_relations.update({tuple(r) for r in job_relations})
 
         upstream_dataset_ids = {input_.dataset_id for input_ in inputs} - ids_to_skip.datasets
         downstream_dataset_ids = {output.dataset_id for output in outputs} - ids_to_skip.datasets
@@ -1334,26 +1337,28 @@ class LineageService:
         """Returns a LineageServiceResult with only run_parent_relations or job_parent_relations populated."""
         match granularity:
             case "RUN" | "OPERATION":
-                relations = await self._uow.run.list_ancestor_relations(result.runs.keys())
-                parents_run_ids = {p_id for p_id, _ in relations}
+                run_relations = await self._uow.run.list_ancestor_relations(result.runs.keys())
+                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
+                parents_run_ids = {p_id for p_id, _ in run_relations}
                 runs = await self._uow.run.list_by_ids(parents_run_ids)
                 runs_by_id = {run.id: run for run in runs}
                 job_ids = {run.job_id for run in runs}
                 jobs = await self._uow.job.list_by_ids(job_ids)
                 jobs_by_id = {job.id: job for job in jobs}
                 return LineageServiceResult(
-                    run_ancestor_relations={tuple(r) for r in relations},
+                    run_ancestor_relations={tuple(r) for r in run_relations},
+                    job_ancestor_relations={tuple(r) for r in job_relations},
                     runs=runs_by_id,
                     jobs=jobs_by_id,
                 )
 
             case "JOB":
-                relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
-                parents_job_ids = {p_id for p_id, _ in relations}
+                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
+                parents_job_ids = {p_id for p_id, _ in job_relations}
                 jobs = await self._uow.job.list_by_ids(parents_job_ids)
                 jobs_by_id = {job.id: job for job in jobs}
                 return LineageServiceResult(
-                    job_ancestor_relations={tuple(r) for r in relations},
+                    job_ancestor_relations={tuple(r) for r in job_relations},
                     jobs=jobs_by_id,
                 )
 
