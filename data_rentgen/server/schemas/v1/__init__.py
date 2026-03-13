@@ -9,6 +9,9 @@ from data_rentgen.server.schemas.v1.dataset import (
     DatasetSchemaV1,
 )
 from data_rentgen.server.schemas.v1.job import (
+    JobDependenciesQueryV1,
+    JobDependenciesRelationsV1,
+    JobDependenciesResponseV1,
     JobDetailedResponseV1,
     JobPaginateQueryV1,
     JobResponseV1,
@@ -84,6 +87,9 @@ __all__ = [
     "DatasetSchemaV1",
     "DirectLineageColumnRelationV1",
     "IndirectLineageColumnRelationV1",
+    "JobDependenciesQueryV1",
+    "JobDependenciesRelationsV1",
+    "JobDependenciesResponseV1",
     "JobDetailedResponseV1",
     "JobLineageQueryV1",
     "JobPaginateQueryV1",

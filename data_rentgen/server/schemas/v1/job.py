@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from enum import Enum
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from data_rentgen.server.schemas.v1.location import LocationResponseV1
@@ -40,6 +43,40 @@ class JobTypesResponseV1(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# TODO: This class and several others are duplicate from lineage schemas, maybe we should create common class for both.
+class JobEntityV1(BaseModel):
+    kind: Literal["JOB"] = Field(default="JOB")
+    id: str = Field(description="Id of the Job")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class JobDependencyV1(BaseModel):
+    from_: JobEntityV1 = Field(description="Start point of relation", serialization_alias="from")
+    to: JobEntityV1 = Field(description="End point of relation")
+    type_: str | None = Field(description="Type of dependenciy", serialization_alias="type", default=None)
+
+
+class JobEntityRelationV1(BaseModel):
+    from_: JobEntityV1 = Field(description="Start point of relation", serialization_alias="from")
+    to: JobEntityV1 = Field(description="End point of relation")
+
+
+class JobDependenciesRelationsV1(BaseModel):
+    parents: list[JobEntityRelationV1] = Field(description="Parent relations", default_factory=list)
+    dependencies: list[JobDependencyV1] = Field(description="Job dependencies", default_factory=list)
+
+
+class JobDependenciesResponseV1(BaseModel):
+    "Job dependencies"
+
+    relations: JobDependenciesRelationsV1 = Field(
+        description="Job parents and dependencies relations",
+        default_factory=JobDependenciesRelationsV1,
+    )
+    nodes: list[JobResponseV1] = Field(description="Job nodes", default_factory=list)
 
 
 class JobPaginateQueryV1(PaginateQueryV1):
@@ -83,4 +120,23 @@ class JobPaginateQueryV1(PaginateQueryV1):
         examples=[["yarn"]],
     )
 
+    model_config = ConfigDict(extra="forbid")
+
+
+class DependenciesDirectionV1(str, Enum):
+    DOWNSTREAM = "DOWNSTREAM"
+    UPSTREAM = "UPSTREAM"
+    BOTH = "BOTH"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class JobDependenciesQueryV1(BaseModel):
+    start_node_id: int = Field(description="Job id", examples=[42])
+    direction: DependenciesDirectionV1 = Field(
+        default=DependenciesDirectionV1.BOTH,
+        description="Direction of the lineage",
+        examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
+    )
     model_config = ConfigDict(extra="forbid")
