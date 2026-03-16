@@ -60,7 +60,7 @@ class JobDependencyRepository(Repository[JobDependency]):
         self,
         job_ids: list[int],
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
-    ) -> set[tuple[int, int, str | None]]:
+    ) -> list[JobDependency]:
 
         job_dependency_query = select(JobDependency)
         match direction:
@@ -78,7 +78,7 @@ class JobDependencyRepository(Repository[JobDependency]):
                     )
                 )
         scalars = await self._session.scalars(job_dependency_query, {"job_ids": job_ids})
-        return {(item.from_job_id, item.to_job_id, item.type) for item in scalars.all()}
+        return list(scalars.all())
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(

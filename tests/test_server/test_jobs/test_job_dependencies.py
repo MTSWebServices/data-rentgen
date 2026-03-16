@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import Job
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import jobs_to_json
+from tests.test_server.utils.convert_to_json import jobs_ancestors_to_json, jobs_to_json
 from tests.test_server.utils.enrich import enrich_jobs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -111,10 +111,7 @@ async def test_get_job_dependencies_default_request(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [
-                {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}}
-                for from_id, to_id in sorted([(job_root.id, job_middle.id), (job_middle.id, job_leaf.id)])
-            ],
+            "parents": jobs_ancestors_to_json([job_root, job_middle, job_leaf]),
             "dependencies": [
                 {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}, "type": type_}
                 for from_id, to_id, type_ in sorted(
@@ -153,10 +150,7 @@ async def test_get_job_dependencies_with_direction_upstream(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [
-                {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}}
-                for from_id, to_id in sorted([(job_root.id, job_middle.id), (job_middle.id, job_leaf.id)])
-            ],
+            "parents": jobs_ancestors_to_json([job_root, job_middle, job_leaf]),
             "dependencies": [
                 {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}, "type": type_}
                 for from_id, to_id, type_ in sorted(
@@ -192,10 +186,7 @@ async def test_get_job_dependencies_with_direction_downstream(
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "relations": {
-            "parents": [
-                {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}}
-                for from_id, to_id in sorted([(job_root.id, job_middle.id), (job_middle.id, job_leaf.id)])
-            ],
+            "parents": jobs_ancestors_to_json([job_root, job_middle, job_leaf]),
             "dependencies": [
                 {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}, "type": type_}
                 for from_id, to_id, type_ in sorted(

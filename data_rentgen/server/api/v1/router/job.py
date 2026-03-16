@@ -20,7 +20,7 @@ from data_rentgen.server.schemas.v1 import (
     LineageResponseV1,
     PageResponseV1,
 )
-from data_rentgen.server.schemas.v1.job import JobDependencyV1, JobEntityRelationV1, JobEntityV1
+from data_rentgen.server.schemas.v1.job import JobDependencyV1, JobEntityV1, JobParentEntityRelationV1
 from data_rentgen.server.services import JobService, LineageService, get_user
 from data_rentgen.server.utils.lineage_response import build_lineage_response
 
@@ -95,7 +95,7 @@ async def get_job_dependencies(
     return JobDependenciesResponseV1(
         relations=JobDependenciesRelationsV1(
             parents=[
-                JobEntityRelationV1(
+                JobParentEntityRelationV1(
                     from_=JobEntityV1(id=str(from_id)),
                     to=JobEntityV1(id=str(to_id)),
                 )

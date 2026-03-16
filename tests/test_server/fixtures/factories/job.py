@@ -334,7 +334,7 @@ async def job_dependency_chain(
     """
     Fixture that creates:
     - Parent-child hierarchy: root -> middle -> leaf via parent_job_id.
-    - Two independent dependencies for each chain job in job_dependency table:
+    - For each chain job - two items in job_dependency table:
       source_root -> root and root -> target_root
       source_middle -> middle and middle -> target_middle
       source_leaf -> leaf and leaf -> target_leaf

@@ -121,13 +121,13 @@ class JobService:
         job_ids |= {c_id for _, c_id in descendant_relations}
 
         dependencies = await self._uow.job_dependency.get_dependencies(job_ids=list(job_ids), direction=direction)
-        for f_id, t_id, _ in dependencies:
-            job_ids.add(f_id)
-            job_ids.add(t_id)
+        for dependency in dependencies:
+            job_ids.add(dependency.from_job_id)
+            job_ids.add(dependency.to_job_id)
         jobs = await self._uow.job.list_by_ids(list(job_ids))
 
         return JobDependenciesResult(
             parents=ancestor_relations + descendant_relations,
-            dependencies=dependencies,
+            dependencies={(d.from_job_id, d.to_job_id, d.type) for d in dependencies},
             jobs=[JobServiceResult.from_orm(job) for job in jobs],
         )

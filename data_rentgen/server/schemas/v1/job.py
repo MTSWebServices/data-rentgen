@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -55,16 +56,16 @@ class JobEntityV1(BaseModel):
 class JobDependencyV1(BaseModel):
     from_: JobEntityV1 = Field(description="Start point of relation", serialization_alias="from")
     to: JobEntityV1 = Field(description="End point of relation")
-    type_: str | None = Field(description="Type of dependenciy", serialization_alias="type", default=None)
+    type_: str | None = Field(description="Type of dependency", serialization_alias="type", default=None)
 
 
-class JobEntityRelationV1(BaseModel):
+class JobParentEntityRelationV1(BaseModel):
     from_: JobEntityV1 = Field(description="Start point of relation", serialization_alias="from")
     to: JobEntityV1 = Field(description="End point of relation")
 
 
 class JobDependenciesRelationsV1(BaseModel):
-    parents: list[JobEntityRelationV1] = Field(description="Parent relations", default_factory=list)
+    parents: list[JobParentEntityRelationV1] = Field(description="Parent relations", default_factory=list)
     dependencies: list[JobDependencyV1] = Field(description="Job dependencies", default_factory=list)
 
 
@@ -128,5 +129,23 @@ class JobDependenciesQueryV1(BaseModel):
         default="BOTH",
         description="Direction of the lineage",
         examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
+    )
+    since: datetime | None = Field(
+        default=None,
+        description="",
+        examples=["2008-09-15T15:53:00+05:00"],
+    )
+    until: datetime | None = Field(
+        default=None,
+        description="",
+        examples=["2008-09-15T15:53:00+05:00"],
+    )
+
+    depth: int | None = Field(
+        default=None,
+        ge=1,
+        le=10,
+        description="Depth of the dependency relations",
+        examples=[1, 3],
     )
     model_config = ConfigDict(extra="forbid")
