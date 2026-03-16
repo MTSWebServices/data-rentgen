@@ -110,7 +110,10 @@ async def get_job_dependencies(
                 for from_id, to_id, type_ in sorted(job_dependencies.dependencies)
             ],
         ),
-        nodes=[
-            JobResponseV1.model_validate(job.data) for job in sorted(job_dependencies.jobs, key=lambda item: item.id)
-        ],
+        nodes={
+            "jobs": {
+                str(job.id): JobResponseV1.model_validate(job.data)
+                for job in sorted(job_dependencies.jobs, key=lambda item: item.id)
+            }
+        },
     )

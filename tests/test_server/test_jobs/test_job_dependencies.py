@@ -9,10 +9,53 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import Job
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import job_to_json
+from tests.test_server.utils.convert_to_json import jobs_to_json
 from tests.test_server.utils.enrich import enrich_jobs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
+
+
+async def test_get_job_dependencies_nonexistent_start_node(
+    test_client: AsyncClient,
+    new_job: Job,
+    mocked_user: MockedUser,
+):
+    response = await test_client.get(
+        "v1/jobs/dependencies",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={"start_node_id": new_job.id},
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": [],
+            "dependencies": [],
+        },
+        "nodes": {"jobs": {}},
+    }
+
+
+async def test_get_job_dependencies_isolated_job(
+    test_client: AsyncClient,
+    job: Job,
+    async_session: AsyncSession,
+    mocked_user: MockedUser,
+):
+    [job] = await enrich_jobs([job], async_session)
+
+    response = await test_client.get(
+        "v1/jobs/dependencies",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={"start_node_id": job.id},
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": [],
+            "dependencies": [],
+        },
+        "nodes": {"jobs": jobs_to_json([job])},
+    }
 
 
 async def test_get_job_dependencies_unauthorized(
@@ -86,7 +129,7 @@ async def test_get_job_dependencies_default_request(
                 )
             ],
         },
-        "nodes": [job_to_json(job) for job in sorted(all_jobs, key=lambda j: j.id)],
+        "nodes": {"jobs": jobs_to_json(all_jobs)},
     }
 
 
@@ -125,7 +168,7 @@ async def test_get_job_dependencies_with_direction_upstream(
                 )
             ],
         },
-        "nodes": [job_to_json(job) for job in sorted(expected_nodes, key=lambda j: j.id)],
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
     }
 
 
@@ -164,5 +207,5 @@ async def test_get_job_dependencies_with_direction_downstream(
                 )
             ],
         },
-        "nodes": [job_to_json(job) for job in sorted(expected_nodes, key=lambda j: j.id)],
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
     }

@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-
+from typing import Literal
 
 from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, or_, select, tuple_
 
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import JobDependencyDTO
-from data_rentgen.server.schemas.v1.job import DependenciesDirectionV1
 
 fetch_bulk_query = select(JobDependency).where(
     tuple_(JobDependency.from_job_id, JobDependency.to_job_id).in_(
@@ -25,14 +24,6 @@ fetch_bulk_query = select(JobDependency).where(
 get_one_query = select(JobDependency).where(
     JobDependency.from_job_id == bindparam("from_job_id"),
     JobDependency.to_job_id == bindparam("to_job_id"),
-)
-
-
-job_dependency_query = select(JobDependency).where(
-    or_(
-        JobDependency.from_job_id == any_(bindparam("job_ids")),
-        JobDependency.to_job_id == any_(bindparam("job_ids")),
-    )
 )
 
 
@@ -65,8 +56,10 @@ class JobDependencyRepository(Repository[JobDependency]):
         await self._lock(job_dependency.from_job.id, job_dependency.to_job.id)
         return await self._get(job_dependency) or await self._create(job_dependency)
 
-    async def get_dependecies(
-        self, job_ids: list[int], direction: DependenciesDirectionV1
+    async def get_dependencies(
+        self,
+        job_ids: list[int],
+        direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
     ) -> set[tuple[int, int, str | None]]:
 
         job_dependency_query = select(JobDependency)
