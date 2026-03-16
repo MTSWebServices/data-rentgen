@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
+from typing import Literal
 
-
-from sqlalchemy import ARRAY, Integer, bindparam, cast, func, select, tuple_
+from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, or_, select, tuple_
 
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.repositories.base import Repository
@@ -55,6 +55,30 @@ class JobDependencyRepository(Repository[JobDependency]):
         # if another worker already created the same row, just use it. if not - create with holding the lock.
         await self._lock(job_dependency.from_job.id, job_dependency.to_job.id)
         return await self._get(job_dependency) or await self._create(job_dependency)
+
+    async def get_dependencies(
+        self,
+        job_ids: list[int],
+        direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
+    ) -> list[JobDependency]:
+
+        job_dependency_query = select(JobDependency)
+        match direction:
+            case "UPSTREAM":
+                job_dependency_query = job_dependency_query.where(JobDependency.to_job_id == any_(bindparam("job_ids")))
+            case "DOWNSTREAM":
+                job_dependency_query = job_dependency_query.where(
+                    JobDependency.from_job_id == any_(bindparam("job_ids"))
+                )
+            case "BOTH":
+                job_dependency_query = job_dependency_query.where(
+                    or_(
+                        JobDependency.from_job_id == any_(bindparam("job_ids")),
+                        JobDependency.to_job_id == any_(bindparam("job_ids")),
+                    )
+                )
+        scalars = await self._session.scalars(job_dependency_query, {"job_ids": job_ids})
+        return list(scalars.all())
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest_asyncio
 
-from data_rentgen.db.models import Job, TagValue
+from data_rentgen.db.models import Job, JobDependency, TagValue
 from tests.test_server.fixtures.factories.base import random_string
 from tests.test_server.fixtures.factories.job_type import create_job_type
 from tests.test_server.fixtures.factories.location import create_location
@@ -322,6 +322,101 @@ async def jobs_with_same_parent_job(
         async_session.expunge_all()
 
     yield items
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
+async def job_dependency_chain(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+) -> AsyncGenerator[tuple[tuple[Job, Job, Job]], None]:
+    """
+    Fixture that creates:
+    - Parent-child hierarchy: root -> middle -> leaf via parent_job_id.
+    - For each chain job - two items in job_dependency table:
+      source_root -> root and root -> target_root
+      source_middle -> middle and middle -> target_middle
+      source_leaf -> leaf and leaf -> target_leaf
+
+    Returns (job_root, job_middle, job_leaf). Root/middle/leaf are not directly connected
+    by dependency edges, only by parent-child links.
+    """
+    async with async_session_maker() as async_session:
+        location = await create_location(async_session)
+        job_type = await create_job_type(async_session)
+        job_root = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "job-root"},
+        )
+        job_middle = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "job-middle", "parent_job_id": job_root.id},
+        )
+        job_leaf = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "job-leaf", "parent_job_id": job_middle.id},
+        )
+        source_root = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "source-root"},
+        )
+        target_root = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "target-root"},
+        )
+        source_middle = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "source-middle"},
+        )
+        target_middle = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "target-middle"},
+        )
+        source_leaf = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "source-leaf"},
+        )
+        target_leaf = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type.id,
+            job_kwargs={"name": "target-leaf"},
+        )
+        async_session.add_all(
+            [
+                JobDependency(from_job_id=source_root.id, to_job_id=job_root.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=job_root.id, to_job_id=target_root.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=source_middle.id, to_job_id=job_middle.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=job_middle.id, to_job_id=target_middle.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=source_leaf.id, to_job_id=job_leaf.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=job_leaf.id, to_job_id=target_leaf.id, type="DIRECT_DEPENDENCY"),
+            ],
+        )
+        await async_session.commit()
+        async_session.expunge_all()
+
+    yield (
+        (source_root, job_root, target_root),
+        (source_middle, job_middle, target_middle),
+        (source_leaf, job_leaf, target_leaf),
+    )
 
     async with async_session_maker() as async_session:
         await clean_db(async_session)
