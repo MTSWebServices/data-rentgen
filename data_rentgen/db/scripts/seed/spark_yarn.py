@@ -213,11 +213,10 @@ def generate_spark_run_yarn(
         JobDependencyDTO(
             from_job=JobDTO(
                 name="mart_layer_dag.mart_layer_task_dbt",
-                parent_job=parent_run.job.parent_job,  # DAG
                 location=parent_run.job.location,
                 type=JobTypeDTO(type="AIRFLOW_TASK"),
             ),
-            to_job=job,
+            to_job=parent_run.job,
             type="DIRECT_DEPENDENCY",
         )
     )
