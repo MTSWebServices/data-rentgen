@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -130,22 +129,4 @@ class JobDependenciesQueryV1(BaseModel):
         description="Direction of the lineage",
         examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
     )
-    since: datetime | None = Field(
-        default=None,
-        description="",
-        examples=["2008-09-15T15:53:00+05:00"],
-    )
-    until: datetime | None = Field(
-        default=None,
-        description="",
-        examples=["2008-09-15T15:53:00+05:00"],
-    )
-
-    depth: int | None = Field(
-        default=None,
-        ge=1,
-        le=10,
-        description="Depth of the dependency relations",
-        examples=[1, 3],
-    )
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
