@@ -64,7 +64,7 @@ class JobServicePaginatedResult(PaginationDTO[JobServiceResult]):
 
 @dataclass
 class JobDependenciesResult:
-    parents: list[tuple[int, int]] = field(default_factory=list)
+    parents: set[tuple[int, int]] = field(default_factory=set)
     dependencies: set[tuple[int, int, str | None]] = field(default_factory=set)
     jobs: list[JobServiceResult] = field(default_factory=list)
 
@@ -113,21 +113,25 @@ class JobService:
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
     ) -> JobDependenciesResult:
         logger.info("Get Job dependencies with start at job with id %s and direction: %s", start_node_id, direction)
-        job_ids = {start_node_id}
 
         ancestor_relations = await self._uow.job.list_ancestor_relations([start_node_id])
         descendant_relations = await self._uow.job.list_descendant_relations([start_node_id])
-        job_ids |= {p_id for p_id, _ in ancestor_relations}
-        job_ids |= {c_id for _, c_id in descendant_relations}
+        job_ids = (
+            {start_node_id}
+            | {p.parent_job_id for p in ancestor_relations}
+            | {p.child_job_id for p in descendant_relations}
+        )
 
         dependencies = await self._uow.job_dependency.get_dependencies(job_ids=list(job_ids), direction=direction)
-        for dependency in dependencies:
-            job_ids.add(dependency.from_job_id)
-            job_ids.add(dependency.to_job_id)
-        jobs = await self._uow.job.list_by_ids(list(job_ids))
+        dependency_job_ids = {d.from_job_id for d in dependencies} | {d.to_job_id for d in dependencies}
+        job_ids |= dependency_job_ids
 
+        # return ancestors for all found jobs in the graph
+        ancestor_relations += await self._uow.job.list_ancestor_relations(list(dependency_job_ids))
+        job_ids |= {p.parent_job_id for p in ancestor_relations}
+        jobs = await self._uow.job.list_by_ids(list(job_ids))
         return JobDependenciesResult(
-            parents=ancestor_relations + descendant_relations,
+            parents={(p.parent_job_id, p.child_job_id) for p in ancestor_relations + descendant_relations},
             dependencies={(d.from_job_id, d.to_job_id, d.type) for d in dependencies},
             jobs=[JobServiceResult.from_orm(job) for job in jobs],
         )

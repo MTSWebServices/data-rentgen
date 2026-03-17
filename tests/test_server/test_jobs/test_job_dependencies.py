@@ -83,13 +83,15 @@ async def test_get_job_dependencies_with_direction_both(
     mocked_user: MockedUser,
 ):
     (
-        (_, dag2, _),
+        (dag1, dag2, dag3),
         (task1, task2, task3),
         (_, spark2, _),
     ) = job_dependency_chain
     expected_nodes = await enrich_jobs(
         [
+            dag1,
             dag2,
+            dag3,
             task1,
             task2,
             task3,
@@ -107,7 +109,7 @@ async def test_get_job_dependencies_with_direction_both(
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == {
             "relations": {
-                "parents": jobs_ancestors_to_json([task2, spark2]),
+                "parents": jobs_ancestors_to_json(expected_nodes),
                 "dependencies": [
                     {
                         "from": {"kind": "JOB", "id": str(from_id)},
@@ -132,9 +134,13 @@ async def test_get_job_dependencies_with_direction_upstream(
     async_session: AsyncSession,
     mocked_user: MockedUser,
 ):
-    (_, dag2, _), (task1, task2, _), (_, spark2, _) = job_dependency_chain
+    (
+        (dag1, dag2, _),
+        (task1, task2, _),
+        (_, spark2, _),
+    ) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [task1, dag2, task2, spark2],
+        [dag1, task1, dag2, task2, spark2],
         async_session,
     )
 
@@ -147,7 +153,7 @@ async def test_get_job_dependencies_with_direction_upstream(
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == {
             "relations": {
-                "parents": jobs_ancestors_to_json([task2, spark2]),
+                "parents": jobs_ancestors_to_json(expected_nodes),
                 "dependencies": [
                     {
                         "from": {"kind": "JOB", "id": str(task1.id)},
@@ -166,9 +172,13 @@ async def test_get_job_dependencies_with_direction_downstream(
     async_session: AsyncSession,
     mocked_user: MockedUser,
 ):
-    (_, dag2, _), (_, task2, task3), (_, spark2, _) = job_dependency_chain
+    (
+        (_, dag2, dag3),
+        (_, task2, task3),
+        (_, spark2, _),
+    ) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [dag2, task2, spark2, task3],
+        [dag2, task2, spark2, dag3, task3],
         async_session,
     )
 
@@ -181,7 +191,7 @@ async def test_get_job_dependencies_with_direction_downstream(
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json() == {
             "relations": {
-                "parents": jobs_ancestors_to_json([task2, spark2]),
+                "parents": jobs_ancestors_to_json(expected_nodes),
                 "dependencies": [
                     {
                         "from": {"kind": "JOB", "id": str(task2.id)},
