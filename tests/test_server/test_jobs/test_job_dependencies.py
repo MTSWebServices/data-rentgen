@@ -60,12 +60,11 @@ async def test_get_job_dependencies_isolated_job(
 
 async def test_get_job_dependencies_unauthorized(
     test_client: AsyncClient,
-    job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
+    job: Job,
 ):
-    (_, job_middle, _) = job_dependency_chain[1]
     response = await test_client.get(
         "v1/jobs/dependencies",
-        params={"start_node_id": job_middle.id},
+        params={"start_node_id": job.id},
     )
     assert response.status_code == HTTPStatus.UNAUTHORIZED, response.json()
     assert response.json() == {
@@ -77,57 +76,54 @@ async def test_get_job_dependencies_unauthorized(
     }
 
 
-async def test_get_job_dependencies_default_request(
+async def test_get_job_dependencies_with_direction_both(
     test_client: AsyncClient,
     job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
     async_session: AsyncSession,
     mocked_user: MockedUser,
 ):
     (
-        (source_root, job_root, target_root),
-        (source_middle, job_middle, target_middle),
-        (source_leaf, job_leaf, target_leaf),
+        (_, dag2, _),
+        (task1, task2, task3),
+        (_, spark2, _),
     ) = job_dependency_chain
-    all_jobs = await enrich_jobs(
+    expected_nodes = await enrich_jobs(
         [
-            job_root,
-            job_middle,
-            job_leaf,
-            source_root,
-            target_root,
-            source_middle,
-            target_middle,
-            source_leaf,
-            target_leaf,
+            dag2,
+            task1,
+            task2,
+            task3,
+            spark2,
         ],
         async_session,
     )
 
-    response = await test_client.get(
-        "v1/jobs/dependencies",
-        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
-        params={"start_node_id": job_middle.id},
-    )
-    assert response.status_code == HTTPStatus.OK, response.json()
-    assert response.json() == {
-        "relations": {
-            "parents": jobs_ancestors_to_json([job_root, job_middle, job_leaf]),
-            "dependencies": [
-                {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}, "type": type_}
-                for from_id, to_id, type_ in sorted(
-                    [
-                        (source_root.id, job_root.id, "DIRECT_DEPENDENCY"),
-                        (job_root.id, target_root.id, "DIRECT_DEPENDENCY"),
-                        (source_middle.id, job_middle.id, "DIRECT_DEPENDENCY"),
-                        (job_middle.id, target_middle.id, "DIRECT_DEPENDENCY"),
-                        (source_leaf.id, job_leaf.id, "DIRECT_DEPENDENCY"),
-                        (job_leaf.id, target_leaf.id, "DIRECT_DEPENDENCY"),
-                    ]
-                )
-            ],
-        },
-        "nodes": {"jobs": jobs_to_json(all_jobs)},
-    }
+    for start_node in [dag2, task2, spark2]:
+        response = await test_client.get(
+            "v1/jobs/dependencies",
+            headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+            params={"start_node_id": start_node.id},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "relations": {
+                "parents": jobs_ancestors_to_json([task2, spark2]),
+                "dependencies": [
+                    {
+                        "from": {"kind": "JOB", "id": str(from_id)},
+                        "to": {"kind": "JOB", "id": str(to_id)},
+                        "type": type_,
+                    }
+                    for from_id, to_id, type_ in sorted(
+                        [
+                            (task1.id, task2.id, "DIRECT_DEPENDENCY"),
+                            (task2.id, task3.id, "DIRECT_DEPENDENCY"),
+                        ]
+                    )
+                ],
+            },
+            "nodes": {"jobs": jobs_to_json(expected_nodes)},
+        }
 
 
 async def test_get_job_dependencies_with_direction_upstream(
@@ -136,34 +132,32 @@ async def test_get_job_dependencies_with_direction_upstream(
     async_session: AsyncSession,
     mocked_user: MockedUser,
 ):
-    (source_root, job_root, _), (source_middle, job_middle, _), (source_leaf, job_leaf, _) = job_dependency_chain
+    (_, dag2, _), (task1, task2, _), (_, spark2, _) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [job_root, job_middle, job_leaf, source_root, source_middle, source_leaf],
+        [task1, dag2, task2, spark2],
         async_session,
     )
 
-    response = await test_client.get(
-        "v1/jobs/dependencies",
-        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
-        params={"start_node_id": job_middle.id, "direction": "UPSTREAM"},
-    )
-    assert response.status_code == HTTPStatus.OK, response.json()
-    assert response.json() == {
-        "relations": {
-            "parents": jobs_ancestors_to_json([job_root, job_middle, job_leaf]),
-            "dependencies": [
-                {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}, "type": type_}
-                for from_id, to_id, type_ in sorted(
-                    [
-                        (source_root.id, job_root.id, "DIRECT_DEPENDENCY"),
-                        (source_middle.id, job_middle.id, "DIRECT_DEPENDENCY"),
-                        (source_leaf.id, job_leaf.id, "DIRECT_DEPENDENCY"),
-                    ]
-                )
-            ],
-        },
-        "nodes": {"jobs": jobs_to_json(expected_nodes)},
-    }
+    for start_node in [dag2, task2, spark2]:
+        response = await test_client.get(
+            "v1/jobs/dependencies",
+            headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+            params={"start_node_id": start_node.id, "direction": "UPSTREAM"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "relations": {
+                "parents": jobs_ancestors_to_json([task2, spark2]),
+                "dependencies": [
+                    {
+                        "from": {"kind": "JOB", "id": str(task1.id)},
+                        "to": {"kind": "JOB", "id": str(task2.id)},
+                        "type": "DIRECT_DEPENDENCY",
+                    },
+                ],
+            },
+            "nodes": {"jobs": jobs_to_json(expected_nodes)},
+        }
 
 
 async def test_get_job_dependencies_with_direction_downstream(
@@ -172,31 +166,29 @@ async def test_get_job_dependencies_with_direction_downstream(
     async_session: AsyncSession,
     mocked_user: MockedUser,
 ):
-    (_, job_root, target_root), (_, job_middle, target_middle), (_, job_leaf, target_leaf) = job_dependency_chain
+    (_, dag2, _), (_, task2, task3), (_, spark2, _) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [job_root, job_middle, job_leaf, target_root, target_middle, target_leaf],
+        [dag2, task2, spark2, task3],
         async_session,
     )
 
-    response = await test_client.get(
-        "v1/jobs/dependencies",
-        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
-        params={"start_node_id": job_middle.id, "direction": "DOWNSTREAM"},
-    )
-    assert response.status_code == HTTPStatus.OK, response.json()
-    assert response.json() == {
-        "relations": {
-            "parents": jobs_ancestors_to_json([job_root, job_middle, job_leaf]),
-            "dependencies": [
-                {"from": {"kind": "JOB", "id": str(from_id)}, "to": {"kind": "JOB", "id": str(to_id)}, "type": type_}
-                for from_id, to_id, type_ in sorted(
-                    [
-                        (job_root.id, target_root.id, "DIRECT_DEPENDENCY"),
-                        (job_middle.id, target_middle.id, "DIRECT_DEPENDENCY"),
-                        (job_leaf.id, target_leaf.id, "DIRECT_DEPENDENCY"),
-                    ]
-                )
-            ],
-        },
-        "nodes": {"jobs": jobs_to_json(expected_nodes)},
-    }
+    for start_node in [dag2, task2, spark2]:
+        response = await test_client.get(
+            "v1/jobs/dependencies",
+            headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+            params={"start_node_id": start_node.id, "direction": "DOWNSTREAM"},
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == {
+            "relations": {
+                "parents": jobs_ancestors_to_json([task2, spark2]),
+                "dependencies": [
+                    {
+                        "from": {"kind": "JOB", "id": str(task2.id)},
+                        "to": {"kind": "JOB", "id": str(task3.id)},
+                        "type": "DIRECT_DEPENDENCY",
+                    },
+                ],
+            },
+            "nodes": {"jobs": jobs_to_json(expected_nodes)},
+        }
