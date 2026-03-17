@@ -107,4 +107,5 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
 def get_application():
     settings = ConsumerApplicationSettings()
     setup_logging(settings.logging)
+    logger.info("Starting Data.Rentgen consumer with settings:\n%r", settings)
     return application_factory(settings=settings)

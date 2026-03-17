@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
@@ -17,6 +18,8 @@ from data_rentgen.server.settings import ServerApplicationSettings
 
 if TYPE_CHECKING:
     from data_rentgen.server.providers.auth import AuthProvider
+
+logger = logging.getLogger(__name__)
 
 
 def application_factory(settings: ServerApplicationSettings) -> FastAPI:
@@ -56,4 +59,5 @@ def application_factory(settings: ServerApplicationSettings) -> FastAPI:
 def get_application():
     settings = ServerApplicationSettings()
     setup_logging(settings.logging)
+    logger.info("Starting Data.Rentgen server with settings:\n%r", settings)
     return application_factory(settings=settings)
