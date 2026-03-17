@@ -330,92 +330,90 @@ async def jobs_with_same_parent_job(
 @pytest_asyncio.fixture
 async def job_dependency_chain(
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
-) -> AsyncGenerator[tuple[tuple[Job, Job, Job]], None]:
+) -> AsyncGenerator[tuple[tuple[Job, Job, Job], ...], None]:
     """
     Fixture that creates:
-    - Parent-child hierarchy: root -> middle -> leaf via parent_job_id.
-    - For each chain job - two items in job_dependency table:
-      source_root -> root and root -> target_root
-      source_middle -> middle and middle -> target_middle
-      source_leaf -> leaf and leaf -> target_leaf
+    - Parent-child hierarchy: dag -> task -> spark via parent_job_id
+    - Job dependency edges: task1 -> task2 and task2 -> task3
 
-    Returns (job_root, job_middle, job_leaf). Root/middle/leaf are not directly connected
-    by dependency edges, only by parent-child links.
+    There are no relations like Dag -> Dag and Spark -> Spark.
     """
     async with async_session_maker() as async_session:
         location = await create_location(async_session)
-        job_type = await create_job_type(async_session)
-        job_root = await create_job(
+
+        job_type_dag = await create_job_type(async_session, {"type": "AIRFLOW_DAG"})
+        dag1 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "job-root"},
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "dag1"},
         )
-        job_middle = await create_job(
+        dag2 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "job-middle", "parent_job_id": job_root.id},
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "dag2"},
         )
-        job_leaf = await create_job(
+        dag3 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "job-leaf", "parent_job_id": job_middle.id},
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "dag3"},
         )
-        source_root = await create_job(
+
+        job_type_task = await create_job_type(async_session, {"type": "AIRFLOW_TASK"})
+        task1 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "source-root"},
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "task1", "parent_job_id": dag1.id},
         )
-        target_root = await create_job(
+        task2 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "target-root"},
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "task2", "parent_job_id": dag2.id},
         )
-        source_middle = await create_job(
+        task3 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "source-middle"},
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "task3", "parent_job_id": dag3.id},
         )
-        target_middle = await create_job(
+
+        job_type_spark = await create_job_type(async_session, {"type": "SPARK_APPLICATION"})
+        spark1 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "target-middle"},
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark1", "parent_job_id": task1.id},
         )
-        source_leaf = await create_job(
+        spark2 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "source-leaf"},
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark2", "parent_job_id": task2.id},
         )
-        target_leaf = await create_job(
+        spark3 = await create_job(
             async_session,
             location_id=location.id,
-            job_type_id=job_type.id,
-            job_kwargs={"name": "target-leaf"},
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark3", "parent_job_id": task3.id},
         )
+
         async_session.add_all(
             [
-                JobDependency(from_job_id=source_root.id, to_job_id=job_root.id, type="DIRECT_DEPENDENCY"),
-                JobDependency(from_job_id=job_root.id, to_job_id=target_root.id, type="DIRECT_DEPENDENCY"),
-                JobDependency(from_job_id=source_middle.id, to_job_id=job_middle.id, type="DIRECT_DEPENDENCY"),
-                JobDependency(from_job_id=job_middle.id, to_job_id=target_middle.id, type="DIRECT_DEPENDENCY"),
-                JobDependency(from_job_id=source_leaf.id, to_job_id=job_leaf.id, type="DIRECT_DEPENDENCY"),
-                JobDependency(from_job_id=job_leaf.id, to_job_id=target_leaf.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=task1.id, to_job_id=task2.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=task2.id, to_job_id=task3.id, type="DIRECT_DEPENDENCY"),
             ],
         )
         await async_session.commit()
         async_session.expunge_all()
 
     yield (
-        (source_root, job_root, target_root),
-        (source_middle, job_middle, target_middle),
-        (source_leaf, job_leaf, target_leaf),
+        (dag1, dag2, dag3),
+        (task1, task2, task3),
+        (spark1, spark2, spark3),
     )
 
     async with async_session_maker() as async_session:
