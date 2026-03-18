@@ -215,6 +215,11 @@ def generate_spark_run_yarn(
                 name="mart_layer_dag.mart_layer_task_dbt",
                 location=parent_run.job.location,
                 type=JobTypeDTO(type="AIRFLOW_TASK"),
+                parent_job=JobDTO(
+                    name="mart_layer_dag",
+                    location=parent_run.job.location,
+                    type=JobTypeDTO(type="AIRFLOW_DAG"),
+                ),
             ),
             to_job=parent_run.job,
             type="DIRECT_DEPENDENCY",
