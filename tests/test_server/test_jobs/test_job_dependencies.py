@@ -202,3 +202,63 @@ async def test_get_job_dependencies_with_direction_downstream(
             },
             "nodes": {"jobs": jobs_to_json(expected_nodes)},
         }
+
+
+@pytest.mark.parametrize(
+    ["depth", "direction", "expected_dep_indices", "expected_job_indices"],
+    [
+        (1, "DOWNSTREAM", [(2, 3)], [2, 3]),
+        (2, "DOWNSTREAM", [(2, 3), (3, 4)], [2, 3, 4]),
+        (1, "UPSTREAM", [(1, 2)], [1, 2]),
+        (2, "UPSTREAM", [(0, 1), (1, 2)], [0, 1, 2]),
+        (1, "BOTH", [(1, 2), (2, 3)], [1, 2, 3]),
+        (2, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
+    ],
+    ids=[
+        "depth_1-downstream",
+        "depth_2-downstream",
+        "depth_1-upstream",
+        "depth_2-upstream",
+        "depth_1-both",
+        "depth_2-both",
+    ],
+)
+async def test_get_job_dependencies_with_depth(
+    test_client: AsyncClient,
+    job_dependency_depth_chain: tuple[Job, ...],
+    async_session: AsyncSession,
+    mocked_user: MockedUser,
+    depth: int,
+    direction: str,
+    expected_dep_indices: list[tuple[int, int]],
+    expected_job_indices: list[int],
+):
+    """
+    Fixture chain: job_0 → job_1 → job_2 → job_3 → job_4
+    Start node is always job_2 (middle of the chain).
+    """
+    jobs = job_dependency_depth_chain
+    start_job = jobs[2]
+
+    expected_jobs = await enrich_jobs([jobs[i] for i in expected_job_indices], async_session)
+
+    response = await test_client.get(
+        "v1/jobs/dependencies",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={"start_node_id": start_job.id, "depth": depth, "direction": direction},
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": [],
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": str(jobs[i].id)},
+                    "to": {"kind": "JOB", "id": str(jobs[j].id)},
+                    "type": "DIRECT_DEPENDENCY",
+                }
+                for i, j in sorted(expected_dep_indices)
+            ],
+        },
+        "nodes": {"jobs": jobs_to_json(expected_jobs)},
+    }

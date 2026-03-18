@@ -328,6 +328,51 @@ async def jobs_with_same_parent_job(
 
 
 @pytest_asyncio.fixture
+async def job_dependency_depth_chain(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+) -> AsyncGenerator[list[Job], None]:
+    """
+    Linear dependency chain of 5 jobs without:
+
+        job_1 → job_2 → job_3 → job_4 → job_5
+
+    Each arrow is a JobDependency edge with type "DIRECT_DEPENDENCY".
+    Used for testing depth-limited dependency queries.
+    """
+    async with async_session_maker() as async_session:
+        location = await create_location(async_session)
+        job_type = await create_job_type(async_session)
+
+        jobs = []
+        for i in range(1, 6):
+            job = await create_job(
+                async_session,
+                location_id=location.id,
+                job_type_id=job_type.id,
+                job_kwargs={"name": f"depth-chain-job-{i}"},
+            )
+            jobs.append(job)
+
+        async_session.add_all(
+            [
+                JobDependency(
+                    from_job_id=jobs[i].id,
+                    to_job_id=jobs[i + 1].id,
+                    type="DIRECT_DEPENDENCY",
+                )
+                for i in range(len(jobs) - 1)
+            ],
+        )
+        await async_session.commit()
+        async_session.expunge_all()
+
+    yield jobs
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
 async def job_dependency_chain(
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
 ) -> AsyncGenerator[tuple[tuple[Job, Job, Job], ...], None]:
