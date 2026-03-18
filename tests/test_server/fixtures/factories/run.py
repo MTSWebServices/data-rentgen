@@ -159,6 +159,7 @@ async def runs_with_same_parent(
     request: pytest.FixtureRequest,
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
     user: User,
+    job: Job,
 ) -> AsyncGenerator[list[Run], None]:
     size, params = request.param
     started_at = datetime.now(tz=UTC)
@@ -169,6 +170,7 @@ async def runs_with_same_parent(
             await create_run(
                 async_session,
                 run_kwargs={
+                    "job_id": job.id,
                     "parent_run_id": parent_run_id,
                     # To be sure runs has different timestamps
                     "created_at": started_at + timedelta(seconds=s),

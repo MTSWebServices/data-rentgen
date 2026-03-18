@@ -6,22 +6,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from data_rentgen.server.schemas.v1.location import LocationResponseV1
+from data_rentgen.server.schemas.v1.job_response import JobResponseV1
 from data_rentgen.server.schemas.v1.pagination import PaginateQueryV1
 from data_rentgen.server.schemas.v1.run import RunResponseV1
 from data_rentgen.server.schemas.v1.tag import TagResponseV1
-
-
-class JobResponseV1(BaseModel):
-    """Job response"""
-
-    id: str = Field(description="Job id", coerce_numbers_to_str=True)
-    parent_job_id: str | None = Field(description="Parent job id", coerce_numbers_to_str=True, default=None)
-    location: LocationResponseV1 = Field(description="Corresponding Location")
-    name: str = Field(description="Job name")
-    type: str = Field(description="Job type")
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class JobDetailedResponseV1(BaseModel):
