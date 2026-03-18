@@ -166,3 +166,66 @@ It is possible to provide custom tags via model config:
         +tags:
             - environment:production
             - layer:bronze
+
+Binding Airflow Task with Spark application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If OpenLineage event contains `Parent Run facet <https://openlineage.io/docs/spec/facets/run-facets/parent_run/>`_,
+DataRentgen can use this information to bind dbt run to the run it was triggered by, e.g. Airflow task:
+
+.. image:: ../airflow/job_hierarchy.png
+
+To fill up this facet, it is required to:
+
+* Setup OpenLineage integration for dbt
+* Setup :ref:`OpenLineage integration for Airflow <overview-setup-airflow>`
+* Pass parent Run info from Airflow to dbt by using `Airflow macros <https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/macros.html#lineage-job-run-macros>`_:
+
+  .. tabs::
+
+    .. code-tab:: py BashOperator
+
+        from airflow.providers.standard.operators.bash import BashOperator
+
+        task = BashOperator(
+            task_id="dbt_run_task",
+            cwd="/path/to/project",
+            bash_command="dbt-ol run",
+            append_env=True,
+            env={
+                # Pass parent Run info from Airflow to Spark
+                "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+                # For apache-airflow-providers-openlineage 2.4.0 or above
+                "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
+            }
+        )
+
+    .. code-tab:: py SSHOperator
+
+        from airflow.providers.ssh.operators.ssh import SSHOperator
+
+        task = SSHOperator(
+            task_id="dbt_run_task",
+            ssh_conn_id="some_host",
+            command="cd /path/to/project && dbt-ol run",
+            environment={
+                "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+                # For apache-airflow-providers-openlineage 2.4.0 or above
+                "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
+            }
+        )
+
+    .. code-tab:: py KubernetesPodOperator
+
+        from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+
+        task = SSHOperator(
+            task_id="dbt_run_task",
+            cmds=["bash", "-cx"],
+            arguments=["cd /path/to/project && dbt-ol run"],
+            env_vars={
+                "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+                # For apache-airflow-providers-openlineage 2.4.0 or above
+                "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
+            }
+        )

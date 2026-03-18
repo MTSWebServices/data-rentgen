@@ -106,6 +106,12 @@ Run-level lineage graph
 .. image:: docs/entities/run_lineage.png
     :alt: Job-level lineage graph
 
+Hierarchy graph
+~~~~~~~~~~~~~~~
+
+.. image:: docs/integrations/airflow/job_hierarchy.png
+    :alt: Job hierarchy
+
 Datasets
 ~~~~~~~~
 
@@ -143,13 +149,13 @@ Hive query
     :alt: Hive query details
 
 Airflow DagRun
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. image:: docs/integrations/airflow/dag_run_details.png
     :alt: Airflow DagRun details
 
 Airflow TaskInstance
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. image:: docs/integrations/airflow/task_run_details.png
     :alt: Airflow TaskInstance details

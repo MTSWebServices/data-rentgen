@@ -321,6 +321,20 @@ It contains following fields:
 
 .. image:: parent_relation.png
 
+Dependency relation
+~~~~~~~~~~~~~~~~~~~
+
+Relation between job/job or run/run which shows the order of executing ETL jobs.
+For example, one Airflow Task can depend on another Airflow Task.
+
+It contains following fields:
+
+- ``from: Job | Run`` - entity which should be waited before current job/run will be started.
+- ``to: Job | Run`` - entity which waits.
+- ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INDIRECT_DEPENDENCY``.
+
+.. image:: job_dependencies.png
+
 Input relation
 ~~~~~~~~~~~~~~
 
