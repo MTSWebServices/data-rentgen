@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased, selectinload
 
-from data_rentgen.db.models import Job, Run, RunStartReason, RunStatus, User
+from data_rentgen.db.models import Job, Location, Run, RunStartReason, RunStatus, User
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import PaginationDTO, RunDTO
@@ -33,6 +33,7 @@ get_list_by_id_query = (
         Run.created_at <= bindparam("until"),
         Run.id == any_(bindparam("run_ids")),
     )
+    .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
 
@@ -43,6 +44,7 @@ get_list_by_job_ids_query = (
         Run.created_at >= bindparam("since"),
         Run.job_id == any_(bindparam("job_ids")),
     )
+    .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
 
@@ -253,7 +255,10 @@ class RunRepository(Repository[Run]):
             # place the most recent runs on top
             order_by = [desc("search_rank"), desc("created_at"), desc("id")]
 
-        options = [selectinload(Run.started_by_user)]
+        options = [
+            selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses),
+            selectinload(Run.started_by_user),
+        ]
         return await self._paginate_by_query(
             query=query,
             order_by=order_by,

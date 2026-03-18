@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import Depends
 from sqlalchemy import Row
 
-from data_rentgen.db.models import Run, RunStatus
+from data_rentgen.db.models import Job, Run, RunStatus
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.services.uow import UnitOfWork
 
@@ -59,6 +59,7 @@ class RunServiceStatistics:
 class RunServicePageItem:
     id: UUID
     data: Run
+    job: Job
     statistics: RunServiceStatistics
 
 
@@ -120,6 +121,7 @@ class RunService:
                 RunServicePageItem(
                     id=run.id,
                     data=run,
+                    job=run.job,
                     statistics=RunServiceStatistics(
                         inputs=RunServiceIOStatistics.from_row(input_stats.get(run.id)),
                         outputs=RunServiceIOStatistics.from_row(output_stats.get(run.id)),

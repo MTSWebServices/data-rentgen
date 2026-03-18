@@ -17,6 +17,7 @@ from pydantic import (
     model_validator,
 )
 
+from data_rentgen.server.schemas.v1.job_response import JobResponseV1
 from data_rentgen.server.schemas.v1.pagination import PaginateQueryV1
 from data_rentgen.server.schemas.v1.user import UserResponseV1
 
@@ -125,6 +126,7 @@ class RunDetailedResponseV1(BaseModel):
 
     id: UUID = Field(description="Run id")
     data: RunResponseV1 = Field(description="Run data")
+    job: JobResponseV1 = Field(description="Job the run is belongs to")
     statistics: RunStatisticsReponseV1 = Field(description="Run statistics")
 
     model_config = ConfigDict(from_attributes=True)

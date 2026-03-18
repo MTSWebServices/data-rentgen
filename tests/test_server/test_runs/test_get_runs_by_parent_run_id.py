@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import Run
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import run_to_json
+from tests.test_server.utils.convert_to_json import job_to_json, run_to_json
 from tests.test_server.utils.enrich import enrich_runs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -120,6 +120,7 @@ async def test_get_runs_by_parent_run_id(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -181,6 +182,7 @@ async def test_get_runs_by_parent_run_id_with_until(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
