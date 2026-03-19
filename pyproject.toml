@@ -66,7 +66,7 @@ exclude = ["docs", "tests"]
 [project.optional-dependencies]
 server = [
   "fastapi~=0.135.1",
-  "uvicorn~=0.41.0",
+  "uvicorn>=0.41,<0.43",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
   "pyjwt~=2.12.1",
@@ -80,7 +80,7 @@ consumer = [
 ]
 http2kafka = [
   "fastapi~=0.135.1",
-  "uvicorn~=0.41.0",
+  "uvicorn>=0.41,<0.43",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
   "faststream[kafka,cli]~=0.6.5",
@@ -93,7 +93,7 @@ gssapi = [
   "gssapi~=1.11.1",
 ]
 seed = [
-  "faker~=40.8.1"
+  "faker>=40.8.1,<40.12.0"
 ]
 
 [dependency-groups]
@@ -131,7 +131,7 @@ docs = [
   "sphinx-copybutton~=0.5.2",
   "sphinxcontrib-towncrier~=0.5.0a0",
   "towncrier~=25.8.0",
-  "sphinx-issues~=5.0.1",
+  "sphinx-issues>=5.0.1,<6.1.0",
   "sphinx-design~=0.7.0",
   "sphinx-favicon~=1.1.0",
   "sphinx-last-updated-by-git~=0.3.8",
