@@ -21,6 +21,13 @@ from data_rentgen.openlineage.run_facets.flink_job import (
 )
 from data_rentgen.openlineage.run_facets.hive_query import OpenLineageHiveQueryInfoRunFacet
 from data_rentgen.openlineage.run_facets.hive_session import OpenLineageHiveSessionInfoRunFacet
+from data_rentgen.openlineage.run_facets.job_dependency import (
+    OpenLineageJobDependenciesRunFacet,
+    OpenLineageJobDependency,
+    OpenLineageJobIdentifier,
+    OpenLineageRunIdentifier,
+)
+from data_rentgen.openlineage.run_facets.nominal_time import OpenLineageNominalTimeRunFacet
 from data_rentgen.openlineage.run_facets.parent_run import (
     OpenLineageParentJob,
     OpenLineageParentRun,
@@ -29,6 +36,7 @@ from data_rentgen.openlineage.run_facets.parent_run import (
 from data_rentgen.openlineage.run_facets.processing_engine import (
     OpenLineageProcessingEngineRunFacet,
 )
+from data_rentgen.openlineage.run_facets.run_tags import OpenLineageRunTagsFacet, OpenLineageRunTagsFacetField
 from data_rentgen.openlineage.run_facets.spark_application import (
     OpenLineageSparkApplicationDetailsRunFacet,
     OpenLineageSparkDeployMode,
@@ -50,12 +58,19 @@ __all__ = [
     "OpenLineageAirflowTaskRunFacet",
     "OpenLineageDbtRunRunFacet",
     "OpenLineageFlinkJobDetailsRunFacet",
+    "OpenLineageJobDependenciesRunFacet",
+    "OpenLineageJobDependency",
+    "OpenLineageJobIdentifier",
+    "OpenLineageNominalTimeRunFacet",
     "OpenLineageParentJob",
     "OpenLineageParentRun",
     "OpenLineageParentRunFacet",
     "OpenLineageProcessingEngineRunFacet",
     "OpenLineageRunFacet",
     "OpenLineageRunFacets",
+    "OpenLineageRunIdentifier",
+    "OpenLineageRunTagsFacet",
+    "OpenLineageRunTagsFacetField",
     "OpenLineageSparkApplicationDetailsRunFacet",
     "OpenLineageSparkDeployMode",
     "OpenLineageSparkJobDetailsRunFacet",
@@ -69,6 +84,7 @@ class OpenLineageRunFacets(OpenLineageBase):
 
     parent: OpenLineageParentRunFacet | None = None
     processing_engine: OpenLineageProcessingEngineRunFacet | None = None
+    tags: OpenLineageRunTagsFacet | None = None
     dataRentgen_run: DataRentgenRunInfoFacet | None = None
     dataRentgen_operation: DataRentgenOperationInfoFacet | None = None
     spark_applicationDetails: OpenLineageSparkApplicationDetailsRunFacet | None = None
@@ -79,3 +95,5 @@ class OpenLineageRunFacets(OpenLineageBase):
     flink_job: OpenLineageFlinkJobDetailsRunFacet | None = None
     hive_query: OpenLineageHiveQueryInfoRunFacet | None = None
     hive_session: OpenLineageHiveSessionInfoRunFacet | None = None
+    nominalTime: OpenLineageNominalTimeRunFacet | None = None
+    jobDependencies: OpenLineageJobDependenciesRunFacet | None = None

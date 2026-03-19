@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from data_rentgen.consumer.extractors.generic import GenericExtractor
+from data_rentgen.consumer.extractors.impl.utils import parse_kv_tag
 from data_rentgen.dto import DatasetDTO, OperationDTO, OutputTypeDTO, RunDTO
 from data_rentgen.openlineage.dataset import OpenLineageDataset, OpenLineageOutputDataset
 from data_rentgen.openlineage.dataset_facets import (
@@ -10,6 +11,7 @@ from data_rentgen.openlineage.dataset_facets import (
     OpenLineageSymlinkIdentifier,
 )
 from data_rentgen.openlineage.run_event import OpenLineageRunEvent
+from data_rentgen.openlineage.run_facets import OpenLineageRunTagsFacet, OpenLineageRunTagsFacetField
 
 
 class DbtExtractor(GenericExtractor):
@@ -56,3 +58,24 @@ class DbtExtractor(GenericExtractor):
         # by default, model is not materialized, and is either VIEW or INSERT INTO
         result = super()._extract_output_type(operation, dataset)
         return result or OutputTypeDTO.APPEND
+
+    def _enrich_run_tags(self, run: RunDTO, event: OpenLineageRunEvent) -> RunDTO:
+        if not event.run.facets.tags:
+            return run
+
+        run_tags: list[OpenLineageRunTagsFacetField] = []
+        for raw_tag in event.run.facets.tags.tags:
+            if raw_tag.value == "true" and ":" in raw_tag.key:
+                # not implemented in OpenLineage yet
+                # https://github.com/OpenLineage/OpenLineage/issues/4281
+
+                key, value, source = parse_kv_tag(
+                    raw_tag.key,
+                    default_source=raw_tag.source or "DBT",
+                )
+                run_tags.append(OpenLineageRunTagsFacetField(key=key, value=value, source=source))
+            else:
+                run_tags.append(raw_tag)
+
+        object.__setattr__(event.run.facets, "tags", OpenLineageRunTagsFacet(tags=run_tags))
+        return super()._enrich_run_tags(run, event)

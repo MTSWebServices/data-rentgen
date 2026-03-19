@@ -39,6 +39,8 @@ class LineageServiceResult:
     outputs: dict[tuple[int, int, UUID | None, UUID | None, int | None], OutputRow] = field(default_factory=dict)
     column_lineage: dict[tuple[int, int], list[ColumnLineageRow]] = field(default_factory=dict)
     io_dataset_relations: dict[tuple[int, int], IODatasetRelationRow] = field(default_factory=dict)
+    run_ancestor_relations: set[tuple[UUID, UUID]] = field(default_factory=set)
+    job_ancestor_relations: set[tuple[int, int]] = field(default_factory=set)
 
     def merge(self, other: "LineageServiceResult") -> "LineageServiceResult":
         self.jobs.update(other.jobs)
@@ -50,6 +52,8 @@ class LineageServiceResult:
         self.outputs.update(other.outputs)
         self.column_lineage.update(other.column_lineage)
         self.io_dataset_relations.update(other.io_dataset_relations)
+        self.run_ancestor_relations.update(other.run_ancestor_relations)
+        self.job_ancestor_relations.update(other.job_ancestor_relations)
         return self
 
 
@@ -81,7 +85,7 @@ class LineageService:
     def __init__(self, uow: Annotated[UnitOfWork, Depends()]):
         self._uow = uow
 
-    async def get_lineage_by_jobs(  # noqa: C901, PLR0912
+    async def get_lineage_by_jobs(  # noqa: C901, PLR0912, PLR0915
         self,
         start_node_ids: Collection[int],
         direction: LineageDirectionV1,
@@ -113,6 +117,13 @@ class LineageService:
 
         # Always include all requested jobs.
         jobs_by_id = {job.id: job for job in jobs}
+        if level == 0:
+            relations = await self._uow.job.list_descendant_relations(start_node_ids)
+            child_jobs_ids = {c_id for _, c_id in relations}
+            child_jobs = await self._uow.job.list_by_ids(child_jobs_ids)
+            jobs.extend(child_jobs)
+            child_jobs_by_id = {job.id: job for job in child_jobs}
+            jobs_by_id |= child_jobs_by_id
 
         inputs: list[InputRow] = []
         outputs: list[OutputRow] = []
@@ -188,6 +199,8 @@ class LineageService:
                 for output in outputs
             },
         )
+        if level == 0:
+            result.job_ancestor_relations.update({tuple(r) for r in relations})
 
         upstream_dataset_ids = {input_.dataset_id for input_ in inputs} - ids_to_skip.datasets
         downstream_dataset_ids = {output.dataset_id for output in outputs} - ids_to_skip.datasets
@@ -233,15 +246,17 @@ class LineageService:
                 for dataset_symlink in dataset_symlinks
             }
 
-        if level == 0 and include_column_lineage:
-            result.column_lineage.update(
-                await self._get_column_lineage(
-                    current_result=result,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                ),
-            )
+        if level == 0:
+            result.merge(await self._populate_parents(result, granularity=granularity))
+            if include_column_lineage:
+                result.column_lineage.update(
+                    await self._get_column_lineage(
+                        current_result=result,
+                        since=since,
+                        until=until,
+                        granularity="JOB",
+                    ),
+                )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
@@ -291,6 +306,14 @@ class LineageService:
 
         # Always include all requested runs.
         runs_by_id = {run.id: run for run in runs}
+        # Include child runs
+        if level == 0:
+            run_relations = await self._uow.run.list_descendant_relations(start_node_ids)
+            child_runs_ids = {c_id for _, c_id in run_relations}
+            child_runs = await self._uow.run.list_by_ids(child_runs_ids)
+            runs.extend(child_runs)
+            child_runs_by_id = {run.id: run for run in child_runs}
+            runs_by_id |= child_runs_by_id
 
         inputs: list[InputRow] = []
         outputs: list[OutputRow] = []
@@ -389,6 +412,11 @@ class LineageService:
                 for output in outputs
             },
         )
+        if level == 0:
+            result.run_ancestor_relations.update({tuple(r) for r in run_relations})
+
+            job_relations = await self._uow.job.list_ancestor_relations(job_ids)
+            result.job_ancestor_relations.update({tuple(r) for r in job_relations})
 
         upstream_dataset_ids = {input_.dataset_id for input_ in inputs} - ids_to_skip.datasets
         downstream_dataset_ids = {output.dataset_id for output in outputs} - ids_to_skip.datasets
@@ -433,10 +461,12 @@ class LineageService:
                 for dataset_symlink in dataset_symlinks
             }
 
-        if level == 0 and include_column_lineage:
-            result.column_lineage.update(
-                await self._get_column_lineage(current_result=result, since=since, until=until, granularity="RUN"),
-            )
+        if level == 0:
+            result.merge(await self._populate_parents(result, granularity=granularity))
+            if include_column_lineage:
+                result.column_lineage.update(
+                    await self._get_column_lineage(current_result=result, since=since, until=until, granularity="RUN"),
+                )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
@@ -454,7 +484,7 @@ class LineageService:
             )
         return result
 
-    async def get_lineage_by_operations(  # noqa: C901, PLR0912
+    async def get_lineage_by_operations(  # noqa: C901, PLR0912, PLR0915
         self,
         start_node_ids: Collection[UUID],
         direction: LineageDirectionV1,
@@ -592,15 +622,17 @@ class LineageService:
                 for dataset_symlink in dataset_symlinks
             }
 
-        if level == 0 and include_column_lineage:
-            result.column_lineage.update(
-                await self._get_column_lineage(
-                    current_result=result,
-                    since=since,
-                    until=until,
-                    granularity="OPERATION",
-                ),
-            )
+        if level == 0:
+            result.merge(await self._populate_parents(result, granularity="OPERATION"))
+            if include_column_lineage:
+                result.column_lineage.update(
+                    await self._get_column_lineage(
+                        current_result=result,
+                        since=since,
+                        until=until,
+                        granularity="OPERATION",
+                    ),
+                )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
@@ -618,7 +650,7 @@ class LineageService:
             )
         return result
 
-    async def get_lineage_by_datasets(
+    async def get_lineage_by_datasets(  # noqa: C901
         self,
         start_node_ids: Collection[int],
         direction: LineageDirectionV1,
@@ -711,15 +743,17 @@ class LineageService:
                 msg = f"Unknown granularity: {granularity}"
                 raise ValueError(msg)
 
-        if level == 0 and include_column_lineage:
-            result.column_lineage.update(
-                await self._get_column_lineage(
-                    current_result=result,
-                    since=since,
-                    until=until,
-                    granularity=granularity,
-                ),
-            )
+        if level == 0:
+            result.merge(await self._populate_parents(result, granularity=granularity))
+            if include_column_lineage:
+                result.column_lineage.update(
+                    await self._get_column_lineage(
+                        current_result=result,
+                        since=since,
+                        until=until,
+                        granularity=granularity,
+                    ),
+                )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
@@ -1294,3 +1328,42 @@ class LineageService:
             )
 
         return result
+
+    async def _populate_parents(
+        self,
+        result: LineageServiceResult,
+        granularity: Literal["OPERATION", "RUN", "JOB", "DATASET"],
+    ) -> LineageServiceResult:
+        """Returns a LineageServiceResult with only run_parent_relations or job_parent_relations populated."""
+        match granularity:
+            case "RUN" | "OPERATION":
+                run_relations = await self._uow.run.list_ancestor_relations(result.runs.keys())
+                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
+                parents_run_ids = {p_id for p_id, _ in run_relations}
+                runs = await self._uow.run.list_by_ids(parents_run_ids)
+                runs_by_id = {run.id: run for run in runs}
+                job_ids = {run.job_id for run in runs}
+                jobs = await self._uow.job.list_by_ids(job_ids)
+                jobs_by_id = {job.id: job for job in jobs}
+                return LineageServiceResult(
+                    run_ancestor_relations={tuple(r) for r in run_relations},
+                    job_ancestor_relations={tuple(r) for r in job_relations},
+                    runs=runs_by_id,
+                    jobs=jobs_by_id,
+                )
+
+            case "JOB":
+                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
+                parents_job_ids = {p_id for p_id, _ in job_relations}
+                jobs = await self._uow.job.list_by_ids(parents_job_ids)
+                jobs_by_id = {job.id: job for job in jobs}
+                return LineageServiceResult(
+                    job_ancestor_relations={tuple(r) for r in job_relations},
+                    jobs=jobs_by_id,
+                )
+
+            case "DATASET":
+                return LineageServiceResult()
+            case _:
+                msg = f"Unknown granularity for parents relations: {granularity}"
+                raise ValueError(msg)

@@ -116,6 +116,7 @@ async def tag_values(
                     tag_id=tag.id,
                     tag_value_kwargs=value_params,
                 )
+                item.tag = tag
                 items.append(item)
             async_session.expunge_all()
 
@@ -148,11 +149,12 @@ async def tags_search(
         for tag_name, values in tag_data.items():
             tag = await create_tag(async_session, tag_kwargs={"name": tag_name})
             for value in values:
-                await create_tag_value(
+                item = await create_tag_value(
                     async_session,
                     tag_id=tag.id,
                     tag_value_kwargs={"value": value},
                 )
+                item.tag = tag
             tags.append(tag)
         async_session.expunge_all()
 

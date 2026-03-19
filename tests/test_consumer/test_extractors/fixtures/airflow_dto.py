@@ -18,6 +18,8 @@ from data_rentgen.dto import (
     RunStartReasonDTO,
     RunStatusDTO,
     SchemaDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 
@@ -39,6 +41,16 @@ def extracted_airflow_dag_job(
         name="mydag",
         location=extracted_airflow_location,
         type=JobTypeDTO(type="AIRFLOW_DAG"),
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="airflow.version"),
+                value="2.9.2",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.10.0",
+            ),
+        },
     )
 
 
@@ -50,6 +62,16 @@ def extracted_airflow_task_job(
         name="mydag.mytask",
         location=extracted_airflow_location,
         type=JobTypeDTO(type="AIRFLOW_TASK"),
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="airflow.version"),
+                value="2.9.2",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.10.0",
+            ),
+        },
     )
 
 

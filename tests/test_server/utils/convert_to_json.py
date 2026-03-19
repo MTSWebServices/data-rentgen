@@ -10,6 +10,7 @@ from data_rentgen.db.models import (
 from data_rentgen.server.schemas.v1.lineage import OutputTypeV1
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
     from datetime import datetime
 
     from data_rentgen.db.models import (
@@ -56,6 +57,30 @@ def operation_parent_to_json(operation: Operation):
 
 def operation_parents_to_json(operations: list[Operation]):
     return [operation_parent_to_json(run) for run in sorted(operations, key=lambda x: x.id)]
+
+
+def run_ancestor_to_json(run: Run):
+    return {
+        "from": {"kind": "RUN", "id": str(run.parent_run_id)},
+        "to": {"kind": "RUN", "id": str(run.id)},
+    }
+
+
+def runs_ancestors_to_json(runs: list[Run]):
+    results = [run_ancestor_to_json(run) for run in runs if run.parent_run_id]
+    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
+
+
+def job_ancestor_to_json(job: Job):
+    return {
+        "from": {"kind": "JOB", "id": str(job.parent_job_id)},
+        "to": {"kind": "JOB", "id": str(job.id)},
+    }
+
+
+def jobs_ancestors_to_json(jobs: list[Job]):
+    results = [job_ancestor_to_json(job) for job in jobs if job.parent_job_id]
+    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
 
 
 def symlink_to_json(symlink: DatasetSymlink):
@@ -186,7 +211,7 @@ def tag_to_json(tag: Tag, values: list[TagValue] | None = None) -> dict:
     }
 
 
-def tag_values_to_json(tag_values: set[TagValue]) -> list[dict]:
+def tag_values_to_json(tag_values: Collection[TagValue]) -> list[dict]:
     sorted_tag_values = sorted(tag_values, key=lambda tv: tv.tag.name)
     tags = []
     for tag, group in groupby(sorted_tag_values, key=lambda tv: tv.tag):
@@ -225,6 +250,7 @@ def datasets_to_json(
 def job_to_json(job: Job):
     return {
         "id": str(job.id),
+        "parent_job_id": str(job.parent_job_id) if job.parent_job_id else None,
         "name": job.name,
         "type": job.type,
         "location": location_to_json(job.location),
@@ -244,7 +270,7 @@ def run_to_json(run: Run):
         "id": str(run.id),
         "job_id": str(run.job_id),
         "created_at": format_datetime(run.created_at),
-        "parent_run_id": str(run.parent_run_id),
+        "parent_run_id": str(run.parent_run_id) if run.parent_run_id else None,
         "status": run.status.name,
         "external_id": run.external_id,
         "attempt": run.attempt,
@@ -255,6 +281,8 @@ def run_to_json(run: Run):
         "start_reason": run.start_reason.value if run.start_reason else None,
         "ended_at": format_datetime(run.ended_at) if run.ended_at else None,
         "end_reason": run.end_reason,
+        "expected_start_at": format_datetime(run.expected_start_at) if run.expected_start_at else None,
+        "expected_end_at": format_datetime(run.expected_end_at) if run.expected_end_at else None,
     }
 
 

@@ -5,12 +5,16 @@ from data_rentgen.dto import (
     DatasetSymlinkDTO,
     DatasetSymlinkTypeDTO,
     LocationDTO,
+    TagDTO,
+    TagValueDTO,
 )
 from data_rentgen.openlineage.dataset import (
     OpenLineageDataset,
 )
 from data_rentgen.openlineage.dataset_facets import (
     OpenLineageDatasetFacets,
+    OpenLineageDatasetTagsFacet,
+    OpenLineageDatasetTagsFacetField,
     OpenLineageSymlinkIdentifier,
     OpenLineageSymlinksDatasetFacet,
     OpenLineageSymlinkType,
@@ -291,5 +295,37 @@ def test_extractors_extract_dataset_unknown():
             addresses={"unknown://some-namespace"},
         ),
         name="some.name",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_with_tags():
+    dataset = OpenLineageDataset(
+        namespace="postgres://192.168.1.1:5432",
+        name="mydb.myschema.mytable",
+        facets=OpenLineageDatasetFacets(
+            tags=OpenLineageDatasetTagsFacet(
+                tags=[
+                    OpenLineageDatasetTagsFacetField(key="somekey", value="somevalue"),
+                    OpenLineageDatasetTagsFacetField(key="somekey", value="othervalue", source="OTHER"),
+                    OpenLineageDatasetTagsFacetField(key="anotherkey", value="anothervalue", source="ABC", field="abc"),
+                ],
+            ),
+        ),
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="postgres",
+            name="192.168.1.1:5432",
+            addresses={"postgres://192.168.1.1:5432"},
+        ),
+        name="mydb.myschema.mytable",
+        tag_values={
+            TagValueDTO(tag=TagDTO(name="somekey"), value="somevalue"),
+            TagValueDTO(tag=TagDTO(name="somekey"), value="othervalue"),
+            TagValueDTO(tag=TagDTO(name="anotherkey"), value="anothervalue"),
+        },
     )
     assert symlinks_dto == []

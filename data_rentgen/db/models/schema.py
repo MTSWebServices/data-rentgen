@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
-
 from uuid import UUID
 
 from sqlalchemy import JSON, BigInteger

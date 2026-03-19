@@ -29,6 +29,8 @@ from data_rentgen.dto import (
     RunStatusDTO,
     SchemaDTO,
     SQLQueryDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 from data_rentgen.utils.uuid import generate_new_uuid
@@ -63,10 +65,22 @@ DATASETS = {
     "file_sandbox_raw_user_info": DatasetDTO(
         name="/app/sandbox/user_info.csv",
         location=LOCATIONS["file"],
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="storage.layer"),
+                value="bronze",
+            ),
+        },
     ),
     "hive_ref_user_info": DatasetDTO(
         name="ref.user_info",
         location=LOCATIONS["hive"],
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="storage.layer"),
+                value="silver",
+            ),
+        },
     ),
     "hdfs_ref_user_info": DatasetDTO(
         name="/user/hive/warehouse/ref.db/user_info",
@@ -106,6 +120,18 @@ def generate_hive_run(
         name="ref_user@10.176.145.86",
         location=LOCATIONS["hive"],
         type=JobTypeDTO(type="HIVE_SESSION"),
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="hive.version"),
+                value="3.1.2",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.43.0",
+            ),
+            # no custom tags support for now
+            # https://github.com/OpenLineage/OpenLineage/issues/4280
+        },
     )
 
     run_created_at = faker.date_time_between(start, end, tzinfo=UTC)

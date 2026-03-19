@@ -6,6 +6,7 @@ from data_rentgen.openlineage.job_facets.base import OpenLineageJobFacet
 from data_rentgen.openlineage.job_facets.documentation import (
     OpenLineageDocumentationJobFacet,
 )
+from data_rentgen.openlineage.job_facets.job_tags import OpenLineageJobTagsFacet, OpenLineageJobTagsFacetField
 from data_rentgen.openlineage.job_facets.job_type import (
     OpenLineageJobProcessingType,
     OpenLineageJobTypeJobFacet,
@@ -17,7 +18,10 @@ __all__ = [
     "OpenLineageJobFacet",
     "OpenLineageJobFacets",
     "OpenLineageJobProcessingType",
+    "OpenLineageJobTagsFacet",
+    "OpenLineageJobTagsFacetField",
     "OpenLineageJobTypeJobFacet",
+    "OpenLineageSqlJobFacet",
 ]
 
 
@@ -29,3 +33,4 @@ class OpenLineageJobFacets(OpenLineageBase):
     documentation: OpenLineageDocumentationJobFacet | None = None
     jobType: OpenLineageJobTypeJobFacet | None = None
     sql: OpenLineageSqlJobFacet | None = None
+    tags: OpenLineageJobTagsFacet | None = None

@@ -10,6 +10,7 @@ from data_rentgen.dto.dataset_column_relation import (
 from data_rentgen.dto.dataset_symlink import DatasetSymlinkDTO, DatasetSymlinkTypeDTO
 from data_rentgen.dto.input import InputDTO
 from data_rentgen.dto.job import JobDTO
+from data_rentgen.dto.job_dependency import JobDependencyDTO
 from data_rentgen.dto.job_type import JobTypeDTO
 from data_rentgen.dto.location import LocationDTO
 from data_rentgen.dto.operation import (
@@ -22,6 +23,7 @@ from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.dto.run import RunDTO, RunStartReasonDTO, RunStatusDTO
 from data_rentgen.dto.schema import SchemaDTO
 from data_rentgen.dto.sql_query import SQLQueryDTO
+from data_rentgen.dto.tag import TagDTO, TagValueDTO
 from data_rentgen.dto.user import UserDTO
 
 __all__ = [
@@ -33,6 +35,7 @@ __all__ = [
     "DatasetSymlinkTypeDTO",
     "InputDTO",
     "JobDTO",
+    "JobDependencyDTO",
     "JobTypeDTO",
     "LocationDTO",
     "OperationDTO",
@@ -46,5 +49,7 @@ __all__ = [
     "RunStatusDTO",
     "SQLQueryDTO",
     "SchemaDTO",
+    "TagDTO",
+    "TagValueDTO",
     "UserDTO",
 ]

@@ -33,4 +33,4 @@ class OpenLineageProcessingEngineRunFacet(OpenLineageRunFacet):
 
     name: str = Field(examples=["Spark", "Flink", "Hive"])
     version: Version = Field(examples=["3.5.6"])
-    openlineageAdapterVersion: Version = Field(examples=["1.36.0"])
+    openlineageAdapterVersion: Version | None = Field(default=None, examples=["1.36.0"])

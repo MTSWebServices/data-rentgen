@@ -17,6 +17,8 @@ from data_rentgen.dto import (
     RunDTO,
     RunStatusDTO,
     SchemaDTO,
+    TagDTO,
+    TagValueDTO,
 )
 
 
@@ -37,6 +39,16 @@ def extracted_flink_job(
         name="myjob",
         location=extracted_flink_location,
         type=JobTypeDTO(type="FLINK_JOB"),
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="flink.version"),
+                value="1.19.0",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.34.0",
+            ),
+        },
     )
 
 

@@ -4,14 +4,28 @@ from __future__ import annotations
 
 from collections.abc import Collection
 
-from sqlalchemy import ColumnElement, CompoundSelect, Select, SQLColumnExpression, any_, asc, desc, func, select
+from sqlalchemy import (
+    ColumnElement,
+    CompoundSelect,
+    Select,
+    SQLColumnExpression,
+    any_,
+    asc,
+    bindparam,
+    desc,
+    func,
+    select,
+)
 from sqlalchemy.orm import selectinload
 
-from data_rentgen.db.models.tag import Tag
-from data_rentgen.db.models.tag_value import TagValue
+from data_rentgen.db.models import Tag, TagValue
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto.pagination import PaginationDTO
+from data_rentgen.dto.tag import TagDTO
+
+fetch_bulk_query = select(Tag).where(Tag.name == any_(bindparam("names")))
+get_one_by_name_query = select(Tag).where(Tag.name == bindparam("name"))
 
 
 class TagRepository(Repository[Tag]):
@@ -63,3 +77,33 @@ class TagRepository(Repository[Tag]):
             page=page,
             page_size=page_size,
         )
+
+    async def fetch_bulk(self, tags_dto: list[TagDTO]) -> list[tuple[TagDTO, Tag | None]]:
+        if not tags_dto:
+            return []
+
+        scalars = await self._session.scalars(
+            fetch_bulk_query,
+            {
+                "names": [item.name for item in tags_dto],
+            },
+        )
+        existing = {tag.name: tag for tag in scalars.all()}
+        return [(tag_dto, existing.get(tag_dto.name)) for tag_dto in tags_dto]
+
+    async def create(self, tag_dto: TagDTO) -> Tag:
+        # if another worker already created the same row, just use it. if not - create with holding the lock.
+        await self._lock(tag_dto.name)
+        return await self.get_or_create(tag_dto)
+
+    async def get_or_create(self, tag_dto: TagDTO) -> Tag:
+        return await self._get(tag_dto.name) or await self._create(tag_dto)
+
+    async def _get(self, name: str) -> Tag | None:
+        return await self._session.scalar(get_one_by_name_query, {"name": name})
+
+    async def _create(self, tag: TagDTO) -> Tag:
+        result = Tag(name=tag.name)
+        self._session.add(result)
+        await self._session.flush([result])
+        return result

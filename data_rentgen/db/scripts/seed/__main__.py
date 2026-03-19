@@ -106,7 +106,6 @@ async def main(args: list[str]) -> None:
         result.merge(item)
     logger.info("  Generated: %r", result)
 
-    logger.info("Saving to database...")
     db_settings = DatabaseSettings()  # type: ignore[call-arg]
     session_factory = create_session_factory(db_settings)
     async with session_factory() as session:

@@ -16,7 +16,8 @@ Requirements
 Limitations
 -----------
 
-* Only ``standalone-job`` (application mode) is supported, but not ``jobmanager`` (session mode): `https://github.com/OpenLineage/OpenLineage/issues/2150 <OpenLineage issue>`_
+* Only ``standalone-job`` (application mode) is supported, but not ``jobmanager`` (session mode): `OpenLineage issue <https://github.com/OpenLineage/OpenLineage/issues/2150>`_
+* Currently there is no way to pass job tags, `see issue <https://github.com/OpenLineage/OpenLineage/issues/4280>`_.
 
 Entity mapping
 --------------

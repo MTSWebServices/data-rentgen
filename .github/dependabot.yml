@@ -20,6 +20,10 @@ updates:
     labels:
       - type:dependency
     versioning-strategy: increase-if-necessary
+    ignore:
+      # do not use Sphinx 9
+      - dependency-name: sphinx
+        update-types: [version-update:semver-major]
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       python-packages:

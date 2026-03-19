@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
-
 from sqlalchemy import BigInteger, Computed, ForeignKey, Index, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship

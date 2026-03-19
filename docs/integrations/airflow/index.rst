@@ -172,12 +172,56 @@ Job list page
 
 .. image:: ./job_list.png
 
+DAG job details page
+~~~~~~~~~~~~~~~~~~~~
+
+.. image:: ./dag_job_details.png
+
 DAG run details page
 ~~~~~~~~~~~~~~~~~~~~
 
 .. image:: ./dag_run_details.png
 
+Task job details page
+~~~~~~~~~~~~~~~~~~~~~
+
+.. image:: ./task_job_details.png
+
 Task run details page
 ~~~~~~~~~~~~~~~~~~~~~
 
 .. image:: ./task_run_details.png
+
+Job level lineage
+~~~~~~~~~~~~~~~~~
+
+.. image:: ./job_lineage.png
+
+Job dependencies
+~~~~~~~~~~~~~~~~
+
+.. image:: ./job_hierarchy.png
+
+Extra configuration
+-------------------
+
+Collecting DAG tags
+~~~~~~~~~~~~~~~~~~~
+
+By default, following job tags are created:
+
+- ``airflow.version``
+- ``openlineage_adapter.version``
+- ``openlineage_client.version`` (using OpenLineage client 1.38.0+)
+
+If is possible to provide custom DAG tags as well. But DataRentgen is able to extract only tags in format ``key:value``, e.g.:
+
+.. code-block:: python
+    :caption: mydag.py
+
+    from airflow.models import DAG
+
+    with DAG(
+        dag_id="mydag",
+        tags=["environment:production", "layer:bronze"],
+    )

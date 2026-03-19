@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
-
 from sqlalchemy import BigInteger, Index, String, column, func
 from sqlalchemy.orm import Mapped, mapped_column
 

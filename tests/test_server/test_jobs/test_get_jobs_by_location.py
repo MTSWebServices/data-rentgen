@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import Job
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import job_to_json
+from tests.test_server.utils.convert_to_json import job_to_json, tag_values_to_json
 from tests.test_server.utils.enrich import enrich_jobs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -45,6 +45,8 @@ async def test_get_jobs_by_location_id(
             {
                 "id": str(job.id),
                 "data": job_to_json(job),
+                "tags": [],
+                "last_run": None,
             }
             for job in [dag_job, task_job]
         ],
@@ -76,6 +78,8 @@ async def test_get_jobs_by_location_id(
             {
                 "id": str(dag_job.id),
                 "data": job_to_json(dag_job),
+                "tags": tag_values_to_json(dag_job.tag_values) if dag_job.tag_values else [],
+                "last_run": None,
             },
         ],
     }
@@ -142,6 +146,8 @@ async def test_get_jobs_by_location_type(
             {
                 "id": str(job.id),
                 "data": job_to_json(job),
+                "tags": tag_values_to_json(job.tag_values) if job.tag_values else [],
+                "last_run": None,
             }
             for job in [dag_job, task_job]
         ],
@@ -173,6 +179,8 @@ async def test_get_jobs_by_location_type(
             {
                 "id": str(dag_job.id),
                 "data": job_to_json(dag_job),
+                "tags": tag_values_to_json(dag_job.tag_values) if dag_job.tag_values else [],
+                "last_run": None,
             },
         ],
     }

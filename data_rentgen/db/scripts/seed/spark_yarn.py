@@ -17,6 +17,7 @@ from data_rentgen.dto import (
     DatasetSymlinkDTO,
     DatasetSymlinkTypeDTO,
     InputDTO,
+    JobDependencyDTO,
     JobDTO,
     JobTypeDTO,
     LocationDTO,
@@ -29,6 +30,8 @@ from data_rentgen.dto import (
     RunStatusDTO,
     SchemaDTO,
     SQLQueryDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 from data_rentgen.utils.uuid import generate_new_uuid
@@ -66,6 +69,12 @@ DATASETS = {
     "hive_raw_user_metrics": DatasetDTO(
         name="raw.user_metrics",
         location=LOCATIONS["hive_metastore"],
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="storage.layer"),
+                value="silver",
+            ),
+        },
     ),
     "hdfs_raw_user_metrics": DatasetDTO(
         name="/user/hive/warehouse/raw.db/user_metrics",
@@ -82,6 +91,16 @@ DATASETS = {
     "hive_mart_user_metrics_agg": DatasetDTO(
         name="mart.user_metrics_agg",
         location=LOCATIONS["hive_metastore"],
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="storage.layer"),
+                value="gold",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="owner.team"),
+                value="DE Team 2",
+            ),
+        },
     ),
     "hdfs_mart_user_metrics_agg": DatasetDTO(
         name="/user/hive/warehouse/mart.db/user_metrics_agg",
@@ -158,27 +177,62 @@ def generate_spark_run_yarn(
     start: datetime,
     end: datetime,
 ) -> BatchExtractionResult:
+    run_created_at = faker.date_time_between(start, end, tzinfo=UTC)
+    run_started_at = run_created_at + timedelta(minutes=faker.pyfloat(min_value=0, max_value=3))
+    run_ended_at = run_started_at + timedelta(minutes=faker.pyfloat(min_value=10, max_value=12))
+    parent_run = generate_airflow_run(
+        "mart_layer_dag",
+        "mart_layer_task_spark",
+        run_created_at - timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
+        run_ended_at + timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
+    )
+
     job = JobDTO(
         name="mart_layer_loader",
         location=LOCATIONS["yarn"],
         type=JobTypeDTO(type="SPARK_APPLICATION"),
+        parent_job=parent_run.job,
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="spark.version"),
+                value="3.5.7",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.38.0",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="environment"),
+                value="production",
+            ),
+        },
     )
 
-    run_created_at = faker.date_time_between(start, end, tzinfo=UTC)
-    run_started_at = run_created_at + timedelta(minutes=faker.pyfloat(min_value=0, max_value=3))
-    run_ended_at = run_started_at + timedelta(minutes=faker.pyfloat(min_value=10, max_value=12))
+    # add Airflow Task mart_layer_dag.mart_layer_task_dbt -> mart_layer_dag.mart_layer_task_spark dependency
+    parent_run.job_dependencies.append(
+        JobDependencyDTO(
+            from_job=JobDTO(
+                name="mart_layer_dag.mart_layer_task_dbt",
+                location=parent_run.job.location,
+                type=JobTypeDTO(type="AIRFLOW_TASK"),
+                parent_job=JobDTO(
+                    name="mart_layer_dag",
+                    location=parent_run.job.location,
+                    type=JobTypeDTO(type="AIRFLOW_DAG"),
+                ),
+            ),
+            to_job=parent_run.job,
+            type="DIRECT_DEPENDENCY",
+        )
+    )
+
     run_id = generate_new_uuid(run_created_at)
     external_id = f"application_{run_created_at.timestamp() * 1000}_0001"
     run = RunDTO(
         id=run_id,
         job=job,
         status=RunStatusDTO.SUCCEEDED,
-        parent_run=generate_airflow_run(
-            "mart_layer_dag",
-            "mart_layer_task",
-            run_created_at - timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
-            run_ended_at + timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
-        ),
+        parent_run=parent_run,
         external_id=external_id,
         running_log_url=f"http://{faker.ipv4_private()}:{faker.port_number(is_user=True)}",
         persistent_log_url=f"http://mn01.hadoop.companyname.com:8088/proxy/{external_id}",

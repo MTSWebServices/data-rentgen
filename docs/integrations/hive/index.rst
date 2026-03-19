@@ -31,6 +31,8 @@ Limitations
 
 * Hive sends events when user session started, but not when stopped. So all Hive sessions in Data.Rentgen are in ``STARTED`` status.
 
+* Currently there is no way to pass job tags, `see issue <https://github.com/OpenLineage/OpenLineage/issues/4280>`_.
+
 Entity mapping
 --------------
 

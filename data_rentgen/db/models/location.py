@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -40,7 +39,7 @@ class Location(Base):
         doc="External ID for integration with other systems",
     )
 
-    addresses: Mapped[list[Address]] = relationship(
+    addresses: Mapped[list["Address"]] = relationship(
         "Address",
         lazy="noload",
         back_populates="location",

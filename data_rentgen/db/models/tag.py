@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: 2025-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Computed, Index, String, column, func
@@ -23,7 +21,7 @@ class Tag(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(32), nullable=False)
-    tag_values: Mapped[list[TagValue]] = relationship(
+    tag_values: Mapped[list["TagValue"]] = relationship(
         "TagValue",
         lazy="noload",
         back_populates="tag",

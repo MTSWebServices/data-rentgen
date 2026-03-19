@@ -3,7 +3,7 @@
 Frontend
 ========
 
-Data.Rentgen provides a `Frontend (UI) <https://github.com/MobileTeleSystems/data-rentgen-ui>`_ based on `ReactAdmin <https://marmelab.com/react-admin/>`_ and `ReactFlow <https://reactflow.dev/>`_,
+Data.Rentgen provides a `Frontend (UI) <https://github.com/MTSWebServices/data-rentgen-ui>`_ based on `ReactAdmin <https://marmelab.com/react-admin/>`_ and `ReactFlow <https://reactflow.dev/>`_,
 providing users the ability to navigate entities and build lineage graph.
 
 Install & run

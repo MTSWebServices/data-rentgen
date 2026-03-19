@@ -6,20 +6,21 @@ from data_rentgen.db.models.base import Base
 from data_rentgen.db.models.column_lineage import ColumnLineage
 from data_rentgen.db.models.custom_properties import CustomProperties
 from data_rentgen.db.models.custom_user_properties import CustomUserProperties
-from data_rentgen.db.models.dataset import Dataset, dataset_tags_table
+from data_rentgen.db.models.dataset import Dataset, DatasetTagValue
 from data_rentgen.db.models.dataset_column_relation import (
     DatasetColumnRelation,
     DatasetColumnRelationType,
 )
 from data_rentgen.db.models.dataset_symlink import DatasetSymlink, DatasetSymlinkType
 from data_rentgen.db.models.input import Input
-from data_rentgen.db.models.job import Job
+from data_rentgen.db.models.job import Job, JobTagValue
+from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.models.job_type import JobType
 from data_rentgen.db.models.location import Location
 from data_rentgen.db.models.operation import Operation, OperationStatus, OperationType
 from data_rentgen.db.models.output import Output, OutputType
 from data_rentgen.db.models.personal_token import PersonalToken
-from data_rentgen.db.models.run import Run, RunStartReason, RunStatus
+from data_rentgen.db.models.run import JobLastRun, Run, RunStartReason, RunStatus
 from data_rentgen.db.models.schema import Schema
 from data_rentgen.db.models.sql_query import SQLQuery
 from data_rentgen.db.models.tag import Tag
@@ -37,8 +38,12 @@ __all__ = [
     "DatasetColumnRelationType",
     "DatasetSymlink",
     "DatasetSymlinkType",
+    "DatasetTagValue",
     "Input",
     "Job",
+    "JobDependency",
+    "JobLastRun",
+    "JobTagValue",
     "JobType",
     "Location",
     "Operation",
@@ -55,5 +60,4 @@ __all__ = [
     "Tag",
     "TagValue",
     "User",
-    "dataset_tags_table",
 ]

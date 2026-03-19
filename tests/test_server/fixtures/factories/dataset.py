@@ -9,7 +9,6 @@ from data_rentgen.db.models import Dataset, TagValue
 from data_rentgen.db.models.dataset_symlink import DatasetSymlink, DatasetSymlinkType
 from tests.test_server.fixtures.factories.base import random_string
 from tests.test_server.fixtures.factories.location import create_location
-from tests.test_server.fixtures.factories.tag import create_tag, create_tag_value
 from tests.test_server.utils.delete import clean_db
 
 if TYPE_CHECKING:
@@ -49,28 +48,6 @@ async def create_dataset(
     await async_session.commit()
     await async_session.refresh(dataset)
     return dataset
-
-
-async def create_dataset_with_tags(
-    async_session: AsyncSession,
-    dataset_kwargs: dict | None = None,
-    tags_count: int = 3,
-    tag_values_count: int = 2,
-) -> Dataset:
-    location = await create_location(async_session)
-
-    tag_values = set()
-    for _ in range(tags_count):
-        tag = await create_tag(async_session)
-        values = [await create_tag_value(async_session, tag_id=tag.id) for _ in range(tag_values_count)]
-        tag_values.update(values)
-
-    return await create_dataset(
-        async_session,
-        location_id=location.id,
-        dataset_kwargs=dataset_kwargs,
-        tag_values=tag_values,
-    )
 
 
 async def make_symlink(
@@ -295,43 +272,8 @@ async def datasets_search(
         await clean_db(async_session)
 
 
-@pytest_asyncio.fixture(params=[{}])
-async def dataset_with_tags(
-    request: pytest.FixtureRequest,
-    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
-) -> AsyncGenerator[Dataset, None]:
-    async with async_session_maker() as async_session:
-        dataset = await create_dataset_with_tags(
-            async_session,
-            dataset_kwargs=request.param,
-        )
-        async_session.expunge_all()
-
-    yield dataset
-
-    async with async_session_maker() as async_session:
-        await clean_db(async_session)
-
-
-@pytest_asyncio.fixture(params=[(3, {})])
-async def datasets_with_tags(
-    request: pytest.FixtureRequest,
-    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
-) -> AsyncGenerator[list[Dataset], None]:
-    size, params = request.param
-
-    async with async_session_maker() as async_session:
-        datasets = [await create_dataset_with_tags(async_session, dataset_kwargs=params) for _ in range(size)]
-        async_session.expunge_all()
-
-    yield datasets
-
-    async with async_session_maker() as async_session:
-        await clean_db(async_session)
-
-
 @pytest_asyncio.fixture
-def make_dataset(async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]]):
+async def make_dataset(async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]]):
     async def _create(tag_values: list[TagValue] | None = None, dataset_kwargs: dict | None = None) -> Dataset:
         async with async_session_maker() as async_session:
             location = await create_location(async_session)
@@ -344,4 +286,7 @@ def make_dataset(async_session_maker: Callable[[], AbstractAsyncContextManager[A
             async_session.expunge_all()
             return dataset
 
-    return _create
+    yield _create
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)

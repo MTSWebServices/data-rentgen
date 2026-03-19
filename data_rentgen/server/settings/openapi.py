@@ -94,7 +94,7 @@ class LogoSettings(BaseModel):
         description="Alternative text for ``<img>`` tag",
     )
     href: AnyHttpUrl | None = Field(  # type: ignore[assignment]
-        default="https://github.com/MobileTeleSystems/data_rentgen",
+        default="https://github.com/MTSWebServices/data_rentgen",
         description="Clicking on logo will redirect to this URL",
     )
 

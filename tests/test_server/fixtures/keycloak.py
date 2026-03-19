@@ -1,4 +1,6 @@
+import base64
 import json
+import secrets
 import time
 from base64 import b64encode
 
@@ -192,5 +194,39 @@ def mock_keycloak_logout_bad_request(server_app_settings, respx_mock):
     openid_url = f"{realm_url}/protocol/openid-connect"
     respx_mock.post(f"{openid_url}/logout").respond(
         status_code=400,
+        content_type="application/json",
+    )
+
+
+@pytest.fixture
+def mock_keycloak_certs(server_app_settings, rsa_keys, respx_mock):
+    keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
+    server_url = keycloak_settings.server_url
+    realm_name = keycloak_settings.realm_name
+    realm_url = f"{server_url}/realms/{realm_name}"
+    openid_url = f"{realm_url}/protocol/openid-connect"
+
+    def encode_number_base64(n: int):
+        return base64.b64encode(n.to_bytes((n.bit_length() + 7) // 8, byteorder="big")).decode("utf-8")
+
+    # return public key in Keycloak JWK format
+    # https://github.com/marcospereirampj/python-keycloak/pull/704/changes
+    public_key = rsa_keys["public_key"]
+    payload = {
+        "keys": [
+            {
+                "kid": secrets.token_hex(16),
+                "kty": "RSA",
+                "alg": "RS256",
+                "use": "sig",
+                "n": encode_number_base64(public_key.public_numbers().n),
+                "e": encode_number_base64(public_key.public_numbers().e),
+            },
+        ]
+    }
+
+    respx_mock.get(f"{openid_url}/certs").respond(
+        status_code=200,
+        json=payload,
         content_type="application/json",
     )

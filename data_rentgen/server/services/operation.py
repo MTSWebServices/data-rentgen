@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import Depends
 from sqlalchemy import Row
 
-from data_rentgen.db.models.operation import Operation
+from data_rentgen.db.models import Operation
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.services.uow import UnitOfWork
 

@@ -15,6 +15,7 @@ from sqlalchemy import (
     select,
     union,
 )
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from data_rentgen.db.models import Address, Location
@@ -43,6 +44,17 @@ get_one_query = (
     .options(selectinload(Location.addresses))
 )
 get_distinct_query = select(Location.type).distinct(Location.type).order_by(Location.type)
+
+insert_address_query = (
+    insert(Address)
+    .values(
+        {
+            "location_id": bindparam("location_id"),
+            "url": bindparam("url"),
+        }
+    )
+    .on_conflict_do_nothing(index_elements=["location_id", "url"])
+)
 
 
 class LocationRepository(Repository[Location]):
@@ -141,25 +153,22 @@ class LocationRepository(Repository[Location]):
     async def _update_addresses(self, existing: Location, new: LocationDTO) -> Location:
         existing_urls = {address.url for address in existing.addresses}
         new_urls = new.addresses - existing_urls
-        # in most cases, Location is unchanged, so we can avoid UPDATE statements
+        # in most cases, Location is unchanged, so we can avoid INSERT statements
         if not new_urls:
             return existing
 
-        # take a lock, to avoid race conditions, and then
-        # get fresh state of the object, because it already could be updated by another worker
+        # take a lock to avoid creating the same address from multiple workers
         await self._lock(existing.type, existing.name)
-        await self._session.refresh(existing, ["addresses"])
-
-        # already has all required addresses - nothing to update
-        existing_urls = {address.url for address in existing.addresses}
-        new_urls = new.addresses - existing_urls
-        if not new_urls:
-            return existing
-
-        # add new addresses while holding the lock
-        addresses = [Address(url=url, location_id=existing.id) for url in new_urls]
-        existing.addresses.extend(addresses)
-        await self._session.flush([existing])
+        await self._session.execute(
+            insert_address_query,
+            [
+                {
+                    "location_id": existing.id,
+                    "url": url,
+                }
+                for url in new_urls
+            ],
+        )
         return existing
 
     async def get_location_types(self):

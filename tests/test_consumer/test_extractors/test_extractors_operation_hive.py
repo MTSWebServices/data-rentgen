@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from packaging.version import Version
 from uuid6 import UUID
 
 from data_rentgen.consumer.extractors.impl import HiveExtractor
@@ -33,7 +32,6 @@ from data_rentgen.openlineage.run_event import (
 from data_rentgen.openlineage.run_facets import (
     OpenLineageHiveQueryInfoRunFacet,
     OpenLineageHiveSessionInfoRunFacet,
-    OpenLineageProcessingEngineRunFacet,
     OpenLineageRunFacets,
 )
 
@@ -73,11 +71,6 @@ def test_extractors_extract_operation_hive_job():
                     clientIp="11.22.33.44",
                     sessionId="0ba6765b-3019-4172-b748-63c257158d20",
                     creationTime=session_creation_time,
-                ),
-                processing_engine=OpenLineageProcessingEngineRunFacet(
-                    version=Version("3.1.3"),
-                    name="myuser",
-                    openlineageAdapterVersion=Version("1.35.0"),
                 ),
             ),
         ),

@@ -17,6 +17,7 @@ from pydantic import (
     model_validator,
 )
 
+from data_rentgen.server.schemas.v1.job_response import JobResponseV1
 from data_rentgen.server.schemas.v1.pagination import PaginateQueryV1
 from data_rentgen.server.schemas.v1.user import UserResponseV1
 
@@ -81,6 +82,8 @@ class RunResponseV1(BaseModel):
     start_reason: str | None = Field(description="Start reason of the Run", default=None)
     ended_at: datetime | None = Field(description="End time of the Run", default=None)
     end_reason: str | None = Field(description="End reason of the Run", default=None)
+    expected_start_at: datetime | None = Field(description="Run expected start time", default=None)
+    expected_end_at: datetime | None = Field(description="Run expected end time", default=None)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -123,6 +126,7 @@ class RunDetailedResponseV1(BaseModel):
 
     id: UUID = Field(description="Run id")
     data: RunResponseV1 = Field(description="Run data")
+    job: JobResponseV1 = Field(description="Job the run is belongs to")
     statistics: RunStatisticsReponseV1 = Field(description="Run statistics")
 
     model_config = ConfigDict(from_attributes=True)
@@ -216,7 +220,7 @@ class RunsPaginateQueryV1(PaginateQueryV1):
     @classmethod
     def _check_until(cls, value: datetime | None, info: ValidationInfo) -> datetime | None:
         since = info.data.get("since")
-        if since and value and since >= value:
+        if since and value and since.timestamp() >= value.timestamp():
             msg = "'since' should be less than 'until'"
             raise ValueError(msg)
         return value

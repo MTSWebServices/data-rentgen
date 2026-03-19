@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from data_rentgen.db.models.location import Location
+from data_rentgen.db.models import Location
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.server.services.tag import TagData, TagValueData
 from data_rentgen.services.uow import UnitOfWork
@@ -18,7 +18,6 @@ class DatasetData:
     id: int
     name: str
     location: Location
-    schema = None
 
 
 @dataclass

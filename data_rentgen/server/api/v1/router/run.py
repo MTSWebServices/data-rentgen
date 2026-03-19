@@ -51,7 +51,7 @@ async def runs(
     return PageResponseV1[RunDetailedResponseV1].from_pagination(pagination)
 
 
-@router.get("/lineage", summary="Get Run lineage graph")
+@router.get("/lineage", summary="Get Run lineage graph", tags=["Lineage"])
 async def get_runs_lineage(
     query_args: Annotated[RunLineageQueryV1, Query()],
     lineage_service: Annotated[LineageService, Depends()],

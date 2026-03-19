@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased, selectinload
 
-from data_rentgen.db.models import Job, Run, RunStartReason, RunStatus, User
+from data_rentgen.db.models import Job, Location, Run, RunStartReason, RunStatus, User
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import PaginationDTO, RunDTO
@@ -33,6 +33,7 @@ get_list_by_id_query = (
         Run.created_at <= bindparam("until"),
         Run.id == any_(bindparam("run_ids")),
     )
+    .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
 
@@ -43,6 +44,7 @@ get_list_by_job_ids_query = (
         Run.created_at >= bindparam("since"),
         Run.job_id == any_(bindparam("job_ids")),
     )
+    .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
 
@@ -61,6 +63,8 @@ insert_statement = insert(Run).values(
     started_by_user_id=bindparam("started_by_user_id"),
     start_reason=bindparam("start_reason"),
     ended_at=bindparam("ended_at"),
+    expected_start_at=bindparam("expected_start_at"),
+    expected_end_at=bindparam("expected_end_at"),
 )
 inserted_row = insert_statement.excluded
 insert_statement = insert_statement.on_conflict_do_update(
@@ -77,8 +81,70 @@ insert_statement = insert_statement.on_conflict_do_update(
         "attempt": func.coalesce(inserted_row.attempt, Run.attempt),
         "persistent_log_url": func.coalesce(inserted_row.persistent_log_url, Run.persistent_log_url),
         "running_log_url": func.coalesce(inserted_row.running_log_url, Run.running_log_url),
+        "expected_start_at": func.coalesce(inserted_row.expected_start_at, Run.expected_start_at),
+        "expected_end_at": func.coalesce(inserted_row.expected_end_at, Run.expected_end_at),
     },
 )
+
+
+child_run = aliased(Run, name="child")
+parent_run = aliased(Run, name="parent")
+
+ancestors_by_run_base_part = (
+    select(
+        child_run.id.label("child_run_id"),
+        parent_run.id.label("parent_run_id"),
+    )
+    .select_from(child_run)
+    .join(parent_run, child_run.parent_run_id == parent_run.id)
+    .where(
+        child_run.id == any_(bindparam("run_ids")),
+        child_run.created_at >= bindparam("since"),
+        child_run.created_at <= bindparam("until"),
+    )
+)
+ancestors_by_run_cte = ancestors_by_run_base_part.cte("ancestors_by_run", recursive=True)
+
+ancestors_by_run_recursive_part = (
+    select(
+        child_run.id.label("child_run_id"),
+        parent_run.id.label("parent_run_id"),
+    )
+    .select_from(child_run)
+    .join(parent_run, child_run.parent_run_id == parent_run.id)
+    .where(
+        child_run.id == ancestors_by_run_cte.c.parent_run_id,
+    )
+)
+ancestors_by_run_cte = ancestors_by_run_cte.union(ancestors_by_run_recursive_part)
+
+descendants_by_run_base_part = (
+    select(
+        parent_run.id.label("parent_run_id"),
+        child_run.id.label("child_run_id"),
+    )
+    .select_from(parent_run)
+    .join(child_run, child_run.parent_run_id == parent_run.id)
+    .where(
+        parent_run.id == any_(bindparam("run_ids")),
+        parent_run.created_at >= bindparam("since"),
+        parent_run.created_at <= bindparam("until"),
+    )
+)
+descendants_by_run_cte = descendants_by_run_base_part.cte("descendants_by_run", recursive=True)
+
+descendants_by_run_recursive_part = (
+    select(
+        parent_run.id.label("parent_run_id"),
+        child_run.id.label("child_run_id"),
+    )
+    .select_from(parent_run)
+    .join(child_run, child_run.parent_run_id == parent_run.id)
+    .where(
+        parent_run.id == descendants_by_run_cte.c.child_run_id,
+    )
+)
+descendants_by_run_cte = descendants_by_run_cte.union(descendants_by_run_recursive_part)
 
 
 class RunRepository(Repository[Run]):
@@ -189,7 +255,10 @@ class RunRepository(Repository[Run]):
             # place the most recent runs on top
             order_by = [desc("search_rank"), desc("created_at"), desc("id")]
 
-        options = [selectinload(Run.started_by_user)]
+        options = [
+            selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses),
+            selectinload(Run.started_by_user),
+        ]
         return await self._paginate_by_query(
             query=query,
             order_by=order_by,
@@ -271,6 +340,8 @@ class RunRepository(Repository[Run]):
             attempt=run.attempt,
             persistent_log_url=run.persistent_log_url,
             running_log_url=run.running_log_url,
+            expected_start_at=run.expected_start_at,
+            expected_end_at=run.expected_end_at,
         )
         self._session.add(result)
         await self._session.flush([result])
@@ -298,6 +369,8 @@ class RunRepository(Repository[Run]):
             "attempt": new.attempt,
             "persistent_log_url": new.persistent_log_url,
             "running_log_url": new.running_log_url,
+            "expected_start_at": new.expected_start_at,
+            "expected_end_at": new.expected_end_at,
         }
         for col_name, value in optional_fields.items():
             if value is not None:
@@ -327,7 +400,41 @@ class RunRepository(Repository[Run]):
                     "attempt": run.attempt,
                     "persistent_log_url": run.persistent_log_url,
                     "running_log_url": run.running_log_url,
+                    "expected_start_at": run.expected_start_at,
+                    "expected_end_at": run.expected_end_at,
                 }
                 for run in runs
             ],
         )
+
+    async def list_ancestor_relations(self, run_ids: Collection[UUID]):
+        if not run_ids:
+            return []
+        stmt = select(
+            ancestors_by_run_cte.c.parent_run_id,
+            ancestors_by_run_cte.c.child_run_id,
+        )
+        result = await self._session.execute(
+            stmt,
+            {
+                "since": extract_timestamp_from_uuid(min(run_ids)),
+                "until": extract_timestamp_from_uuid(max(run_ids)),
+                "run_ids": list(run_ids),
+            },
+        )
+        return list(result.fetchall())
+
+    async def list_descendant_relations(self, run_ids: Collection[UUID]):
+        stmt = select(
+            descendants_by_run_cte.c.parent_run_id,
+            descendants_by_run_cte.c.child_run_id,
+        )
+        result = await self._session.execute(
+            stmt,
+            {
+                "since": extract_timestamp_from_uuid(min(run_ids)),
+                "until": extract_timestamp_from_uuid(max(run_ids)),
+                "run_ids": list(run_ids),
+            },
+        )
+        return list(result.fetchall())

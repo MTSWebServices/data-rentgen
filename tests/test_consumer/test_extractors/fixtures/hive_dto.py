@@ -18,6 +18,8 @@ from data_rentgen.dto import (
     RunStatusDTO,
     SchemaDTO,
     SQLQueryDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 
@@ -48,6 +50,16 @@ def extracted_hive_job(
         name="myuser@11.22.33.44",
         location=extracted_hive_thrift_location,
         type=JobTypeDTO(type="HIVE_SESSION"),
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="hive.version"),
+                value="3.1.3",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.34.0",
+            ),
+        },
     )
 
 

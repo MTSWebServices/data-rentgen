@@ -18,6 +18,7 @@ from data_rentgen.db.models import (
     DatasetSymlinkType,
     Input,
     Job,
+    JobDependency,
     Location,
     Operation,
     OperationStatus,
@@ -28,6 +29,7 @@ from data_rentgen.db.models import (
     RunStatus,
     Schema,
     SQLQuery,
+    TagValue,
 )
 
 RESOURCES_PATH = Path(__file__).parent.parent.parent.joinpath("resources").resolve()
@@ -65,8 +67,14 @@ async def test_runs_handler_spark(
     for event in input_transformation(events_spark):
         await test_broker.publish(event, "input.runs")
 
-    job_query = select(Job).order_by(Job.name).options(selectinload(Job.location).selectinload(Location.addresses))
-
+    job_query = (
+        select(Job)
+        .order_by(Job.name)
+        .options(
+            selectinload(Job.location).selectinload(Location.addresses),
+            selectinload(Job.tag_values).selectinload(TagValue.tag),
+        )
+    )
     job_scalars = await async_session.scalars(job_query)
     jobs = job_scalars.all()
     assert len(jobs) == 1
@@ -76,6 +84,15 @@ async def test_runs_handler_spark(
     assert jobs[0].location.name == "some.host.name"
     assert len(jobs[0].location.addresses) == 1
     assert jobs[0].location.addresses[0].url == "local://some.host.name"
+    assert {tv.tag.name: tv.value for tv in jobs[0].tag_values} == {
+        "spark.version": "3.4.3",
+        "openlineage_adapter.version": "1.19.0",
+    }
+
+    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_scalars = await async_session.scalars(job_dependency_query)
+    job_dependencies = job_dependency_scalars.all()
+    assert not job_dependencies
 
     run_query = select(Run).order_by(Run.id).options(selectinload(Run.started_by_user))
     run_scalars = await async_session.scalars(run_query)
@@ -96,7 +113,7 @@ async def test_runs_handler_spark(
     assert application_run.running_log_url == "http://127.0.0.1:4040"
     assert application_run.persistent_log_url is None
 
-    sql_query = select(SQLQuery).order_by(SQLQuery.id)
+    sql_query = select(SQLQuery).order_by(SQLQuery.fingerprint)
     sql_query_scalars = await async_session.scalars(sql_query)
     sql_queries = sql_query_scalars.all()
     assert len(sql_queries) == 1

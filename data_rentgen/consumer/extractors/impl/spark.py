@@ -62,6 +62,7 @@ class SparkExtractor(GenericExtractor):
         run = self.extract_parent_run(event.run.facets.parent)  # type: ignore[arg-type]
         # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
         self._enrich_run_identifiers(run, event)
+        self._enrich_run_tags(run, event)
         operation = super()._extract_operation(event, run)
 
         # in some cases, operation name may contain raw SELECT query with newlines. use spaces instead.

@@ -10,6 +10,7 @@ from data_rentgen.dto import (
     DatasetDTO,
     DatasetSymlinkDTO,
     InputDTO,
+    JobDependencyDTO,
     JobDTO,
     JobTypeDTO,
     LocationDTO,
@@ -18,23 +19,28 @@ from data_rentgen.dto import (
     RunDTO,
     SchemaDTO,
     SQLQueryDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 
 T = TypeVar(
     "T",
-    LocationDTO,
-    DatasetDTO,
     ColumnLineageDTO,
+    DatasetDTO,
     DatasetSymlinkDTO,
+    InputDTO,
+    JobDependencyDTO,
     JobDTO,
     JobTypeDTO,
-    RunDTO,
+    LocationDTO,
     OperationDTO,
-    InputDTO,
     OutputDTO,
+    RunDTO,
     SchemaDTO,
     SQLQueryDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 
@@ -63,6 +69,7 @@ class BatchExtractionResult:
         self._dataset_symlinks: dict[tuple, DatasetSymlinkDTO] = {}
         self._job_types: dict[tuple, JobTypeDTO] = {}
         self._jobs: dict[tuple, JobDTO] = {}
+        self._job_dependencies: dict[tuple, JobDependencyDTO] = {}
         self._runs: dict[tuple, RunDTO] = {}
         self._operations: dict[tuple, OperationDTO] = {}
         self._inputs: dict[tuple, InputDTO] = {}
@@ -70,6 +77,8 @@ class BatchExtractionResult:
         self._column_lineage: dict[tuple, ColumnLineageDTO] = {}
         self._schemas: dict[tuple, SchemaDTO] = {}
         self._sql_queries: dict[tuple, SQLQueryDTO] = {}
+        self._tags: dict[tuple, TagDTO] = {}
+        self._tag_values: dict[tuple, TagValueDTO] = {}
         self._users: dict[tuple, UserDTO] = {}
 
     def __repr__(self):
@@ -80,6 +89,7 @@ class BatchExtractionResult:
             f"dataset_symlinks={len(self._dataset_symlinks)}, "
             f"job_types={len(self._job_types)}, "
             f"jobs={len(self._jobs)}, "
+            f"job_dependencies={len(self._job_dependencies)}, "
             f"runs={len(self._runs)}, "
             f"operations={len(self._operations)}, "
             f"inputs={len(self._inputs)}, "
@@ -87,6 +97,8 @@ class BatchExtractionResult:
             f"column_lineage={len(self._column_lineage)}, "
             f"schemas={len(self._schemas)}, "
             f"sql_queries={len(self._sql_queries)}, "
+            f"tags={len(self._tags)}, "
+            f"tag_values={len(self._tag_values)}, "
             f"users={len(self._users)}"
             ")"
         )
@@ -111,6 +123,7 @@ class BatchExtractionResult:
 
     def add_dataset(self, dataset: DatasetDTO):
         dataset.location = self.add_location(dataset.location)
+        dataset.tag_values = {self.add_tag_value(tag_value) for tag_value in dataset.tag_values}
         return self._add(self._datasets, dataset)
 
     def add_dataset_symlink(self, dataset_symlink: DatasetSymlinkDTO):
@@ -125,7 +138,15 @@ class BatchExtractionResult:
         job.location = self.add_location(job.location)
         if job.type:
             job.type = self.add_job_type(job.type)
+        if job.parent_job:
+            job.parent_job = self.add_job(job.parent_job)
+        job.tag_values = {self.add_tag_value(tag_value) for tag_value in job.tag_values}
         return self._add(self._jobs, job)
+
+    def add_job_dependency(self, job_dependency: JobDependencyDTO):
+        job_dependency.from_job = self.add_job(job_dependency.from_job)
+        job_dependency.to_job = self.add_job(job_dependency.to_job)
+        return self._add(self._job_dependencies, job_dependency)
 
     def add_run(self, run: RunDTO):
         run.job = self.add_job(run.job)
@@ -133,6 +154,8 @@ class BatchExtractionResult:
             run.parent_run = self.add_run(run.parent_run)
         if run.user:
             run.user = self.add_user(run.user)
+        for job_dependency in run.job_dependencies:
+            self.add_job_dependency(job_dependency)
         return self._add(self._runs, run)
 
     def add_operation(self, operation: OperationDTO):
@@ -167,6 +190,13 @@ class BatchExtractionResult:
     def add_sql_query(self, sql_query: SQLQueryDTO):
         return self._add(self._sql_queries, sql_query)
 
+    def add_tag(self, tag: TagDTO):
+        return self._add(self._tags, tag)
+
+    def add_tag_value(self, tag_value: TagValueDTO):
+        tag_value.tag = self.add_tag(tag_value.tag)
+        return self._add(self._tag_values, tag_value)
+
     def add_user(self, user: UserDTO):
         return self._add(self._users, user)
 
@@ -182,9 +212,16 @@ class BatchExtractionResult:
     def get_user(self, user_key: tuple) -> UserDTO:
         return self._users[user_key]
 
+    def get_tag(self, tag_key: tuple) -> TagDTO:
+        return self._tags[tag_key]
+
+    def get_tag_value(self, tag_value_key: tuple) -> TagValueDTO:
+        return self._tag_values[tag_value_key]
+
     def get_dataset(self, dataset_key: tuple) -> DatasetDTO:
         dataset = self._datasets[dataset_key]
         dataset.location = self.get_location(dataset.location.unique_key)
+        dataset.tag_values = {self.get_tag_value(tag_value.unique_key) for tag_value in dataset.tag_values}
         return dataset
 
     def get_dataset_symlink(self, dataset_symlink_key: tuple) -> DatasetSymlinkDTO:
@@ -201,7 +238,16 @@ class BatchExtractionResult:
         job.location = self.get_location(job.location.unique_key)
         if job.type:
             job.type = self.get_job_type(job.type.unique_key)
+        if job.parent_job:
+            job.parent_job = self.get_job(job.parent_job.unique_key)
+        job.tag_values = {self.get_tag_value(tag_value.unique_key) for tag_value in job.tag_values}
         return job
+
+    def get_job_dependency(self, job_dependency_key: tuple) -> JobDependencyDTO:
+        job_dependency = self._job_dependencies[job_dependency_key]
+        job_dependency.from_job = self.get_job(job_dependency.from_job.unique_key)
+        job_dependency.to_job = self.get_job(job_dependency.to_job.unique_key)
+        return job_dependency
 
     def get_run(self, run_key: tuple) -> RunDTO:
         run = self._runs[run_key]
@@ -261,6 +307,9 @@ class BatchExtractionResult:
     def jobs(self) -> list[JobDTO]:
         return self._resolve(self.get_job, self._jobs)
 
+    def job_dependencies(self) -> list[JobDependencyDTO]:
+        return self._resolve(self.get_job_dependency, self._job_dependencies)
+
     def runs(self) -> list[RunDTO]:
         return self._resolve(self.get_run, self._runs)
 
@@ -281,6 +330,12 @@ class BatchExtractionResult:
 
     def sql_queries(self) -> list[SQLQueryDTO]:
         return self._resolve(self.get_sql_query, self._sql_queries)
+
+    def tags(self) -> list[TagDTO]:
+        return self._resolve(self.get_tag, self._tags)
+
+    def tag_values(self) -> list[TagValueDTO]:
+        return self._resolve(self.get_tag_value, self._tag_values)
 
     def users(self) -> list[UserDTO]:
         return self._resolve(self.get_user, self._users)
@@ -321,6 +376,12 @@ class BatchExtractionResult:
 
         for sql_query in other.sql_queries():
             self.add_sql_query(sql_query)
+
+        for tag in other.tags():
+            self.add_tag(tag)
+
+        for tag_value in other.tag_values():
+            self.add_tag_value(tag_value)
 
         for user in other.users():
             self.add_user(user)

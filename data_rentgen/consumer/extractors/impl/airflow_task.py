@@ -7,11 +7,17 @@ from urllib.parse import quote
 from packaging.version import Version
 
 from data_rentgen.consumer.extractors.generic import GenericExtractor
-from data_rentgen.dto import OperationDTO, RunDTO, RunStartReasonDTO, UserDTO
+from data_rentgen.consumer.extractors.impl.utils import parse_kv_tag
+from data_rentgen.dto import JobDTO, JobTypeDTO, OperationDTO, RunDTO, RunStartReasonDTO, UserDTO
+from data_rentgen.dto.job_dependency import JobDependencyDTO
+from data_rentgen.openlineage.job import OpenLineageJob
+from data_rentgen.openlineage.job_facets import OpenLineageJobTagsFacetField
 from data_rentgen.openlineage.run_event import OpenLineageRunEvent
 from data_rentgen.openlineage.run_facets import (
     OpenLineageAirflowDagRunType,
     OpenLineageAirflowTaskRunFacet,
+    OpenLineageRunTagsFacet,
+    OpenLineageRunTagsFacetField,
 )
 
 
@@ -155,3 +161,89 @@ class AirflowTaskExtractor(GenericExtractor):
         )
         task_id = quote(task_run_facet.task.task_id)
         return f"{namespace}/log?&dag_id={dag_id}&task_id={task_id}&execution_date={execution_date}"
+
+    def _enrich_job_tags(self, job_dto: JobDTO, job: OpenLineageJob) -> JobDTO:
+        if not job.facets.tags:
+            return job_dto
+
+        # Send only by apache-airflow-openlineage-provider 2.4.0+
+        # https://github.com/apache/airflow/pull/51303
+        job_tags: list[OpenLineageJobTagsFacetField] = []
+        for raw_tag in job.facets.tags.tags:
+            if raw_tag.key != raw_tag.value:
+                # not implemented in OpenLineage yet
+                # https://github.com/apache/airflow/issues/61069
+                job_tags.append(raw_tag)
+                continue
+
+            if ":" not in raw_tag.key:
+                # OL integration sends tags like "prod:prod" which are not suitable for DataRentgen
+                continue
+
+            key, value, source = parse_kv_tag(
+                raw_tag.key,
+                default_source=raw_tag.source or "AIRFLOW",
+            )
+            job_tags.append(OpenLineageJobTagsFacetField(key=key, value=value, source=source))
+
+        job.facets.tags.tags[:] = job_tags
+        return super()._enrich_job_tags(job_dto, job)
+
+    def _enrich_run_tags(self, run: RunDTO, event: OpenLineageRunEvent) -> RunDTO:
+        if event.run.facets.tags or not event.run.facets.airflow:
+            # user-specified tags in OpenLineage config - bypass
+            return super()._enrich_run_tags(run, event)
+
+        # before apache-airflow-openlineage-provider 2.4.0,
+        # we can get raw tags list only from dag description
+
+        run_tags: list[OpenLineageRunTagsFacetField] = []
+        for tag_str in event.run.facets.airflow.dag.tags:
+            if ":" not in tag_str:
+                # see above
+                continue
+
+            key, value, source = parse_kv_tag(
+                tag_str,
+                default_source="AIRFLOW",
+            )
+            run_tags.append(OpenLineageRunTagsFacetField(key=key, value=value, source=source))
+
+        # facets are immutable
+        object.__setattr__(event.run.facets, "tags", OpenLineageRunTagsFacet(tags=run_tags))
+        return super()._enrich_run_tags(run, event)
+
+    def _enrich_job_dependencies(self, run: RunDTO, event: OpenLineageRunEvent) -> RunDTO:
+        run = super()._enrich_job_dependencies(run, event)
+        if event.run.facets.airflow:
+            # https://github.com/apache/airflow/pull/59521 brings up jobDependency facet,
+            # but it still doesn't contain direct task -> task dependencies
+            dag_info = event.run.facets.airflow.dag
+            task_info = event.run.facets.airflow.task
+            for upstream_task_id in task_info.upstream_task_ids:
+                run.job_dependencies.append(
+                    JobDependencyDTO(
+                        from_job=JobDTO(
+                            name=f"{dag_info.dag_id}.{upstream_task_id}",
+                            location=run.job.location,
+                            type=JobTypeDTO("AIRFLOW_TASK"),
+                            parent_job=run.job.parent_job,
+                        ),
+                        to_job=run.job,
+                        type="DIRECT_DEPENDENCY",
+                    ),
+                )
+            for downstream_task_id in task_info.downstream_task_ids:
+                run.job_dependencies.append(
+                    JobDependencyDTO(
+                        from_job=run.job,
+                        to_job=JobDTO(
+                            name=f"{dag_info.dag_id}.{downstream_task_id}",
+                            location=run.job.location,
+                            type=JobTypeDTO("AIRFLOW_TASK"),
+                            parent_job=run.job.parent_job,
+                        ),
+                        type="DIRECT_DEPENDENCY",
+                    ),
+                )
+        return run

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest_asyncio
 
-from data_rentgen.db.models import Job
+from data_rentgen.db.models import Job, JobDependency, TagValue
 from tests.test_server.fixtures.factories.base import random_string
 from tests.test_server.fixtures.factories.job_type import create_job_type
 from tests.test_server.fixtures.factories.location import create_location
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 def job_factory(**kwargs):
     data = {
         "id": randint(0, 10000000),
+        "parent_job_id": None,
         "location_id": randint(0, 10000000),
         "name": random_string(32),
         "type_id": randint(0, 10000000),
@@ -35,6 +36,7 @@ async def create_job(
     location_id: int,
     job_type_id: int,
     job_kwargs: dict | None = None,
+    tag_values: set[TagValue] | None = None,
 ) -> Job:
     if job_kwargs:
         job_kwargs.update({"location_id": location_id, "type_id": job_type_id})
@@ -42,6 +44,8 @@ async def create_job(
         job_kwargs = {"location_id": location_id, "type_id": job_type_id}
     job = job_factory(**job_kwargs)
     del job.id
+    if tag_values:
+        job.tag_values |= tag_values
     async_session.add(job)
     await async_session.commit()
     await async_session.refresh(job)
@@ -267,6 +271,195 @@ async def jobs_with_locations_and_types(
         async_session.expunge_all()
 
     yield (spark_job, dag_job, task_job)
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
+async def make_job(async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]]):
+    async def _create(tag_values: list[TagValue] | None = None, job_kwargs: dict | None = None) -> Job:
+        async with async_session_maker() as async_session:
+            location = await create_location(async_session)
+            job_type = await create_job_type(async_session)
+            job = await create_job(
+                async_session,
+                job_type_id=job_type.id,
+                location_id=location.id,
+                job_kwargs=job_kwargs,
+                tag_values=set(tag_values or []),
+            )
+            async_session.expunge_all()
+            return job
+
+    yield _create
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture(params=[(5, {})])
+async def jobs_with_same_parent_job(
+    request: pytest.FixtureRequest,
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+    job: Job,
+) -> AsyncGenerator[list[Job], None]:
+    size, params = request.param
+
+    async with async_session_maker() as async_session:
+        items = []
+        for _ in range(size):
+            location = await create_location(async_session)
+            job_type = await create_job_type(async_session)
+            item = await create_job(
+                async_session,
+                location_id=location.id,
+                job_type_id=job_type.id,
+                job_kwargs={"parent_job_id": job.id, **params},
+            )
+            items.append(item)
+
+        async_session.expunge_all()
+
+    yield items
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
+async def job_dependency_depth_chain(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+) -> AsyncGenerator[list[Job], None]:
+    """
+    Linear dependency chain of 5 jobs:
+
+        job_1 → job_2 → job_3 → job_4 → job_5
+
+    Each arrow is a JobDependency edge with type "DIRECT_DEPENDENCY".
+    Used for testing depth-limited dependency queries.
+    """
+    async with async_session_maker() as async_session:
+        location = await create_location(async_session)
+        job_type = await create_job_type(async_session)
+
+        jobs = []
+        for i in range(1, 6):
+            job = await create_job(
+                async_session,
+                location_id=location.id,
+                job_type_id=job_type.id,
+                job_kwargs={"name": f"depth-chain-job-{i}"},
+            )
+            jobs.append(job)
+
+        async_session.add_all(
+            [
+                JobDependency(
+                    from_job_id=jobs[i].id,
+                    to_job_id=jobs[i + 1].id,
+                    type="DIRECT_DEPENDENCY",
+                )
+                for i in range(len(jobs) - 1)
+            ],
+        )
+        await async_session.commit()
+        async_session.expunge_all()
+
+    yield jobs
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
+async def job_dependency_chain(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+) -> AsyncGenerator[tuple[tuple[Job, Job, Job], ...], None]:
+    """
+    Fixture that creates:
+    - Parent-child hierarchy: dag -> task -> spark via parent_job_id
+    - Job dependency edges: task1 -> task2 and task2 -> task3
+
+    There are no relations like Dag -> Dag and Spark -> Spark.
+    """
+    async with async_session_maker() as async_session:
+        location = await create_location(async_session)
+
+        job_type_dag = await create_job_type(async_session, {"type": "AIRFLOW_DAG"})
+        dag1 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "dag1"},
+        )
+        dag2 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "dag2"},
+        )
+        dag3 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "dag3"},
+        )
+
+        job_type_task = await create_job_type(async_session, {"type": "AIRFLOW_TASK"})
+        task1 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "task1", "parent_job_id": dag1.id},
+        )
+        task2 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "task2", "parent_job_id": dag2.id},
+        )
+        task3 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "task3", "parent_job_id": dag3.id},
+        )
+
+        job_type_spark = await create_job_type(async_session, {"type": "SPARK_APPLICATION"})
+        spark1 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark1", "parent_job_id": task1.id},
+        )
+        spark2 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark2", "parent_job_id": task2.id},
+        )
+        spark3 = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark3", "parent_job_id": task3.id},
+        )
+
+        async_session.add_all(
+            [
+                JobDependency(from_job_id=task1.id, to_job_id=task2.id, type="DIRECT_DEPENDENCY"),
+                JobDependency(from_job_id=task2.id, to_job_id=task3.id, type="DIRECT_DEPENDENCY"),
+            ],
+        )
+        await async_session.commit()
+        async_session.expunge_all()
+
+    yield (
+        (dag1, dag2, dag3),
+        (task1, task2, task3),
+        (spark1, spark2, spark3),
+    )
 
     async with async_session_maker() as async_session:
         await clean_db(async_session)

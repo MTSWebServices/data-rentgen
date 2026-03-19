@@ -104,4 +104,5 @@ def application_factory(settings: Http2KafkaApplicationSettings) -> FastAPI:
 def get_application():
     settings = Http2KafkaApplicationSettings()
     setup_logging(settings.logging)
+    logger.info("Starting Data.Rentgen HTTP2Kafka with settings:\n%r", settings)
     return application_factory(settings=settings)

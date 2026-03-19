@@ -40,7 +40,12 @@ async def enrich_datasets(datasets: Sequence[Dataset], async_session: AsyncSessi
 
 async def enrich_jobs(jobs: Sequence[Job], async_session: AsyncSession) -> list[Job]:
     job_ids = [job.id for job in jobs]
-    query = select(Job).where(Job.id.in_(job_ids)).options(selectinload(Job.location).selectinload(Location.addresses))
+    query = (
+        select(Job)
+        .where(Job.id.in_(job_ids))
+        .options(selectinload(Job.location).selectinload(Location.addresses))
+        .options(selectinload(Job.tag_values).selectinload(TagValue.tag))
+    )
     result = await async_session.scalars(query)
     jobs_by_id = {job.id: job for job in result.all()}
     # preserve original order

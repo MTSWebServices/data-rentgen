@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEFAULT_PYTHON: '3.13'
+  DEFAULT_PYTHON: '3.14'
   MIN_COVERAGE: 87
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Start containers
         run: |
@@ -77,7 +77,7 @@ jobs:
           dest: ./logs
 
       - name: Upload Coverage Results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: success() || failure()
         with:
           name: coverage-${{ env.DEFAULT_PYTHON }}
@@ -91,7 +91,7 @@ jobs:
           docker compose -f docker-compose.test.yml down -v --remove-orphans
 
       - name: Upload DB logs
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: db-logs
@@ -114,7 +114,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download all raw coverage data
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: reports/
           pattern: coverage-*
@@ -155,7 +155,7 @@ jobs:
 
       - name: Dynamic Badges
         uses: schneegans/dynamic-badges-action@v1.7.0
-        if: github.repository == 'MobileTeleSystems/data-rentgen' && github.event_name == 'push'
+        if: github.repository == 'MTSWebServices/data-rentgen' && github.event_name == 'push'
         with:
           auth: ${{ secrets.AUTOMERGE_TOKEN }}
           gistID: 03e73a82ecc4709934540ce8201cc3b4

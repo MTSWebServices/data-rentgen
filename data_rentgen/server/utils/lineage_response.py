@@ -58,7 +58,10 @@ def build_lineage_response(lineage: LineageServiceResult) -> LineageResponseV1:
             operations=operations,  # type: ignore[assignment, arg-type]
         ),
         relations=LineageRelationsResponseV1(
-            parents=_get_run_parent_relations(lineage.runs) + _get_operation_parent_relations(lineage.operations),
+            parents=_get_jobs_ancestor_relations(lineage.job_ancestor_relations)
+            + _get_run_ancestor_relations(lineage.run_ancestor_relations)
+            + _get_run_parent_relations(lineage.runs)
+            + _get_operation_parent_relations(lineage.operations),
             symlinks=_get_symlink_relations(lineage.dataset_symlinks),
             inputs=_get_input_relations(lineage.inputs),
             outputs=_get_output_relations(lineage.outputs),
@@ -330,3 +333,25 @@ def _get_datasets_with_dataset_granularity(
             schema=schema,
         )
     return datasets
+
+
+def _get_run_ancestor_relations(runs_relations: set[tuple[UUID, UUID]]) -> list[LineageParentRelationV1]:
+    parents = []
+    for parent_run_id, run_id in runs_relations:
+        relation = LineageParentRelationV1(
+            from_=LineageEntityV1(kind=LineageEntityKindV1.RUN, id=parent_run_id),
+            to=LineageEntityV1(kind=LineageEntityKindV1.RUN, id=run_id),
+        )
+        parents.append(relation)
+    return sorted(parents, key=lambda x: (x.from_.id, x.to.id))
+
+
+def _get_jobs_ancestor_relations(jobs_relations: set[tuple[int, int]]) -> list[LineageParentRelationV1]:
+    parents = []
+    for parent_job_id, job_id in jobs_relations:
+        relation = LineageParentRelationV1(
+            from_=LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(parent_job_id)),
+            to=LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(job_id)),
+        )
+        parents.append(relation)
+    return sorted(parents, key=lambda x: (x.from_.id, x.to.id))

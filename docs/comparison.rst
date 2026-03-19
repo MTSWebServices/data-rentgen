@@ -13,7 +13,7 @@ DataHub cons
   To extract and draw lineage between tables, it is required to *both* connect ingestor to all databases, and to enable integration with ETL (Spark, Airflow, etc).
 
   There is an option ``spark.datahub.metadata.dataset.materialize=true``, but in this case DataHub creates datasets without schema,
-  so ingestors are still required.
+  so ingestors are still required for column lineage.
 
 * DataHub Spark agent doesn't properly work if *Platform Instances* are enabled in DataHub.
   Platform Instance is an additional hierarchy level for databases,
@@ -22,6 +22,8 @@ DataHub cons
 * OpenLineage → DataHub integration collects each Spark command as dedicated *Pipeline Task*, producing a huge lineage graph.
 
   Data.Rentgen has configurable ``granularity`` option while rendering the lineage graph.
+
+* No support for Job → Job hierarchy like Airflow Task → Spark application, or Airflow Task → Airflow Task dependencies.
 
 * High CPU and memory consumption.
 
@@ -41,6 +43,7 @@ OpenMetadata cons
 
 * Database ingestors are required to build a lineage graph, just like DataHub.
 * OpenLineage → OpenMetadata integration produces no lineage, for some unknown reason.
+* No support for Job → Job hierarchy like Airflow Task → Spark application, or Airflow Task → Airflow Task dependencies.
 * High CPU and memory consumption.
 
 OpenMetadata pros
@@ -64,7 +67,7 @@ Marquez cons
 
 * Severe performance issues while consuming lineage events.
 * No support for dataset symlinks, e.g. HDFS location → Hive table.
-* No support for parent runs, e.g. Airflow task → Spark application.
+* No support for Job → Job hierarchy like Airflow Task → Spark application, or Airflow Task → Airflow Task dependencies.
 * No releases since 2024.
 
 Marquez pros

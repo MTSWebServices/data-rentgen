@@ -13,6 +13,11 @@ Requirements
 * Running :ref:`message-broker`
 * (Optional) :ref:`http2kafka`
 
+Limitations
+-----------
+
+* Currently there is no way to pass job tags, `see issue <https://github.com/OpenLineage/OpenLineage/issues/4280>`_.
+
 Entity mapping
 --------------
 

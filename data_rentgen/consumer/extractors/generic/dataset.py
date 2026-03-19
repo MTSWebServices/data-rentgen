@@ -9,6 +9,8 @@ from data_rentgen.dto import (
     DatasetSymlinkDTO,
     DatasetSymlinkTypeDTO,
     LocationDTO,
+    TagDTO,
+    TagValueDTO,
 )
 from data_rentgen.openlineage.dataset import (
     OpenLineageDataset,
@@ -28,7 +30,8 @@ class DatasetExtractorMixin:
         """
         Extract DatasetDTO from input or output OpenLineageDataset
         """
-        return self._extract_dataset_ref(dataset)
+        dataset_dto = self._extract_dataset_ref(dataset)
+        return self._enrich_dataset_tags(dataset_dto, dataset)
 
     def _extract_dataset_ref(
         self,
@@ -108,3 +111,15 @@ class DatasetExtractorMixin:
         )
 
         return sorted(result, key=lambda x: x.type)
+
+    def _enrich_dataset_tags(self, dataset_dto: DatasetDTO, dataset: OpenLineageDataset) -> DatasetDTO:
+        if not dataset.facets.tags:
+            return dataset_dto
+
+        for raw_tag in dataset.facets.tags.tags:
+            tag_value = TagValueDTO(
+                tag=TagDTO(name=raw_tag.key),
+                value=raw_tag.value,
+            )
+            dataset_dto.tag_values.add(tag_value)
+        return dataset_dto

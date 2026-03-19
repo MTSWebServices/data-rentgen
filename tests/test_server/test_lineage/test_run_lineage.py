@@ -11,11 +11,13 @@ from tests.test_server.fixtures.factories.schema import create_schema
 from tests.test_server.utils.convert_to_json import (
     datasets_to_json,
     inputs_to_json,
+    jobs_ancestors_to_json,
     jobs_to_json,
     operation_parents_to_json,
     operations_to_json,
     outputs_to_json,
     run_parents_to_json,
+    runs_ancestors_to_json,
     runs_to_json,
     symlinks_to_json,
 )
@@ -1212,6 +1214,150 @@ async def test_get_run_lineage_for_long_running_operations(
             "datasets": datasets_to_json(datasets, outputs, inputs),
             "jobs": jobs_to_json([job]),
             "runs": runs_to_json([run]),
+            "operations": {},
+        },
+    }
+
+
+async def test_get_run_lineage_run_with_ancestor_relations(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    lineage_with_parent_run_relations: LineageResult,
+    mocked_user: MockedUser,
+):
+    lineage = lineage_with_parent_run_relations
+    run = lineage.runs[-1]
+    since = run.created_at
+
+    # Removing other run which one the same level with our
+    lineage.runs.pop(-2)
+    runs = await enrich_runs(lineage.runs, async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
+    datasets = await enrich_datasets(lineage.datasets, async_session)
+
+    response = await test_client.get(
+        "v1/runs/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            "start_node_id": str(run.id),
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(jobs) + runs_ancestors_to_json(runs) + run_parents_to_json(runs),
+            "symlinks": [],
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
+                *inputs_to_json(merge_io_by_runs(lineage.inputs), granularity="RUN"),
+            ],
+            "outputs": [],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
+            "operations": {},
+        },
+    }
+
+
+async def test_runs_with_granularity_operation_and_ancestor_relations(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    lineage_with_parent_run_relations: LineageResult,
+    mocked_user: MockedUser,
+):
+    lineage = lineage_with_parent_run_relations
+    run = lineage.runs[-1]
+    since = run.created_at
+
+    # Removing other run which one the same level with our
+    lineage.runs.pop(-2)
+    datasets = await enrich_datasets(lineage.datasets, async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
+    runs = await enrich_runs(lineage.runs, async_session)
+
+    response = await test_client.get(
+        "v1/runs/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            "start_node_id": str(run.id),
+            "granularity": "OPERATION",
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(jobs)
+            + runs_ancestors_to_json(runs)
+            + run_parents_to_json(runs)
+            + operation_parents_to_json(lineage.operations),
+            "symlinks": [],
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
+                *inputs_to_json(lineage.inputs, granularity="OPERATION"),
+                *inputs_to_json(merge_io_by_runs(lineage.inputs), granularity="RUN"),
+            ],
+            "outputs": [],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
+            "operations": operations_to_json(lineage.operations),
+        },
+    }
+
+
+async def test_get_run_lineage_run_with_descendant_relations(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    lineage_with_parent_run_relations: LineageResult,
+    mocked_user: MockedUser,
+):
+    lineage = lineage_with_parent_run_relations
+    run = lineage.runs[0]
+    since = run.created_at
+
+    datasets = await enrich_datasets(lineage.datasets, async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
+    runs = await enrich_runs(lineage.runs, async_session)
+
+    response = await test_client.get(
+        "v1/runs/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            "start_node_id": str(run.id),
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(jobs) + runs_ancestors_to_json(runs) + run_parents_to_json(runs),
+            "symlinks": [],
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
+                *inputs_to_json(merge_io_by_runs(lineage.inputs), granularity="RUN"),
+            ],
+            "outputs": [],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
             "operations": {},
         },
     }

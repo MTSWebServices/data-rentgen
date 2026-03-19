@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy import Row
 
-from data_rentgen.db.models.location import Location
+from data_rentgen.db.models import Location
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.services.uow import UnitOfWork
 

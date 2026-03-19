@@ -68,6 +68,7 @@ async def test_keycloak_auth(
     create_session_cookie,
     mock_keycloak_well_known,
     mock_keycloak_realm,
+    mock_keycloak_certs,
 ):
     session_cookie = create_session_cookie(user)
     headers = {
@@ -103,6 +104,7 @@ async def test_keycloak_auth_refresh_access_token(
     create_session_cookie,
     mock_keycloak_well_known,
     mock_keycloak_realm,
+    mock_keycloak_certs,
     mock_keycloak_token_refresh,
 ):
     session_cookie = create_session_cookie(user, expire_in_msec=-100000000)  # expired access token
@@ -168,6 +170,7 @@ async def test_keycloak_auth_logout(
     create_session_cookie,
     mock_keycloak_well_known,
     mock_keycloak_realm,
+    mock_keycloak_certs,
     mock_keycloak_token_refresh,
     mock_keycloak_logout,
 ):
@@ -218,6 +221,7 @@ async def test_keycloak_auth_logout_bad_request(
     create_session_cookie,
     mock_keycloak_well_known,
     mock_keycloak_realm,
+    mock_keycloak_certs,
     mock_keycloak_token_refresh,
     mock_keycloak_logout_bad_request,
 ):

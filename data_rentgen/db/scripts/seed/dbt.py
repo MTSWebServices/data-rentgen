@@ -9,6 +9,7 @@ from uuid import uuid4
 from faker import Faker
 
 from data_rentgen.consumer.extractors import BatchExtractionResult
+from data_rentgen.db.scripts.seed.airflow import generate_airflow_run
 from data_rentgen.dto import (
     ColumnLineageDTO,
     DatasetColumnRelationDTO,
@@ -27,6 +28,8 @@ from data_rentgen.dto import (
     RunStatusDTO,
     SchemaDTO,
     SQLQueryDTO,
+    TagDTO,
+    TagValueDTO,
 )
 from data_rentgen.utils.uuid import generate_new_uuid
 
@@ -51,6 +54,16 @@ DATASETS = {
     "clickhouse_user_metrics": DatasetDTO(
         name="batch.user_metrics",
         location=LOCATIONS["clickhouse"],
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="owner.product"),
+                value="DataPlans Store",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="storage.layer"),
+                value="bronze",
+            ),
+        },
     ),
 }
 
@@ -80,19 +93,46 @@ def generate_dbt_run(
     start: datetime,
     end: datetime,
 ) -> BatchExtractionResult:
+    run_created_at = faker.date_time_between(start, end, tzinfo=UTC)
+    run_started_at = run_created_at + timedelta(minutes=faker.pyfloat(min_value=0, max_value=3))
+    run_ended_at = run_started_at + timedelta(minutes=faker.pyfloat(min_value=30, max_value=35))
+    parent_run = generate_airflow_run(
+        "mart_layer_dag",
+        "mart_layer_task_dbt",
+        run_created_at - timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
+        run_ended_at + timedelta(seconds=faker.pyint(min_value=5, max_value=10)),
+    )
+
     job = JobDTO(
         name="dbt-run-user_metrics",
         location=LOCATIONS["local"],
         type=JobTypeDTO(type="DBT_JOB"),
+        parent_job=parent_run.job,
+        tag_values={
+            TagValueDTO(
+                tag=TagDTO(name="dbt.version"),
+                value="1.9.4",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_adapter.version"),
+                value="1.43.0",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="openlineage_client.version"),
+                value="1.43.0",
+            ),
+            TagValueDTO(
+                tag=TagDTO(name="environment"),
+                value="production",
+            ),
+        },
     )
 
-    run_created_at = faker.date_time_between(start, end, tzinfo=UTC)
-    run_started_at = run_created_at + timedelta(minutes=faker.pyfloat(min_value=0, max_value=3))
-    run_ended_at = run_started_at + timedelta(minutes=faker.pyfloat(min_value=30, max_value=35))
     run_id = generate_new_uuid(run_created_at)
     run = RunDTO(
         id=run_id,
         job=job,
+        parent_run=parent_run,
         status=RunStatusDTO.SUCCEEDED,
         external_id=str(uuid4()),
         started_at=run_started_at,

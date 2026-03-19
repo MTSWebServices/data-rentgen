@@ -22,9 +22,11 @@ from sqlalchemy import (
     tuple_,
     union,
 )
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
 from data_rentgen.db.models import Address, Dataset, Location, TagValue
+from data_rentgen.db.models.dataset import DatasetTagValue
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import DatasetDTO, PaginationDTO
@@ -65,6 +67,17 @@ get_stats_query = (
     .group_by(Dataset.location_id)
 )
 
+insert_tag_value_query = (
+    insert(DatasetTagValue)
+    .values(
+        {
+            "dataset_id": bindparam("dataset_id"),
+            "tag_value_id": bindparam("tag_value_id"),
+        }
+    )
+    .on_conflict_do_nothing(index_elements=["dataset_id", "tag_value_id"])
+)
+
 
 class DatasetRepository(Repository[Dataset]):
     async def fetch_bulk(self, datasets_dto: list[DatasetDTO]) -> list[tuple[DatasetDTO, Dataset | None]]:
@@ -87,10 +100,53 @@ class DatasetRepository(Repository[Dataset]):
             for dto in datasets_dto
         ]
 
-    async def create(self, dataset: DatasetDTO) -> Dataset:
-        # if another worker already created the same row, just use it. if not - create with holding the lock.
-        await self._lock(dataset.location.id, dataset.name.lower())
-        return await self._get(dataset) or await self._create(dataset)
+    async def create_or_update(self, dataset: DatasetDTO) -> Dataset:
+        result = await self._get(dataset)
+        if not result:
+            # try one more time, but with lock acquired.
+            # if another worker already created the same row, just use it. if not - create with holding the lock.
+            await self._lock(dataset.location.id, dataset.name.lower())
+            result = await self._get(dataset)
+
+        if not result:
+            result = await self._create(dataset)
+        return await self.update(result, dataset)
+
+    async def _get(self, dataset: DatasetDTO) -> Dataset | None:
+        return await self._session.scalar(
+            get_one_query,
+            {
+                "location_id": dataset.location.id,
+                "name_lower": dataset.name.lower(),
+            },
+        )
+
+    async def _create(self, dataset: DatasetDTO) -> Dataset:
+        result = Dataset(location_id=dataset.location.id, name=dataset.name)
+        self._session.add(result)
+        await self._session.flush([result])
+        return result
+
+    async def update(self, existing: Dataset, new: DatasetDTO) -> Dataset:
+        if not new.tag_values:
+            # in most cases datasets have no tag values, so we can avoid INSERT statements
+            return existing
+
+        # Lock to prevent inserting the same rows from multiple workers
+        await self._lock(existing.location_id, existing.name)
+        await self._session.execute(
+            insert_tag_value_query,
+            [
+                {
+                    "dataset_id": existing.id,
+                    "tag_value_id": tag_value_dto.id,
+                }
+                for tag_value_dto in new.tag_values
+            ],
+        )
+        # unlike job tags, OL integrations may provide only part of dataset tags.
+        # so we only insert them, but never delete old ones
+        return existing
 
     async def paginate(
         self,
@@ -184,18 +240,3 @@ class DatasetRepository(Repository[Dataset]):
 
         query_result = await self._session.execute(get_stats_query, {"location_ids": list(location_ids)})
         return {row.location_id: row for row in query_result.all()}
-
-    async def _get(self, dataset: DatasetDTO) -> Dataset | None:
-        return await self._session.scalar(
-            get_one_query,
-            {
-                "location_id": dataset.location.id,
-                "name_lower": dataset.name.lower(),
-            },
-        )
-
-    async def _create(self, dataset: DatasetDTO) -> Dataset:
-        result = Dataset(location_id=dataset.location.id, name=dataset.name)
-        self._session.add(result)
-        await self._session.flush([result])
-        return result

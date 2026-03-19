@@ -43,7 +43,7 @@ async def operations(
     return PageResponseV1[OperationDetailedResponseV1].from_pagination(pagination)
 
 
-@router.get("/lineage", summary="Get Operation lineage graph")
+@router.get("/lineage", summary="Get Operation lineage graph", tags=["Lineage"])
 async def get_operations_lineage(
     query_args: Annotated[OperationLineageQueryV1, Query()],
     lineage_service: Annotated[LineageService, Depends()],

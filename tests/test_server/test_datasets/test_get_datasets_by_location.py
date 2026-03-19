@@ -7,47 +7,47 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import Dataset, Location
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import dataset_to_json
+from tests.test_server.utils.convert_to_json import dataset_to_json, tag_values_to_json
 from tests.test_server.utils.enrich import enrich_datasets
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
 
 
+@pytest.mark.asyncio
 async def test_get_datasets_by_location_id(
     test_client: AsyncClient,
+    datasets: list[Dataset],
     async_session: AsyncSession,
-    datasets_search: tuple[dict[str, Dataset], ...],
     mocked_user: MockedUser,
-) -> None:
-    _, _, datasets_by_address = datasets_search
-    datasets = await enrich_datasets([datasets_by_address["hdfs://my-cluster-namenode:2080"]], async_session)
-    location_id = datasets[0].location_id
+):
+    # Each dataset at this ficture has it's own location
+    dataset = datasets[0]
+    [dataset] = await enrich_datasets([dataset], async_session)
 
     response = await test_client.get(
-        "/v1/datasets",
+        "v1/datasets",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
-        params={"location_id": location_id},
+        params={"location_id": dataset.location.id},
     )
 
     assert response.status_code == HTTPStatus.OK, response.json()
     assert response.json() == {
         "meta": {
+            "page": 1,
+            "page_size": 20,
+            "total_count": 1,
+            "pages_count": 1,
             "has_next": False,
             "has_previous": False,
             "next_page": None,
-            "page": 1,
-            "page_size": 20,
-            "pages_count": 1,
             "previous_page": None,
-            "total_count": 1,
         },
         "items": [
             {
                 "id": str(dataset.id),
                 "data": dataset_to_json(dataset),
-                "tags": [],
-            }
-            for dataset in datasets
+                "tags": tag_values_to_json(dataset.tag_values) if dataset.tag_values else [],
+            },
         ],
     }
 

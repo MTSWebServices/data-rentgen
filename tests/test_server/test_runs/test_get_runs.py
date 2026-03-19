@@ -9,7 +9,7 @@ from uuid6 import uuid7
 from data_rentgen.db.models.run import Run
 from data_rentgen.utils.uuid import generate_new_uuid
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import run_to_json
+from tests.test_server.utils.convert_to_json import job_to_json, run_to_json
 from tests.test_server.utils.enrich import enrich_runs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -119,6 +119,7 @@ async def test_get_runs_with_since(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -179,6 +180,7 @@ async def test_get_runs_with_until(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -243,6 +245,7 @@ async def test_get_runs_with_job_type(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -292,6 +295,7 @@ async def test_get_runs_with_job_type(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -356,6 +360,7 @@ async def test_get_runs_with_status(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -404,6 +409,7 @@ async def test_get_runs_with_status(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -469,6 +475,7 @@ async def test_get_runs_with_started_at(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -535,6 +542,7 @@ async def test_get_runs_with_ended_at(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -601,6 +609,7 @@ async def test_get_runs_with_location_id(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -650,6 +659,7 @@ async def test_get_runs_with_location_id(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -715,6 +725,7 @@ async def test_get_runs_with_started_by_user(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,
@@ -764,6 +775,7 @@ async def test_get_runs_with_started_by_user(
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
+                "job": job_to_json(run.job),
                 "statistics": {
                     "inputs": {
                         "total_datasets": 0,

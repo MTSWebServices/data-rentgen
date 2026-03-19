@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
-from packaging.version import Version
 from uuid6 import UUID
 
 from data_rentgen.consumer.extractors.impl import FlinkExtractor
@@ -30,7 +29,6 @@ from data_rentgen.openlineage.run_event import (
 )
 from data_rentgen.openlineage.run_facets import (
     OpenLineageFlinkJobDetailsRunFacet,
-    OpenLineageProcessingEngineRunFacet,
     OpenLineageRunFacets,
 )
 
@@ -58,11 +56,6 @@ def test_extractors_extract_operation_flink_job():
             facets=OpenLineageRunFacets(
                 flink_job=OpenLineageFlinkJobDetailsRunFacet(
                     jobId="b825f524-49d6-4dd8-bffd-3e5742c528d0",
-                ),
-                processing_engine=OpenLineageProcessingEngineRunFacet(
-                    version=Version("1.19.0"),
-                    name="flink",
-                    openlineageAdapterVersion=Version("1.34.0"),
                 ),
             ),
         ),
@@ -132,11 +125,6 @@ def test_extractors_extract_operation_flink_job_finished(
             facets=OpenLineageRunFacets(
                 flink_job=OpenLineageFlinkJobDetailsRunFacet(
                     jobId="b825f524-49d6-4dd8-bffd-3e5742c528d0",
-                ),
-                processing_engine=OpenLineageProcessingEngineRunFacet(
-                    version=Version("1.19.0"),
-                    name="flink",
-                    openlineageAdapterVersion=Version("1.34.0"),
                 ),
             ),
         ),

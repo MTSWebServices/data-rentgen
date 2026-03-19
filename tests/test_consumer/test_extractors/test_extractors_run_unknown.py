@@ -13,12 +13,16 @@ from data_rentgen.dto import (
     RunDTO,
     RunStartReasonDTO,
     RunStatusDTO,
+    TagDTO,
+    TagValueDTO,
     UserDTO,
 )
 from data_rentgen.openlineage.job import OpenLineageJob
 from data_rentgen.openlineage.job_facets import (
     OpenLineageJobFacets,
     OpenLineageJobProcessingType,
+    OpenLineageJobTagsFacet,
+    OpenLineageJobTagsFacetField,
     OpenLineageJobTypeJobFacet,
 )
 from data_rentgen.openlineage.run import OpenLineageRun
@@ -32,6 +36,7 @@ from data_rentgen.openlineage.run_facets.parent_run import (
     OpenLineageParentRun,
     OpenLineageParentRunFacet,
 )
+from data_rentgen.openlineage.run_facets.run_tags import OpenLineageRunTagsFacet, OpenLineageRunTagsFacetField
 
 
 @pytest.mark.parametrize(
@@ -69,9 +74,51 @@ def test_extractors_extract_run_unknown(
             name="myjob",
             facets=OpenLineageJobFacets(
                 jobType=raw_job_type,
+                tags=OpenLineageJobTagsFacet(
+                    tags=[
+                        OpenLineageJobTagsFacetField(
+                            key="from.job.config",
+                            value="somevalue1",
+                            source="CONFIG",  # ignored
+                        ),
+                        OpenLineageJobTagsFacetField(
+                            key="from.job.config",
+                            value="othervalue1",
+                            source="USER",  # ignored
+                        ),
+                        OpenLineageJobTagsFacetField(
+                            key="from.job.config",
+                            value="anothervalue1",
+                            source="CUSTOM",  # ignored
+                        ),
+                    ],
+                ),
             ),
         ),
-        run=OpenLineageRun(runId=run_id),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                tags=OpenLineageRunTagsFacet(
+                    tags=[
+                        OpenLineageRunTagsFacetField(
+                            key="from.run.config",
+                            value="somevalue2",
+                            source="CONFIG",  # ignored
+                        ),
+                        OpenLineageRunTagsFacetField(
+                            key="from.run.config",
+                            value="othervalue2",
+                            source="USER",  # ignored
+                        ),
+                        OpenLineageRunTagsFacetField(
+                            key="from.run.config",
+                            value="anothervalue2",
+                            source="CUSTOM",  # ignored
+                        ),
+                    ],
+                ),
+            ),
+        ),
     )
 
     assert UnknownExtractor().extract_run(run) == RunDTO(
@@ -84,6 +131,32 @@ def test_extractors_extract_run_unknown(
                 name="something",
                 addresses={"unknown://something"},
             ),
+            tag_values={
+                TagValueDTO(
+                    tag=TagDTO(name="from.job.config"),
+                    value="somevalue1",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="from.job.config"),
+                    value="othervalue1",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="from.job.config"),
+                    value="anothervalue1",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="from.run.config"),
+                    value="somevalue2",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="from.run.config"),
+                    value="othervalue2",
+                ),
+                TagValueDTO(
+                    tag=TagDTO(name="from.run.config"),
+                    value="anothervalue2",
+                ),
+            },
         ),
         status=RunStatusDTO.SUCCEEDED,
         started_at=None,
@@ -178,6 +251,15 @@ def test_extractors_extract_run_unknown_with_parent():
         id=run_id,
         job=JobDTO(
             name="myjob",
+            parent_job=JobDTO(
+                name="parentjob",
+                type=None,
+                location=LocationDTO(
+                    type="unknown",
+                    name="anything",
+                    addresses={"unknown://anything"},
+                ),
+            ),
             type=JobTypeDTO(type="UNKNOWN_SOMETHING"),
             location=LocationDTO(
                 type="unknown",

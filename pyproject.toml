@@ -25,25 +25,26 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
 keywords = ["Lineage", "FastAPI", "REST", "FastStream"]
 requires-python = ">=3.12"
 dependencies = [
   "pydantic~=2.12.5",
-  "pydantic-settings~=2.12.0",
+  "pydantic-settings~=2.13.1",
   "typing-extensions~=4.15.0",
-  "alembic>=1.17.2,<1.19.0",
+  "alembic~=1.18.3",
   "sqlalchemy~=2.0.44",
   "sqlalchemy-utils~=0.42.0",
-  "greenlet>=3.2.4,<3.4.0",
+  "greenlet~=3.3.1",
   "pyyaml~=6.0.3",
   "python-json-logger~=4.0.0",
   "coloredlogs~=15.0.1",
   "uuid6~=2025.0.0",
   "python-dateutil~=2.9.0.post0",
-  "packaging~=25.0",
-  "cachetools~=6.2.2",
+  "packaging~=26.0",
+  "cachetools~=7.0.5",
 ]
 dynamic = ["version"]
 
@@ -55,46 +56,44 @@ exclude = ["docs", "tests"]
 "*" = ["py.typed", "*.yml",  "*.ini", "VERSION"]
 
 [project.urls]  # Optional
-"Homepage" = "https://github.com/MobileTeleSystems/data-rentgen"
+"Homepage" = "https://github.com/MTSWebServices/data-rentgen"
 "Documentation" = "https://data-rentgen.readthedocs.io/"
-"Source" = "https://github.com/MobileTeleSystems/data-rentgen"
-"CI/CD" = "https://github.com/MobileTeleSystems/data-rentgen/actions"
-"Tracker" = "https://github.com/MobileTeleSystems/data-rentgen/issues"
+"Source" = "https://github.com/MTSWebServices/data-rentgen"
+"CI/CD" = "https://github.com/MTSWebServices/data-rentgen/actions"
+"Tracker" = "https://github.com/MTSWebServices/data-rentgen/issues"
 
 
 [project.optional-dependencies]
 server = [
-  "fastapi>=0.123.10,<0.129.0",
-  "starlette~=0.50.0",
-  "uvicorn>=0.38,<0.41",
+  "fastapi~=0.135.1",
+  "uvicorn~=0.41.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
-  "pyjwt~=2.10.1 ",
+  "pyjwt~=2.12.1",
   "itsdangerous~=2.2.0",
   "python-multipart~=0.0.20",
-  "python-keycloak>=5.8.1,<7.1.0",
+  "python-keycloak~=7.1.1",
 ]
 consumer = [
-  "faststream[kafka,cli]~=0.6.3",
+  "faststream[kafka,cli]~=0.6.7",
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  "fastapi>=0.123.10,<0.129.0",
-  "starlette~=0.50.0",
-  "uvicorn>=0.38,<0.41",
+  "fastapi~=0.135.1",
+  "uvicorn~=0.41.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
-  "faststream[kafka,cli]~=0.6.3",
+  "faststream[kafka,cli]~=0.6.5",
   "cramjam~=2.11.0",
 ]
 postgres = [
   "asyncpg~=0.31.0",
 ]
 gssapi = [
-  "gssapi~=1.10.0",
+  "gssapi~=1.11.1",
 ]
 seed = [
-  "faker>=38.2,<40.2"
+  "faker~=40.8.1"
 ]
 
 [dependency-groups]
@@ -103,17 +102,18 @@ test = [
   "httpx~=0.28.1",
   "pytest-asyncio~=1.3.0",
   "pytest-randomly~=4.0.0",
-  "pytest-deadfixtures>=3.0,<3.2",
+  "pytest-deadfixtures~=3.1.0",
   "pytest-rerunfailures~=16.1",
-  "coverage>=7.12,<7.14",
+  "coverage~=7.13.2",
   "psycopg2-binary~=2.9.11",
   "deepdiff~=8.6.1",
   "respx~=0.22.0",
-  "dirty_equals>=0.9,<0.12",
+  "dirty_equals~=0.11",
   "gevent~=25.9.1",
 ]
 dev = [
-  "prek~=0.2.25",
+  "prek~=0.3.0",
+  "ruff~=0.15.2",
   "mypy~=1.19.0",
   "sqlalchemy[mypy]~=2.0.44",
   "types-pyyaml~=6.0.12",
@@ -122,23 +122,23 @@ dev = [
   "types-cachetools~=6.2.0",
 ]
 docs = [
-  "setuptools-git-versioning>=2.1,<3.1",
+  "setuptools-git-versioning~=3.0.1",
   "autodoc-pydantic~=2.2.0",
-  "numpydoc>=1.9,<1.11",
-  # sphinx-design doesn't support sphinx 9
+  "numpydoc~=1.10.0",
+  # sphinx-design and sphinx-tags do not support sphinx 9
   "sphinx~=8.2.3",
-  "furo>=2025.9.25,<2025.13.0",
+  "furo~=2025.12.19",
   "sphinx-copybutton~=0.5.2",
   "sphinxcontrib-towncrier~=0.5.0a0",
   "towncrier~=25.8.0",
   "sphinx-issues~=5.0.1",
-  "sphinx-design>=0.6.1,<0.8.0",
-  "sphinx-favicon~=1.0.1",
-  "sphinx-last-updated-by-git~= 0.3.8",
+  "sphinx-design~=0.7.0",
+  "sphinx-favicon~=1.1.0",
+  "sphinx-last-updated-by-git~=0.3.8",
   # uncomment after https://github.com/zqmillet/sphinx-plantuml/pull/4
   # "sphinx-plantuml~=1.0.0",
   "sphinx-argparse~=0.5.2",
-  "sphinx-tabs~=3.4.7",
+  "sphinx-tabs~=3.5.0",
 ]
 
 [tool.uv]
@@ -150,10 +150,13 @@ markers = [
     "consumer: tests for consumer (require running database and kafka)",
     "http2kafka: tests for consumer (require running database and kafka)",
     "db: tests for db structure and migrations",
-    "lineage: tests for lineage endpoints (require running database)"
+    "lineage: tests for lineage endpoints (require running database)",
 ]
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
+filterwarnings = [
+    "ignore:Module already imported so cannot be rewritten:pytest.PytestAssertRewriteWarning",
+]
 
 [tool.coverage.run]
 source_pkgs = ["data_rentgen"]

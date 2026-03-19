@@ -7,7 +7,7 @@ build:
     - make
     - gcc
   tools:
-    python: '3.13'
+    python: '3.14'
   jobs:
     post_checkout:
       - git fetch --unshallow || true
@@ -15,7 +15,7 @@ build:
       - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH python -m pip install uv
 
     post_install:
-      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --no-install-project --all-extras --no-extra gssapi --group docs
+      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --frozen --no-install-project --all-extras --no-extra gssapi --group docs
       - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv pip install --no-deps sphinx-plantuml # remove after https://github.com/zqmillet/sphinx-plantuml/pull/4
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH python -m pip list -v
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH make docs-openapi
