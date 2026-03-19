@@ -49,290 +49,299 @@ So there is a fallback for Airflow which extracts these dependencies from ``down
 REST API features
 -----------------
 
-- Added ``GET /v1/jobs/hierarchy`` API endpoint to retrieve job hierarchy graph (parents, dependencies) for a given job. (:issue:`407`, :issue:`412`)
+Added ``GET /v1/jobs/hierarchy`` endpoint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  .. dropdown:: Response example
+This endpoint can be used retrieve job hierarchy graph (parents, dependencies) for a given job. (:issue:`407`, :issue:`412`)
 
-      .. code-block:: python
+.. dropdown:: Response example
 
-        {
-            "relations": {
-                "parents": [
-                    {
-                        "from": {"kind": "JOB", "id": "1"},
-                        "to": {"kind": "JOB", "id": "2"}
+  .. code-block:: python
+
+    {
+        "relations": {
+            "parents": [
+                {
+                    "from": {"kind": "JOB", "id": "1"},
+                    "to": {"kind": "JOB", "id": "2"}
+                }
+            ],
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": "3"},
+                    "to": {"kind": "JOB", "id": "1"},
+                    "type": "DIRECT_DEPENDENCY"
+                },
+                {
+                    "from": {"kind": "JOB", "id": "1"},
+                    "to": {"kind": "JOB", "id": "4"},
+                    "type": "DIRECT_DEPENDENCY"
+                }
+            ]
+        },
+        "nodes": {
+            "jobs": {
+                "1": {
+                    "id": 1,
+                    "parent_job_id": null,
+                    "name": "my_job",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
                     }
-                ],
-                "dependencies": [
-                    {
-                        "from": {"kind": "JOB", "id": "3"},
-                        "to": {"kind": "JOB", "id": "1"},
-                        "type": "DIRECT_DEPENDENCY"
-                    },
-                    {
-                        "from": {"kind": "JOB", "id": "1"},
-                        "to": {"kind": "JOB", "id": "4"},
-                        "type": "DIRECT_DEPENDENCY"
+                },
+                "2": {
+                    "id": 2,
+                    "parent_job_id": 1,
+                    "name": "my_job.child_task",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
                     }
-                ]
-            },
-            "nodes": {
-                "jobs": {
-                    "1": {
-                        "id": 1,
-                        "parent_job_id": null,
-                        "name": "my_job",
-                        "type": "SPARK_APPLICATION",
-                        "location": {
-                            "name": "my_cluster",
-                            "type": "YARN"
-                        }
-                    },
-                    "2": {
-                        "id": 2,
-                        "parent_job_id": 1,
-                        "name": "my_job.child_task",
-                        "type": "SPARK_APPLICATION",
-                        "location": {
-                            "name": "my_cluster",
-                            "type": "YARN"
-                        }
-                    },
-                    "3": {
-                        "id": 3,
-                        "parent_job_id": null,
-                        "name": "source_job",
-                        "type": "SPARK_APPLICATION",
-                        "location": {
-                            "name": "my_cluster",
-                            "type": "YARN"
-                        }
-                    },
-                    "4": {
-                        "id": 4,
-                        "parent_job_id": null,
-                        "name": "target_job",
-                        "type": "SPARK_APPLICATION",
-                        "location": {
-                            "name": "my_cluster",
-                            "type": "YARN"
-                        }
+                },
+                "3": {
+                    "id": 3,
+                    "parent_job_id": null,
+                    "name": "source_job",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
+                    }
+                },
+                "4": {
+                    "id": 4,
+                    "parent_job_id": null,
+                    "name": "target_job",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
                     }
                 }
             }
         }
+    }
 
-- Added parent relation between jobs. (:issue:`394`)
+Added parent relation between jobs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Jobs can now reference a parent job via ``parent_job_id`` field.
+Jobs can now reference a parent job via ``parent_job_id`` field. (:issue:`394`)
 
-  Before:
+Before:
 
-  .. dropdown:: Response example
+.. dropdown:: Response example
 
-    .. code-block:: python
+  .. code-block:: python
 
-        {
-            "meta": { ... },
-            "items": [
-                {
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
                     "id": "42",
-                    "data": {
-                        "id": "42",
-                        "name": "my-spark-task",
-                        "type": "SPARK_APPLICATION",
-                        "location": { ... }
-                    }
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... }
                 }
-            ]
-        }
+            }
+        ]
+    }
 
-  After:
+After:
 
-  .. dropdown:: Response example
+.. dropdown:: Response example
 
-    .. code-block:: python
+  .. code-block:: python
 
-        {
-            "meta": { ... },
-            "items": [
-                {
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
                     "id": "42",
-                    "data": {
-                        "id": "42",
-                        "name": "my-spark-task",
-                        "type": "SPARK_APPLICATION",
-                        "location": { ... },
-                        "parent_job_id": "10"
-                    }
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... },
+                    "parent_job_id": "10"
                 }
-            ]
-        }
+            }
+        ]
+    }
 
-- Added JOB-JOB and RUN-RUN relations to ``relations.parent`` field of lineage API. (:issue:`392`, :issue:`399`, :issue:`401`)
+Added JOB-JOB and RUN-RUN relations to lineage API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  For example, it is possible to get Airflow DAG → Airflow Task → Spark app chain from a single response.
+For example, it is possible to get Airflow DAG → Airflow Task → Spark app chain from a single response. (:issue:`392`, :issue:`399`, :issue:`401`)
 
-  Before:
+Before:
 
-  .. dropdown:: Response example
+.. dropdown:: Response example
 
-    .. code-block:: python
+  .. code-block:: python
 
-        {
-            "relations": {
-                "parents": [
-                    {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "parent-run-uuid"}},
-                    {"from": {"kind": "JOB", "id": "2"}, "to": {"kind": "RUN", "id": "run-uuid"}}
-                ],
-                "symlinks": [],
-                "inputs": [...],
-                "outputs": [...]
-            },
-            "nodes": {...}
-        }
+    {
+        "relations": {
+            "parents": [
+                {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "parent-run-uuid"}},
+                {"from": {"kind": "JOB", "id": "2"}, "to": {"kind": "RUN", "id": "run-uuid"}}
+            ],
+            "symlinks": [],
+            "inputs": [...],
+            "outputs": [...]
+        },
+        "nodes": {...}
+    }
 
-  After:
+After:
 
-  .. dropdown:: Response example
+.. dropdown:: Response example
 
-    .. code-block:: python
+  .. code-block:: python
 
-        {
-            "relations": {
-                "parents": [
-                    {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "parent-run-uuid"}},
-                    {"from": {"kind": "JOB", "id": "2"}, "to": {"kind": "RUN", "id": "run-uuid"}},
-                    # NEW:
-                    {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "JOB", "id": "2"}},
-                    {"from": {"kind": "RUN", "id": "parent-run-uuid"}, "to": {"kind": "RUN", "id": "run-uuid"}}
-                ],
-                "symlinks": [],
-                "inputs": [...],
-                "outputs": [...]
-            },
-            "nodes": {...}
-        }
+    {
+        "relations": {
+            "parents": [
+                {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "parent-run-uuid"}},
+                {"from": {"kind": "JOB", "id": "2"}, "to": {"kind": "RUN", "id": "run-uuid"}},
+                # NEW:
+                {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "JOB", "id": "2"}},
+                {"from": {"kind": "RUN", "id": "parent-run-uuid"}, "to": {"kind": "RUN", "id": "run-uuid"}}
+            ],
+            "symlinks": [],
+            "inputs": [...],
+            "outputs": [...]
+        },
+        "nodes": {...}
+    }
 
-- Include ``job`` to ``GET /v1/runs`` response. (:issue:`411`)
+Include ``job`` to ``GET /v1/runs`` response
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Before:
+This allows to show job type & name for specific run without sending additional requests. :issue:`411`
 
-  .. dropdown:: Response example
+Before:
 
-    .. code:: python
+.. dropdown:: Response example
 
-        {
-            "meta": {
-                "page": 1,
-                "page_size": 20,
-                "total_count": 1,
-                "pages_count": 1,
-                "has_next": False,
-                "has_previous": False,
-                "next_page": None,
-                "previous_page": None,
-            },
-            "items": [
-                {
+  .. code:: python
+
+    {
+        "meta": {
+            "page": 1,
+            "page_size": 20,
+            "total_count": 1,
+            "pages_count": 1,
+            "has_next": False,
+            "has_previous": False,
+            "next_page": None,
+            "previous_page": None,
+        },
+        "items": [
+            {
+                "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                "data": {
                     "id": "01908224-8410-79a2-8de6-a769ad6944c9",
-                    "data": {
-                        "id": "01908224-8410-79a2-8de6-a769ad6944c9",
-                        "created_at": "2024-07-05T09:05:49.584000",
-                        "job_id": "123",
-                        ...
-                    },
-                    "statistics": { ... }
-                }
-            ]
-        }
+                    "created_at": "2024-07-05T09:05:49.584000",
+                    "job_id": "123",
+                    ...
+                },
+                "statistics": { ... }
+            }
+        ]
+    }
 
-  After:
+After:
 
-  .. dropdown:: Response example
+.. dropdown:: Response example
 
-    .. code:: python
+  .. code:: python
 
-        {
-            "meta": {
-                "page": 1,
-                "page_size": 20,
-                "total_count": 1,
-                "pages_count": 1,
-                "has_next": False,
-                "has_previous": False,
-                "next_page": None,
-                "previous_page": None,
-            },
-            "items": [
-                {
+    {
+        "meta": {
+            "page": 1,
+            "page_size": 20,
+            "total_count": 1,
+            "pages_count": 1,
+            "has_next": False,
+            "has_previous": False,
+            "next_page": None,
+            "previous_page": None,
+        },
+        "items": [
+            {
+                "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                "data": {
                     "id": "01908224-8410-79a2-8de6-a769ad6944c9",
-                    "data": {
-                        "id": "01908224-8410-79a2-8de6-a769ad6944c9",
-                        "created_at": "2024-07-05T09:05:49.584000",
-                        "job_id": "123",
-                        ...
-                    },
-                    "job": {
-                        "id": "123",
-                        "name": "myjob",
-                        ...
-                    },
-                    "statistics": { ... }
-                }
-            ]
-        }
+                    "created_at": "2024-07-05T09:05:49.584000",
+                    "job_id": "123",
+                    ...
+                },
+                "job": {
+                    "id": "123",
+                    "name": "myjob",
+                    ...
+                },
+                "statistics": { ... }
+            }
+        ]
+    }
 
-- Include ``last_run`` field to ``GET /v1/jobs`` endpoint response, showing the most recently started run for each job. (:issue:`387`)
+Include ``last_run`` field to ``GET /v1/jobs`` response
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Before:
+This allows to show last start time, status and duration for each job in the list, without additional requests. :issue:`387`
 
-  .. dropdown:: Response example
+Before:
 
-    .. code-block:: python
+.. dropdown:: Response example
 
-        {
-            "meta": { ... },
-            "items": [
-                {
+  .. code-block:: python
+
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
                     "id": "42",
-                    "data": {
-                        "id": "42",
-                        "name": "my-spark-task",
-                        "type": "SPARK_APPLICATION",
-                        "location": { ... },
-                        "parent_job_id": "10"
-                    }
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... },
+                    "parent_job_id": "10"
                 }
-            ]
-        }
+            }
+        ]
+    }
 
-  After:
+After:
 
-  .. dropdown:: Response example
+.. dropdown:: Response example
 
-    .. code-block:: python
+  .. code-block:: python
 
-        {
-            "meta": { ... },
-            "items": [
-                {
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
                     "id": "42",
-                    "data": {
-                        "id": "42",
-                        "name": "my-spark-task",
-                        "type": "SPARK_APPLICATION",
-                        "location": { ... },
-                        "parent_job_id": "10"
-                    },
-                    "last_run": {
-                        "id": "01908224-8410-79a2-8de6-a769ad6944c9",
-                        "created_at": "2024-07-05T09:05:49.584000",
-                        "job_id": "123",
-                        ...
-                    }
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... },
+                    "parent_job_id": "10"
+                },
+                "last_run": {
+                    "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                    "created_at": "2024-07-05T09:05:49.584000",
+                    "job_id": "123",
+                    ...
                 }
-            ]
-        }
-
-  This allows to show last start time, status and duration in UI for job.
+            }
+        ]
+    }
