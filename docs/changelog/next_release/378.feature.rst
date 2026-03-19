@@ -1,1 +1,0 @@
-Added support for OpenLineage ``nominalTime`` run facet to track scheduled/expected start and end times of job runs.

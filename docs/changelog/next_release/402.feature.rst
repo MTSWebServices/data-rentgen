@@ -1,6 +1,0 @@
-Extract information from `jobDependencies <https://openlineage.io/docs/spec/facets/run-facets/job_dependencies/>`_ facet, and store it in ``job_dependency`` table.
-For now this is just a simple tuple `from_dataset_id`, `to_dataset_id, `type` (arbitrary string provided by integration, not enum). This can be changed in future versions of Data.Rentgen.
-
-Currently the only integration providing this kind of information is Airflow. But it is implemented only in most recent version of OpenLineage provider for Airflow (`2.10 or higher <https://github.com/apache/airflow/pull/59521>`_).
-For now provides also doesn't send facet with information about direct task -> task dependencies - only indirect ones are included (declared via `Asset <https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/assets.html>`_).
-So there is a fallback for Airflow which extracts these dependencies from ``downstream_task_ids`` and ``upstream_task_ids`` task fields.

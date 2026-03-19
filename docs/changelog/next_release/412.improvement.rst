@@ -1,1 +1,0 @@
-Add ``depth`` query parameter to ``GET /v1/jobs/dependencies`` endpoint, allowing control over how many layers of dependency are traversed. Defaults to ``1``.

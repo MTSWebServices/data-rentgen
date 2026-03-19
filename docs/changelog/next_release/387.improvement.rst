@@ -1,1 +1,0 @@
-Added ``last_run`` field to ``GET /v1/jobs`` endpoint response, showing the most recently started run for each job.

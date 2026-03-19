@@ -1,8 +1,0 @@
-Extract job tags based on engine & OpenLineage versions:
-- ``airflow.version``
-- ``dbt.version``
-- ``flink.version``
-- ``hive.version``
-- ``spark.version``
-- ``openlineage_adapter.version``
-- ``openlineage_client.version`` (only for Python client v1.38.0 or higher)
