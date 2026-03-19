@@ -50,7 +50,7 @@ upstream_jobs_query_recursive_part = (
 )
 
 
-upstream_jobs_query_cte = upstream_jobs_query_cte.union_all(upstream_jobs_query_recursive_part)
+upstream_jobs_query_cte = upstream_jobs_query_cte.union(upstream_jobs_query_recursive_part)
 upstream_entities_query = select(aliased(JobDependency, upstream_jobs_query_cte))
 
 downstream_jobs_query_base_part = (
@@ -75,8 +75,10 @@ downstream_jobs_query_recursive_part = (
     )
 )
 
-downstream_jobs_query_cte = downstream_jobs_query_cte.union_all(downstream_jobs_query_recursive_part)
+downstream_jobs_query_cte = downstream_jobs_query_cte.union(downstream_jobs_query_recursive_part)
 downstream_entities_query = select(aliased(JobDependency, downstream_jobs_query_cte))
+
+both_entities_query = select(aliased(JobDependency, (upstream_entities_query.union(downstream_entities_query)).cte()))
 
 
 class JobDependencyRepository(Repository[JobDependency]):
@@ -117,15 +119,14 @@ class JobDependencyRepository(Repository[JobDependency]):
 
         match direction:
             case "UPSTREAM":
-                result = await self._session.scalars(upstream_entities_query, {"job_ids": job_ids, "depth": depth})
-                return list(result.all())
+                query = upstream_entities_query
             case "DOWNSTREAM":
-                result = await self._session.scalars(downstream_entities_query, {"job_ids": job_ids, "depth": depth})
-                return list(result.all())
+                query = downstream_entities_query
             case "BOTH":
-                query = select(aliased(JobDependency, (upstream_entities_query.union(downstream_entities_query)).cte()))
-                result = await self._session.scalars(query, {"job_ids": job_ids, "depth": depth})
-                return list(result.all())
+                query = both_entities_query
+
+        result = await self._session.scalars(query, {"job_ids": job_ids, "depth": depth})
+        return list(result.all())
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(
