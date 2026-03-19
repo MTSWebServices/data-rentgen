@@ -332,7 +332,7 @@ async def job_dependency_depth_chain(
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
 ) -> AsyncGenerator[list[Job], None]:
     """
-    Linear dependency chain of 5 jobs without:
+    Linear dependency chain of 5 jobs:
 
         job_1 → job_2 → job_3 → job_4 → job_5
 

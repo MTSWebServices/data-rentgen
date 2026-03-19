@@ -3,7 +3,6 @@
 from typing import Literal
 
 from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, literal, select, tuple_
-from sqlalchemy.orm import aliased
 
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.repositories.base import Repository
@@ -27,14 +26,9 @@ get_one_query = select(JobDependency).where(
     JobDependency.to_job_id == bindparam("to_job_id"),
 )
 
-source_jobs = aliased(JobDependency, name="source")
-target_jobs = aliased(JobDependency, name="target")
-
 upstream_jobs_query_base_part = (
     select(
-        JobDependency.from_job_id.label("from_job_id"),
-        JobDependency.to_job_id.label("to_job_id"),
-        JobDependency.type.label("type"),
+        JobDependency,
         literal(1).label("depth"),
     )
     .select_from(JobDependency)
@@ -44,9 +38,7 @@ upstream_jobs_query_cte = upstream_jobs_query_base_part.cte(name="upstream_jobs_
 
 upstream_jobs_query_recursive_part = (
     select(
-        JobDependency.from_job_id.label("from_job_id"),
-        JobDependency.to_job_id.label("to_job_id"),
-        JobDependency.type.label("type"),
+        JobDependency,
         (upstream_jobs_query_cte.c.depth + 1).label("depth"),
     )
     .select_from(JobDependency)
@@ -61,9 +53,7 @@ upstream_jobs_query_cte = upstream_jobs_query_cte.union_all(upstream_jobs_query_
 
 downstream_jobs_query_base_part = (
     select(
-        JobDependency.from_job_id.label("from_job_id"),
-        JobDependency.to_job_id.label("to_job_id"),
-        JobDependency.type.label("type"),
+        JobDependency,
         literal(1).label("depth"),
     )
     .select_from(JobDependency)
@@ -73,9 +63,7 @@ downstream_jobs_query_cte = downstream_jobs_query_base_part.cte(name="downstream
 
 downstream_jobs_query_recursive_part = (
     select(
-        JobDependency.from_job_id.label("from_job_id"),
-        JobDependency.to_job_id.label("to_job_id"),
-        JobDependency.type.label("type"),
+        JobDependency,
         (downstream_jobs_query_cte.c.depth + 1).label("depth"),
     )
     .select_from(JobDependency)

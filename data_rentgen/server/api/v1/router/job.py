@@ -92,9 +92,9 @@ async def get_job_dependencies(
     current_user: Annotated[User, Depends(get_user())],
 ) -> JobDependenciesResponseV1:
     job_dependencies = await job_service.get_job_dependencies(
-        query_args.start_node_id,
-        query_args.direction,
-        query_args.depth,
+        start_node_id=query_args.start_node_id,
+        direction=query_args.direction,
+        depth=query_args.depth,
     )
     return JobDependenciesResponseV1(
         relations=JobDependenciesRelationsV1(
