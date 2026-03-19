@@ -213,6 +213,7 @@ async def test_get_job_dependencies_with_direction_downstream(
         (2, "UPSTREAM", [(0, 1), (1, 2)], [0, 1, 2]),
         (1, "BOTH", [(1, 2), (2, 3)], [1, 2, 3]),
         (2, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
+        (5, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
     ],
     ids=[
         "depth_1-downstream",
@@ -221,6 +222,7 @@ async def test_get_job_dependencies_with_direction_downstream(
         "depth_2-upstream",
         "depth_1-both",
         "depth_2-both",
+        "depth_5-both",
     ],
 )
 async def test_get_job_dependencies_with_depth(
@@ -261,4 +263,44 @@ async def test_get_job_dependencies_with_depth(
             ],
         },
         "nodes": {"jobs": jobs_to_json(expected_jobs)},
+    }
+
+
+@pytest.mark.parametrize(
+    ["direction", "start_node_index"],
+    [
+        ("UPSTREAM", 0),
+        ("DOWNSTREAM", 4),
+    ],
+    ids=["upstream_boundary", "downstream_boundary"],
+)
+async def test_get_job_dependencies_with_depth_on_boundary(
+    test_client: AsyncClient,
+    job_dependency_depth_chain: tuple[Job, ...],
+    async_session: AsyncSession,
+    mocked_user: MockedUser,
+    direction: str,
+    start_node_index: int,
+):
+    """
+    Fixture chain: job_0 → job_1 → job_2 → job_3 → job_4
+    Start node is job_0 or job_4.
+    """
+    jobs = job_dependency_depth_chain
+    start_job = jobs[start_node_index]
+
+    [expected_job] = await enrich_jobs([start_job], async_session)
+
+    response = await test_client.get(
+        "v1/jobs/dependencies",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={"start_node_id": start_job.id, "depth": 2, "direction": direction},
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": [],
+            "dependencies": [],
+        },
+        "nodes": {"jobs": jobs_to_json([expected_job])},
     }
