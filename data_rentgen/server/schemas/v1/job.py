@@ -129,4 +129,5 @@ class JobDependenciesQueryV1(BaseModel):
         description="Direction of the lineage",
         examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
     )
+    depth: int = Field(description="Depth of dependencies between jobs", default=1)
     model_config = ConfigDict(extra="ignore")

@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Literal
 
-from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, or_, select, tuple_
+from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, literal, select, tuple_
+from sqlalchemy.orm import aliased
 
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.repositories.base import Repository
@@ -25,6 +26,59 @@ get_one_query = select(JobDependency).where(
     JobDependency.from_job_id == bindparam("from_job_id"),
     JobDependency.to_job_id == bindparam("to_job_id"),
 )
+
+upstream_jobs_query_base_part = (
+    select(
+        JobDependency,
+        literal(1).label("depth"),
+    )
+    .select_from(JobDependency)
+    .where(JobDependency.to_job_id == any_(bindparam("job_ids")))
+)
+upstream_jobs_query_cte = upstream_jobs_query_base_part.cte(name="upstream_jobs_query", recursive=True)
+
+upstream_jobs_query_recursive_part = (
+    select(
+        JobDependency,
+        (upstream_jobs_query_cte.c.depth + 1).label("depth"),
+    )
+    .select_from(JobDependency)
+    .where(
+        upstream_jobs_query_cte.c.depth < bindparam("depth"),
+        JobDependency.to_job_id == upstream_jobs_query_cte.c.from_job_id,
+    )
+)
+
+
+upstream_jobs_query_cte = upstream_jobs_query_cte.union(upstream_jobs_query_recursive_part)
+upstream_entities_query = select(aliased(JobDependency, upstream_jobs_query_cte))
+
+downstream_jobs_query_base_part = (
+    select(
+        JobDependency,
+        literal(1).label("depth"),
+    )
+    .select_from(JobDependency)
+    .where(JobDependency.from_job_id == any_(bindparam("job_ids")))
+)
+downstream_jobs_query_cte = downstream_jobs_query_base_part.cte(name="downstream_jobs_query", recursive=True)
+
+downstream_jobs_query_recursive_part = (
+    select(
+        JobDependency,
+        (downstream_jobs_query_cte.c.depth + 1).label("depth"),
+    )
+    .select_from(JobDependency)
+    .where(
+        downstream_jobs_query_cte.c.depth < bindparam("depth"),
+        JobDependency.from_job_id == downstream_jobs_query_cte.c.to_job_id,
+    )
+)
+
+downstream_jobs_query_cte = downstream_jobs_query_cte.union(downstream_jobs_query_recursive_part)
+downstream_entities_query = select(aliased(JobDependency, downstream_jobs_query_cte))
+
+both_entities_query = select(aliased(JobDependency, (upstream_entities_query.union(downstream_entities_query)).cte()))
 
 
 class JobDependencyRepository(Repository[JobDependency]):
@@ -60,25 +114,19 @@ class JobDependencyRepository(Repository[JobDependency]):
         self,
         job_ids: list[int],
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
+        depth: int,
     ) -> list[JobDependency]:
 
-        job_dependency_query = select(JobDependency)
         match direction:
             case "UPSTREAM":
-                job_dependency_query = job_dependency_query.where(JobDependency.to_job_id == any_(bindparam("job_ids")))
+                query = upstream_entities_query
             case "DOWNSTREAM":
-                job_dependency_query = job_dependency_query.where(
-                    JobDependency.from_job_id == any_(bindparam("job_ids"))
-                )
+                query = downstream_entities_query
             case "BOTH":
-                job_dependency_query = job_dependency_query.where(
-                    or_(
-                        JobDependency.from_job_id == any_(bindparam("job_ids")),
-                        JobDependency.to_job_id == any_(bindparam("job_ids")),
-                    )
-                )
-        scalars = await self._session.scalars(job_dependency_query, {"job_ids": job_ids})
-        return list(scalars.all())
+                query = both_entities_query
+
+        result = await self._session.scalars(query, {"job_ids": job_ids, "depth": depth})
+        return list(result.all())
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(

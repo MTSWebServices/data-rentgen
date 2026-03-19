@@ -111,8 +111,15 @@ class JobService:
         self,
         start_node_id: int,
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
+        depth: int,
     ) -> JobDependenciesResult:
-        logger.info("Get Job dependencies with start at job with id %s and direction: %s", start_node_id, direction)
+        logger.info(
+            "Get Job dependencies with start at job with id %s and next params: direction: %s, depth: %s",
+            start_node_id,
+            direction,
+            depth,
+        )
+        job_ids = {start_node_id}
 
         ancestor_relations = await self._uow.job.list_ancestor_relations([start_node_id])
         descendant_relations = await self._uow.job.list_descendant_relations([start_node_id])
@@ -122,10 +129,13 @@ class JobService:
             | {p.child_job_id for p in descendant_relations}
         )
 
-        dependencies = await self._uow.job_dependency.get_dependencies(job_ids=list(job_ids), direction=direction)
+        dependencies = await self._uow.job_dependency.get_dependencies(
+            job_ids=list(job_ids),
+            direction=direction,
+            depth=depth,
+        )
         dependency_job_ids = {d.from_job_id for d in dependencies} | {d.to_job_id for d in dependencies}
         job_ids |= dependency_job_ids
-
         # return ancestors for all found jobs in the graph
         ancestor_relations += await self._uow.job.list_ancestor_relations(list(dependency_job_ids))
         job_ids |= {p.parent_job_id for p in ancestor_relations}
