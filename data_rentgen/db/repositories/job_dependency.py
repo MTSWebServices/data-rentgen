@@ -3,6 +3,7 @@
 from typing import Literal
 
 from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, literal, select, tuple_
+from sqlalchemy.orm import aliased
 
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.repositories.base import Repository
@@ -50,6 +51,7 @@ upstream_jobs_query_recursive_part = (
 
 
 upstream_jobs_query_cte = upstream_jobs_query_cte.union_all(upstream_jobs_query_recursive_part)
+upstream_entities_query = aliased(JobDependency, upstream_jobs_query_cte)
 
 downstream_jobs_query_base_part = (
     select(
@@ -74,6 +76,7 @@ downstream_jobs_query_recursive_part = (
 )
 
 downstream_jobs_query_cte = downstream_jobs_query_cte.union_all(downstream_jobs_query_recursive_part)
+downstream_entities_query = aliased(JobDependency, downstream_jobs_query_cte)
 
 
 class JobDependencyRepository(Repository[JobDependency]):
@@ -124,28 +127,14 @@ class JobDependencyRepository(Repository[JobDependency]):
                 return result
 
     async def _get_upstream_dependencies(self, job_ids: list[int], depth: int) -> list[JobDependency]:
-        stmt = select(
-            upstream_jobs_query_cte.c.from_job_id,
-            upstream_jobs_query_cte.c.to_job_id,
-            upstream_jobs_query_cte.c.type,
-        )
-        result = await self._session.execute(stmt, {"job_ids": job_ids, "depth": depth})
-        return [
-            JobDependency(from_job_id=from_job_id, to_job_id=to_job_id, type=type_)
-            for from_job_id, to_job_id, type_ in result.fetchall()
-        ]
+        stmt = select(upstream_entities_query)
+        result = await self._session.scalars(stmt, {"job_ids": job_ids, "depth": depth})
+        return list(result.all())
 
     async def _get_downstream_dependencies(self, job_ids: list[int], depth: int) -> list[JobDependency]:
-        stmt = select(
-            downstream_jobs_query_cte.c.from_job_id,
-            downstream_jobs_query_cte.c.to_job_id,
-            downstream_jobs_query_cte.c.type,
-        )
-        result = await self._session.execute(stmt, {"job_ids": job_ids, "depth": depth})
-        return [
-            JobDependency(from_job_id=from_job_id, to_job_id=to_job_id, type=type_)
-            for from_job_id, to_job_id, type_ in result.fetchall()
-        ]
+        stmt = select(downstream_entities_query)
+        result = await self._session.scalars(stmt, {"job_ids": job_ids, "depth": depth})
+        return list(result.all())
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(
