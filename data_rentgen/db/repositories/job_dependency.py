@@ -117,22 +117,15 @@ class JobDependencyRepository(Repository[JobDependency]):
 
         match direction:
             case "UPSTREAM":
-                return await self._get_upstream_dependencies(job_ids=job_ids, depth=depth)
+                result = await self._session.scalars(upstream_entities_query, {"job_ids": job_ids, "depth": depth})
+                return list(result.all())
             case "DOWNSTREAM":
-                return await self._get_downstream_dependencies(job_ids=job_ids, depth=depth)
+                result = await self._session.scalars(downstream_entities_query, {"job_ids": job_ids, "depth": depth})
+                return list(result.all())
             case "BOTH":
-                result = []
-                result.extend(await self._get_upstream_dependencies(job_ids=job_ids, depth=depth))
-                result.extend(await self._get_downstream_dependencies(job_ids=job_ids, depth=depth))
-                return result
-
-    async def _get_upstream_dependencies(self, job_ids: list[int], depth: int) -> list[JobDependency]:
-        result = await self._session.scalars(upstream_entities_query, {"job_ids": job_ids, "depth": depth})
-        return list(result.all())
-
-    async def _get_downstream_dependencies(self, job_ids: list[int], depth: int) -> list[JobDependency]:
-        result = await self._session.scalars(downstream_entities_query, {"job_ids": job_ids, "depth": depth})
-        return list(result.all())
+                query = select(aliased(JobDependency, (upstream_entities_query.union(downstream_entities_query)).cte()))
+                result = await self._session.scalars(query, {"job_ids": job_ids, "depth": depth})
+                return list(result.all())
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(
