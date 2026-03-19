@@ -63,7 +63,7 @@ class JobServicePaginatedResult(PaginationDTO[JobServiceResult]):
 
 
 @dataclass
-class JobDependenciesResult:
+class JobHierarchyResult:
     parents: set[tuple[int, int]] = field(default_factory=set)
     dependencies: set[tuple[int, int, str | None]] = field(default_factory=set)
     jobs: list[JobServiceResult] = field(default_factory=list)
@@ -107,14 +107,14 @@ class JobService:
     async def get_job_types(self) -> Sequence[str]:
         return await self._uow.job_type.get_job_types()
 
-    async def get_job_dependencies(
+    async def get_jobs_hierarchy(
         self,
         start_node_id: int,
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
         depth: int,
-    ) -> JobDependenciesResult:
+    ) -> JobHierarchyResult:
         logger.info(
-            "Get Job dependencies with start at job with id %s and next params: direction: %s, depth: %s",
+            "Get jobs hierarchy with start at job with id %s, direction %s, depth %s",
             start_node_id,
             direction,
             depth,
@@ -140,7 +140,7 @@ class JobService:
         ancestor_relations += await self._uow.job.list_ancestor_relations(list(dependency_job_ids))
         job_ids |= {p.parent_job_id for p in ancestor_relations}
         jobs = await self._uow.job.list_by_ids(list(job_ids))
-        return JobDependenciesResult(
+        return JobHierarchyResult(
             parents={(p.parent_job_id, p.child_job_id) for p in ancestor_relations + descendant_relations},
             dependencies={(d.from_job_id, d.to_job_id, d.type) for d in dependencies},
             jobs=[JobServiceResult.from_orm(job) for job in jobs],

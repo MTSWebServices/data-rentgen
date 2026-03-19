@@ -15,13 +15,13 @@ from tests.test_server.utils.enrich import enrich_jobs
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
 
 
-async def test_get_job_dependencies_nonexistent_start_node(
+async def test_get_job_hierarchy_nonexistent_start_node(
     test_client: AsyncClient,
     new_job: Job,
     mocked_user: MockedUser,
 ):
     response = await test_client.get(
-        "v1/jobs/dependencies",
+        "v1/jobs/hierarchy",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={"start_node_id": new_job.id},
     )
@@ -35,7 +35,7 @@ async def test_get_job_dependencies_nonexistent_start_node(
     }
 
 
-async def test_get_job_dependencies_isolated_job(
+async def test_get_job_hierarchy_isolated_job(
     test_client: AsyncClient,
     job: Job,
     async_session: AsyncSession,
@@ -44,7 +44,7 @@ async def test_get_job_dependencies_isolated_job(
     [job] = await enrich_jobs([job], async_session)
 
     response = await test_client.get(
-        "v1/jobs/dependencies",
+        "v1/jobs/hierarchy",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={"start_node_id": job.id},
     )
@@ -58,12 +58,12 @@ async def test_get_job_dependencies_isolated_job(
     }
 
 
-async def test_get_job_dependencies_unauthorized(
+async def test_get_job_hierarchy_unauthorized(
     test_client: AsyncClient,
     job: Job,
 ):
     response = await test_client.get(
-        "v1/jobs/dependencies",
+        "v1/jobs/hierarchy",
         params={"start_node_id": job.id},
     )
     assert response.status_code == HTTPStatus.UNAUTHORIZED, response.json()
@@ -76,7 +76,7 @@ async def test_get_job_dependencies_unauthorized(
     }
 
 
-async def test_get_job_dependencies_with_direction_both(
+async def test_get_job_hierarchy_with_direction_both(
     test_client: AsyncClient,
     job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
     async_session: AsyncSession,
@@ -102,7 +102,7 @@ async def test_get_job_dependencies_with_direction_both(
 
     for start_node in [dag2, task2, spark2]:
         response = await test_client.get(
-            "v1/jobs/dependencies",
+            "v1/jobs/hierarchy",
             headers={"Authorization": f"Bearer {mocked_user.access_token}"},
             params={"start_node_id": start_node.id},
         )
@@ -128,7 +128,7 @@ async def test_get_job_dependencies_with_direction_both(
         }
 
 
-async def test_get_job_dependencies_with_direction_upstream(
+async def test_get_job_hierarchy_with_direction_upstream(
     test_client: AsyncClient,
     job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
     async_session: AsyncSession,
@@ -146,7 +146,7 @@ async def test_get_job_dependencies_with_direction_upstream(
 
     for start_node in [dag2, task2, spark2]:
         response = await test_client.get(
-            "v1/jobs/dependencies",
+            "v1/jobs/hierarchy",
             headers={"Authorization": f"Bearer {mocked_user.access_token}"},
             params={"start_node_id": start_node.id, "direction": "UPSTREAM"},
         )
@@ -166,7 +166,7 @@ async def test_get_job_dependencies_with_direction_upstream(
         }
 
 
-async def test_get_job_dependencies_with_direction_downstream(
+async def test_get_job_hierarchy_with_direction_downstream(
     test_client: AsyncClient,
     job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
     async_session: AsyncSession,
@@ -184,7 +184,7 @@ async def test_get_job_dependencies_with_direction_downstream(
 
     for start_node in [dag2, task2, spark2]:
         response = await test_client.get(
-            "v1/jobs/dependencies",
+            "v1/jobs/hierarchy",
             headers={"Authorization": f"Bearer {mocked_user.access_token}"},
             params={"start_node_id": start_node.id, "direction": "DOWNSTREAM"},
         )
@@ -225,7 +225,7 @@ async def test_get_job_dependencies_with_direction_downstream(
         "depth_5-both",
     ],
 )
-async def test_get_job_dependencies_with_depth(
+async def test_get_job_hierarchy_with_depth(
     test_client: AsyncClient,
     job_dependency_depth_chain: tuple[Job, ...],
     async_session: AsyncSession,
@@ -245,7 +245,7 @@ async def test_get_job_dependencies_with_depth(
     expected_jobs = await enrich_jobs([jobs[i] for i in expected_job_indices], async_session)
 
     response = await test_client.get(
-        "v1/jobs/dependencies",
+        "v1/jobs/hierarchy",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={"start_node_id": start_job.id, "depth": depth, "direction": direction},
     )
@@ -274,7 +274,7 @@ async def test_get_job_dependencies_with_depth(
     ],
     ids=["upstream_boundary", "downstream_boundary"],
 )
-async def test_get_job_dependencies_with_depth_on_boundary(
+async def test_get_job_hierarchy_with_depth_on_boundary(
     test_client: AsyncClient,
     job_dependency_depth_chain: tuple[Job, ...],
     async_session: AsyncSession,
@@ -292,7 +292,7 @@ async def test_get_job_dependencies_with_depth_on_boundary(
     [expected_job] = await enrich_jobs([start_job], async_session)
 
     response = await test_client.get(
-        "v1/jobs/dependencies",
+        "v1/jobs/hierarchy",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={"start_node_id": start_job.id, "depth": 2, "direction": direction},
     )

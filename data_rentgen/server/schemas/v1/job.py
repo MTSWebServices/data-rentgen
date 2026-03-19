@@ -51,17 +51,17 @@ class JobParentEntityRelationV1(BaseModel):
     to: JobEntityV1 = Field(description="End point of relation")
 
 
-class JobDependenciesRelationsV1(BaseModel):
+class JobHierarchyRelationsV1(BaseModel):
     parents: list[JobParentEntityRelationV1] = Field(description="Parent relations", default_factory=list)
     dependencies: list[JobDependencyV1] = Field(description="Job dependencies", default_factory=list)
 
 
-class JobDependenciesResponseV1(BaseModel):
+class JobHierarchyResponseV1(BaseModel):
     "Job dependencies"
 
-    relations: JobDependenciesRelationsV1 = Field(
+    relations: JobHierarchyRelationsV1 = Field(
         description="Job parents and dependencies relations",
-        default_factory=JobDependenciesRelationsV1,
+        default_factory=JobHierarchyRelationsV1,
     )
     nodes: dict[str, dict[str, JobResponseV1]] = Field(description="Job nodes", default_factory=dict)
 
@@ -110,12 +110,12 @@ class JobPaginateQueryV1(PaginateQueryV1):
     model_config = ConfigDict(extra="forbid")
 
 
-class JobDependenciesQueryV1(BaseModel):
+class JobHierarchyQueryV1(BaseModel):
     start_node_id: int = Field(description="Job id", examples=[42])
     direction: Literal["DOWNSTREAM", "UPSTREAM", "BOTH"] = Field(
         default="BOTH",
         description="Direction of the lineage",
         examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
     )
-    depth: int = Field(description="Depth of dependencies between jobs", default=1)
+    depth: int = Field(description="Levels of dependencies to dive into", default=1)
     model_config = ConfigDict(extra="ignore")

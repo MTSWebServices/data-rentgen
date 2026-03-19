@@ -333,7 +333,7 @@ It contains following fields:
 - ``to: Job | Run`` - entity which waits.
 - ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INDIRECT_DEPENDENCY``.
 
-.. image:: job_dependencies.png
+.. image:: dependency_relation.png
 
 Input relation
 ~~~~~~~~~~~~~~

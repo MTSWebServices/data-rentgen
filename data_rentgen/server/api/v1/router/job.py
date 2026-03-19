@@ -9,10 +9,10 @@ from data_rentgen.server.errors import get_error_responses
 from data_rentgen.server.errors.schemas.invalid_request import InvalidRequestSchema
 from data_rentgen.server.errors.schemas.not_authorized import NotAuthorizedRedirectSchema, NotAuthorizedSchema
 from data_rentgen.server.schemas.v1 import (
-    JobDependenciesQueryV1,
-    JobDependenciesRelationsV1,
-    JobDependenciesResponseV1,
     JobDetailedResponseV1,
+    JobHierarchyQueryV1,
+    JobHierarchyRelationsV1,
+    JobHierarchyResponseV1,
     JobLineageQueryV1,
     JobPaginateQueryV1,
     JobResponseV1,
@@ -57,7 +57,7 @@ async def paginate_jobs(
     return PageResponseV1[JobDetailedResponseV1].from_pagination(pagination)
 
 
-@router.get("/lineage", summary="Get Job lineage graph")
+@router.get("/lineage", summary="Get Job lineage graph", tags=["Lineage"])
 async def get_jobs_lineage(
     query_args: Annotated[JobLineageQueryV1, Query()],
     lineage_service: Annotated[LineageService, Depends()],
@@ -85,25 +85,25 @@ async def get_job_types(
     return JobTypesResponseV1(job_types=list(job_types))
 
 
-@router.get("/dependencies", summary="Get ancestors and descendans of the Jobs")
-async def get_job_dependencies(
-    query_args: Annotated[JobDependenciesQueryV1, Depends()],
+@router.get("/hierarchy", summary="Get ancestors and descendans of the Jobs", tags=["Hierarchy"])
+async def get_job_hierarchy(
+    query_args: Annotated[JobHierarchyQueryV1, Depends()],
     job_service: Annotated[JobService, Depends()],
     current_user: Annotated[User, Depends(get_user())],
-) -> JobDependenciesResponseV1:
-    job_dependencies = await job_service.get_job_dependencies(
+) -> JobHierarchyResponseV1:
+    job_hierarchy = await job_service.get_jobs_hierarchy(
         start_node_id=query_args.start_node_id,
         direction=query_args.direction,
         depth=query_args.depth,
     )
-    return JobDependenciesResponseV1(
-        relations=JobDependenciesRelationsV1(
+    return JobHierarchyResponseV1(
+        relations=JobHierarchyRelationsV1(
             parents=[
                 JobParentEntityRelationV1(
                     from_=JobEntityV1(id=str(from_id)),
                     to=JobEntityV1(id=str(to_id)),
                 )
-                for from_id, to_id in sorted(job_dependencies.parents)
+                for from_id, to_id in sorted(job_hierarchy.parents)
             ],
             dependencies=[
                 JobDependencyV1(
@@ -111,13 +111,13 @@ async def get_job_dependencies(
                     to=JobEntityV1(id=str(to_id)),
                     type_=type_,
                 )
-                for from_id, to_id, type_ in sorted(job_dependencies.dependencies)
+                for from_id, to_id, type_ in sorted(job_hierarchy.dependencies)
             ],
         ),
         nodes={
             "jobs": {
                 str(job.id): JobResponseV1.model_validate(job.data)
-                for job in sorted(job_dependencies.jobs, key=lambda item: item.id)
+                for job in sorted(job_hierarchy.jobs, key=lambda item: item.id)
             }
         },
     )

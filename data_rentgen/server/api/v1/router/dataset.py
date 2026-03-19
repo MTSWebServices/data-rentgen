@@ -45,7 +45,7 @@ async def paginate_datasets(
     return PageResponseV1[DatasetDetailedResponseV1].from_pagination(pagination)
 
 
-@router.get("/lineage", summary="Get Dataset lineage graph")
+@router.get("/lineage", summary="Get Dataset lineage graph", tags=["Lineage"])
 async def get_datasets_lineage(
     query_args: Annotated[DatasetLineageQueryV1, Query()],
     lineage_service: Annotated[LineageService, Depends()],
