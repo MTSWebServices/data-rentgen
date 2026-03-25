@@ -1,43 +1,5 @@
 # Entities { #entities }
 
-```plantuml
-
-    @startuml
-        title Entities diagram
-        skinparam componentStyle rectangle
-        left to right direction
-
-        component Location1 {
-            collections Addresses1
-        }
-        component Location2 {
-            collections Addresses2
-        }
-        component Location3 {
-            collections Addresses3
-        }
-        database Dataset1
-        database Dataset2
-        component Job
-        collections Run
-        collections Operation
-        component User
-
-        [Dataset1] --> [Location1]: located in
-        [Dataset2] --> [Location2]: located in
-        [Dataset1] --> [Dataset2]: SYMLINK
-        [Dataset2] --> [Dataset1]: SYMLINK
-        [Job] --> [Location3]: located in
-        [Run] --> [Job]: PARENT
-        [Operation] --> [Run]: PARENT
-        [Run] --> [User]: started by
-        [Run] --> [Run]: PARENT
-        [Dataset1] ..> [Operation]: INPUT
-        [Operation] ..> [Dataset1]: OUTPUT
-
-    @enduml
-```
-
 ```mermaid
 ---
 title: Entities diagram
@@ -106,13 +68,9 @@ Examples:
 It contains following fields:
 
 - `id: int` - internal unique identifier.
-
 - `type: str` - location type, e.g. `hive`, `hdfs`, `oracle` and so on.
-
 - `name: str` - location name, e.g. `some-cluster`, `some.host.name`
-
 - `external_id: str | None` - external identified of this location in some third-party system (e.g. PlatformInstance in [Datahub](https://datahubproject.io/)).
-
 - `addresses` - list of alternative location addresses (see below):
 
   - `url: str` - alternative address, in URL form.
@@ -173,7 +131,6 @@ Also, there can be multiple schemas of dataset:
 It contains following fields:
 
 - `id: int` - internal unique identifier.
-
 - `fields: list[SchemaField]`:
 
   - `name: str` - column name
@@ -206,11 +163,8 @@ Examples:
 It contains following fields:
 
 - `id: int` - internal unique identifier.
-
 - `location: Location` - Location where Job is run, e.g. cluster or host name.
-
 - `name: str` - name of Job, like `my-session-name`, `mydag`, `mydag.mytask`
-
 - `type: str` - type of Job, like:
 
   - `SPARK_APPLICATION`
@@ -220,7 +174,23 @@ It contains following fields:
   - `DBT_JOB`
   - `UNKNOWN`
 
+- `parent_job_id: int` - parent Job which started this specific Job, e.g. Spark applicationId was started by Airflow Task Instance, or Airflow Task Instance is a started by Airflow DagRun.
+- `tags: list[Tag]` - tags of job.
+
 ![job list](job_list.png)
+
+### Tags
+
+Datasets and jobs can have multiple tags which are arbitrary `key: value` pairs.
+
+- `id: int` - tag identifier
+- `name: str` - tag name, usually in format `source.name`, e.g. `airflow.version`,  `company.team`
+- `values: list[TagValue]` - tag values bound to dataset/job:
+
+- `id: int` - tag value identifier
+- `value: str` - tag value, e.g. `1.3.4`, `production`, `Some team`
+
+![tags](tags.png)
 
 ### User
 
@@ -244,17 +214,11 @@ Represents information about Job run:
 It contains following fields:
 
 - `id: uuidv7` - unique identifier, generated on client.
-
 - `created_at: timestamp` - extracted UUIDv7 timestamp, used for filtering purpose.
-
 - `job_id: int` - bound to specific Job.
-
 - `parent_run_id: uuidv7` - parent Run which triggered this specific Run, e.g. Spark applicationId was triggered by Airflow Task Instance, or Airflow Task Instance is a child of Airflow DagRun.
-
 - `started_at: timestamp | None` - timestamp when OpenLineage event with `eventType=START` was received.
-
 - `started_by user: User | None` - Spark session started as specific OS user/Kerberos principal.
-
 - `start_reason: Enum | None` - "why this Run was started?":
 
   - `MANUAL`
@@ -269,15 +233,10 @@ It contains following fields:
   - `KILLED`
 
 - `ended_at: timestamp | None` - timestamp when OpenLineage event with `eventType=COMPLETE|FAIL|ABORT` was received.
-
 - `ended_reason: str | None` - reason of receiving this status, if it is `FAILED` or `KILLED`.
-
 - `external_id : str | None` - external identifier of this Run, e.g. Spark `applicationId` or Airflow `dag_run_id`.
-
 - `attempt: str | None` - external attempt number of this Run, e.g. Spark `attemptId` in YARN, or Airflow Task `try_number`.
-
 - `running_log_url: str | None` - external URL there specific Run information could be found (e.g. Spark UI).
-
 - `persistent_log_url: str | None` - external URL there specific Run logs could be found (e.g. Spark History server, Airflow Web UI).
 
 ![run list](run_list.png)
@@ -295,13 +254,9 @@ Represents specific Spark job or Spark execution information. For now, Airflow D
 It contains following fields:
 
 - `id: uuidv7` - unique identifier, generated on client.
-
 - `created_at: timestamp` - extracted UUIDv7 timestamp, used for filtering purpose.
-
 - `run_id: uuidv7` - bound to specific Run.
-
 - `started_at: timestamp | None` - timestamp when OpenLineage event with `eventType=START` was received.
-
 - `status: Enum` - run status. Currently these statuses are supported:
 
   - `UNKNOWN`
@@ -311,15 +266,10 @@ It contains following fields:
   - `KILLED`
 
 - `ended_at: timestamp | None` - timestamp when OpenLineage event with `eventType=COMPLETE|FAIL|ABORT` was received.
-
 - `name: str` - name of operation, e.g. Spark command , dbt command name.
-
 - `position: int | None` - positional number of operation, e.g. number of Spark execution in Spark UI or `map_index` of Airflow Task.
-
 - `group: str | None` - field to group operations by, e.g. Spark job `jobGroup` or DBT command type (`MODEL`, `SQL`, `TEST`, `SNAPSHOT`).
-
 - `description: str | None` - operation description, e.g. Spark job `jobDescription` field, Airflow Operator name.
-
 - `sql_query: str | None` - SQL query executed by this operation, if any.
 
 ![operation details](../integrations/dbt/operation_details.png)
@@ -335,9 +285,7 @@ Represents dataset relations like `Hive metastore table → HDFS/S3 location of 
 It contains following fields:
 
 - `from: Dataset` - symlink starting point.
-
 - `to: Dataset` - symlink end point.
-
 - `type: Enum` - type of symlink. these types are supported:
 
   - `METASTORE` - from HDFS location to Hive table in metastore.
@@ -348,23 +296,35 @@ It contains following fields:
   Currently, OpenLineage sends only symlinks `HDFS location → Hive table` which [do not exist in the real world](https://github.com/OpenLineage/OpenLineage/issues/2718#issuecomment-2134746258).
   Message consumer automatically adds a reverse symlink `Hive table → HDFS location` to simplify building lineage graph, but this is temporary solution.
 
-![dataset symlinks](dataset_symlinks.png)
+![symlink_relation](symlink_relation.png)
 
 ### Parent Relation
 
 Relation between child run/operation and its parent. For example:
 
-- Spark applicationName is parent for all its runs (applicationId).
-- Spark applicationId is parent for all its Spark job or Spark execution.
+- Spark job (applicationName) is parent for all its runs (applicationId).
 - Airflow DAG is parent of Airflow task.
-- Airflow Task Instance triggered a Spark applicationId, dbt run, and so on.
+- Airflow Task Instance can start a Spark run (applicationId), dbt run, and so on.
 
 It contains following fields:
 
 - `from: Job | Run` - parent entity.
 - `to: Run | Operation` - child entity.
 
-![parent](parent.png)
+![parent_relation](parent_relation.png)
+
+### Dependency relation
+
+Relation between job/job or run/run which shows the order of executing ETL jobs.
+For example, one Airflow Task can depend on another Airflow Task.
+
+It contains following fields:
+
+- `from: Job | Run` - entity which should be waited before current job/run will be started.
+- `to: Job | Run` - entity which waits.
+- `type: str` - type of dependency, any arbitrary string provided by integration, usually something like `DIRECT_DEPENDENCY`, `INDIRECT_DEPENDENCY`.
+
+![dependency_relation](dependency_relation.png)
 
 ### Input relation
 
@@ -380,7 +340,7 @@ It contains following fields:
 - `num_bytes: int | None` - number of bytes read from dataset. For `granularity=JOB|RUN` it is a sum of all read bytes from this dataset. For `granularity=DATASET` always `None`.
 - `num_files: int | None` - number of files read from dataset. For `granularity=JOB|RUN` it is a sum of all read files from this dataset. For `granularity=DATASET` always `None`.
 
-![input](input.png)
+![input_relation](input_relation.png)
 
 ### Output relation
 
@@ -391,9 +351,7 @@ It is also possible to aggregate all outputs of specific Run → Dataset or Job 
 It contains following fields:
 
 - `from: Operation | Run | Job` - output source.
-
 - `to: Dataset` - output target.
-
 - `types: list[Enum]` - type of output. these types are supported:
 
   - `CREATE`
@@ -407,25 +365,20 @@ It contains following fields:
   For `granularity=JOB|RUN` it is a combination of all output types for this dataset.
 
 - `num_rows: int | None` - number of rows written from dataset. For `granularity=JOB|RUN` it is a sum of all written rows to this dataset.
-
 - `num_bytes: int | None` - number of bytes written from dataset. For `granularity=JOB|RUN` it is a sum of all written bytes to this dataset.
-
 - `num_files: int | None` - number of files written from dataset. For `granularity=JOB|RUN` it is a sum of all written files to this dataset.
 
-![output](output.png)
+![output_relation](output_relation.png)
 
 ### Direct Column Lineage relation
 
 Relation Dataset columns → Dataset columns, describing how each target dataset column is related to some source dataset columns.
 
 - `from: Dataset` - source dataset.
-
 - `to: Dataset` - target dataset.
-
 - `fields: dict[str, list[SourceColumn]]` - mapping between target column name and source columns, where `SourceColumn` is:
 
   - `field: str` - source column name
-
   - `types: list[Enum]` - types of transformation applied to source column. Supported types are:
 
     - `IDENTITY` - column is used as-is, e.g. `SELECT source_column AS target_column`
@@ -442,13 +395,10 @@ Relation Dataset columns → Dataset columns, describing how each target dataset
 Relation Dataset columns → Dataset, describing how the entire target dataset is related to some source dataset columns.
 
 - `from: Dataset` - source dataset.
-
 - `to: Dataset` - target dataset.
-
 - `fields: list[Column]` - list of source columns, where `SourceColumn` is:
 
   - `field: str` - source column name
-
   - `types: list[Enum]` - types of transformation applied to source column. Supported types are:
 
     - `FILTER` - column is used in `WHERE` clause, e.g. `SELECT * WHERE source_column = 'abc'`
