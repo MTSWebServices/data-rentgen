@@ -9,21 +9,13 @@
 
 Copy `docker-compose.yml` and `.env.docker` from this repo:
 
-??? note "docker-compose.yml"
+### "docker-compose.yml"
 
-    ```yaml hl_lines="101-118 177" linenums="1"
-    ----8<----
-    docker-compose.yml
-    ----8<----
-    ```
+!include(../../docker-compose.yml)
 
-??? note ".env.docker"
+### note ".env.docker"
 
-    ```ini hl_lines="7-20" linenums="1"
-    ----8<----
-    .env.docker
-    ----8<----
-    ```
+!include(../../.env.docker)
 
 Then start containers using `docker-compose`:
 

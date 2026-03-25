@@ -59,16 +59,3 @@ It's automatically inditifies partitioned tables and their granularity.
     ```
 
     This will delete all rows from partitions created before January 1, 2024, but will keep the empty partition tables.
-
-<!-- TODO:
-1. dd __init__.py to $REPO_HOME/data_rentgen/db/scripts
-2. add docstring to script
-"""
-Truncate or detach partitions, before provided date.
-
-Example:
-   python3 -m data_rentgen.db.scripts.cleanup_partitions truncate --keep-after 2025-01-01
-"""
- -->
-
-::: data_rentgen.db.scripts.cleanup_partitions

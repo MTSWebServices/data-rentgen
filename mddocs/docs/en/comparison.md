@@ -56,17 +56,15 @@
   Data.Rentgen has configurable `granularity` option while rendering the lineage graph.
 
 - Severe performance issues while consuming lineage events.
-
 - No support for dataset symlinks, e.g. HDFS location → Hive table.
-
 - No support for Job → Job hierarchy like Airflow Task → Spark application, or Airflow Task → Airflow Task dependencies.
-
 - No releases since 2024.
 
 ### Marquez pros
 
 - Marquez store and show lineage for any OpenLineage integration.
   Data.Rentgen may require some adjustments for that.
+  
 - Marquez store and show any facet produced by OpenLineage integration, including custom ones.
   Data.Rentgen stores only selected facets.
 

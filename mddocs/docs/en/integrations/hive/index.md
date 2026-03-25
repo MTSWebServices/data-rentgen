@@ -5,13 +5,15 @@ Using [OpenLineage integration with Apache Hive](https://openlineage.io/docs/int
 ## Requirements
 
 - [Apache Hive](https://hive.apache.org/) 3.1.3 (4.0 is not yet supported)
-- OpenLineage 1.34.0 or higher, recommended 1.35.0+
+- OpenLineage 1.34.0 or higher, recommended 1.40.1+
+- Running [message-broker][message-broker]
+- (Optional) [http2kafka][http2kafka]
 
 ## Limitations
 
 - **Hive CLI** is not supported. HiveServer2 is required.
 
-- As for OpenLineage 1.34.0 version only these queries are parsed as containing lineage:
+- As for OpenLineage 1.40.1 version only these queries are parsed as containing lineage:
 
   - `CREATE TABLE .. AS SELECT ...`
   - `INSERT INTO ... SELECT ...`
@@ -25,6 +27,8 @@ Using [OpenLineage integration with Apache Hive](https://openlineage.io/docs/int
 
 - Hive sends events when user session started, but not when stopped. So all Hive sessions in Data.Rentgen are in `STARTED` status.
 
+- Currently there is no way to pass job tags, [see issue](https://github.com/OpenLineage/OpenLineage/issues/4280)
+
 ## Entity mapping
 
 - Hive user + user IP → Data.Rentgen Job
@@ -35,16 +39,22 @@ Using [OpenLineage integration with Apache Hive](https://openlineage.io/docs/int
 
 Download these jars and place then in `/path/to/jars/` directory on HiveServer2 machine:
 
-- [openlineage-java](https://mvnrepository.com/artifact/io.openlineage/openlineage-java)
-- [openlineage-hive](https://mvnrepository.com/artifact/io.openlineage/openlineage-hive)
-- [kafka-clients](https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients)
-- [zstd-jni](https://mvnrepository.com/artifact/com.github.luben/zstd-jni)
+- KafkaTransport:
+
+  - [openlineage-java](https://mvnrepository.com/artifact/io.openlineage/openlineage-java)
+  - [openlineage-hive](https://mvnrepository.com/artifact/io.openlineage/openlineage-hive)
+  - [kafka-clients](https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients)
+  - [zstd-jni](https://mvnrepository.com/artifact/com.github.luben/zstd-jni)
+
+- HttpTransport (requires HTTP2Kafka):
+
+  - [openlineage-hive](https://mvnrepository.com/artifact/io.openlineage/openlineage-hive)
 
 ## Setup
 
 Change `hive-site.xml` configuration file:
 
-```xml
+```xml KafkaTransport title="hive-site.xml"
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Set Hive to stop complaining on unknown properties -->
@@ -124,15 +134,78 @@ Change `hive-site.xml` configuration file:
 </configuration>
 ```
 
+```xml HttpTransport (requires HTTP2Kafka) title="hive-site.xml"
+<?xml version="1.0" encoding="UTF-8"?>
+      <configuration>
+          <!-- Set Hive to stop complaining on unknown properties -->
+          <property>
+              <name>hive.conf.validation</name>
+              <value>false</value>
+          </property>
+
+          <!-- Set path to downloaded jars -->
+          <property>
+              <name>hive.aux.jars.path</name>
+              <value>/path/to/jars/</value>
+          </property>
+
+          <!-- Enable OpenLineage integration based on Hive hooks -->
+          <property>
+              <name>hive.server2.session.hook</name>
+              <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+          </property>
+          <property>
+              <name>hive.exec.post.hooks</name>
+              <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+          </property>
+          <property>
+              <name>hive.exec.failure.hooks</name>
+              <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+          </property>
+
+          <!-- Setup OpenLineage HttpTransport -->
+          <property>
+              <name>hive.openlineage.transport.type</name>
+              <value>http</value>
+          </property>
+          <property>
+              <name>hive.openlineage.transport.url</name>
+              <!-- http2kafka url, should be accessible from HiveServer2 -->
+              <value>http://localhost:8002</value>
+          </property>
+          <property>
+              <name>hive.openlineage.transport.endpoint</name>
+              <value>/v1/openlineage</value>
+          </property>
+          <property>
+              <name>hive.openlineage.transport.compression</name>
+              <value>gzip</value>
+          </property>
+          <property>
+              <name>hive.openlineage.transport.auth.type</name>
+              <value>api_key</value>
+          </property>
+          <property>
+              <name>hive.openlineage.transport.auth.apiKey</name>
+              <!-- Create a PersonalToken, and pass it here -->
+              <value>personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC</value>
+          </property>
+
+          <!-- Set default namespace for jobs -->
+          <property>
+              <name>hive.openlineage.namespace</name>
+              <value>hive://my.hive.host:10000</value>
+          </property>
+      </configuration>
+```
+
 ## Collect and send lineage
 
 Connect to you HiveServer2 instance JDBC interface, e.g. using `beeline` or DBeaver.
 After query was executed, integration will send lineage events to DataRentgen.
 
 !!! note
-
     By default, Job is created with name `{username}@{clientIp}`. You can override this name by executing this statement:
-
     ```sql
     SET hive.openlineage.job.name=my_session_name;
     ```

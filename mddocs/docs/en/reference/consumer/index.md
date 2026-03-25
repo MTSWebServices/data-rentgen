@@ -21,30 +21,23 @@ Data.Rentgen fetches messages from a [`message-broker`][message-broker] using a 
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-??? note "docker-compose.yml"
+### "docker-compose.yml"
 
-  ```yaml hl_lines="120-140" linenums="1"
-  ----8<----
-  docker-compose.yml
-  ----8<----
-  ```
+--8<--
+docker-compose.yml:120:138
+--8<--
 
-??? note ".env.docker"
+### ".env.docker"
 
-  ```ini hl_lines="22-24 29-34" linenums="1"
-  ----8<----
-  .env.docker
-  ----8<----
-  ```
+--8<--
+.env.docker:22:24,29:34
+--8<--
 
 ### Without docker
 
 - Install Python 3.10 or above
-
 - Setup [`database`][database], run migrations and create partitions
-
 - Setup [`message-broker`][message-broker]
-
 - Create virtual environment
 
   ```console
@@ -62,18 +55,14 @@ Data.Rentgen fetches messages from a [`message-broker`][message-broker] using a 
   ```
 
 !!! note
-
     For `SASL_GSSAPI` auth mechanism you also need to install system packages providing `kinit` and `kdestroy` binaries:
-
     ```console
     $ apt install libkrb5-dev krb5-user gcc make autoconf  # Debian-based
     ...
     $ dnf install krb5-devel krb5-libs krb5-workstation gcc make autoconf  # CentOS, OracleLinux
     ...
     ```
-
     And then install `gssapi` extra:
-
     ```console
     $ pip install data-rentgen[consumer,postgres,gssapi]
     ...

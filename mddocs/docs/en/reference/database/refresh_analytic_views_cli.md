@@ -24,14 +24,8 @@ By default these materialized views are empty(`WITH NO DATA`).
 In order to fill these tables with data you need to run refresh script (see below).
 
 <!-- TODO: 
-1. Add __init__.py to $REPO_HOME/data_rentgen/db/scripts
-2. add docstring to script
-"""
-Create matherialized views based on input and output table with given depths.
-
-Example:
-    python3 -m data_rentgen.db.scripts.create_analytics_view --depths day
-"""
+.. argparse::
+   :module: data_rentgen.db.scripts.refresh_analytic_views
+   :func: get_parser
+   :prog: python -m data_rentgen.db.scripts.refresh_analytic_views
 -->
-
-::: data_rentgen.db.scripts.refresh_analytic_views

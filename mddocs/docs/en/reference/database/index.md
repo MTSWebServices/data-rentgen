@@ -42,7 +42,6 @@ By default, database is created with no data. To seed database with some example
 ### With Docker
 
 - Install [Docker](https://docs.docker.com/engine/install/)
-
 - Install [docker-compose](https://github.com/docker/compose/releases/)
 
 - Run the following command:
@@ -64,21 +63,17 @@ By default, database is created with no data. To seed database with some example
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-??? note "docker-compose.yml"
+### "docker-compose.yml"
 
-    ```yaml hl_lines="1-69 176" linenums="1"
-    ----8<----
-    docker-compose.yml
-    ----8<----
-    ```
+--8<--
+docker-compose.yml:1:69,176
+--8<--
 
-??? note ".env.docker"
+### ".env.docker"
 
-    ```ini hl_lines="1-5 23" linenums="1"
-    ----8<----
-    .env.docker
-    ----8<----
-    ```
+--8<--
+.env.docker:1:5,23
+--8<--
 
 - Add scripts to crontab:
 
@@ -94,9 +89,7 @@ By default, database is created with no data. To seed database with some example
 ### Without Docker
 
 - For installing PostgreSQL, please follow [installation instruction](https://www.postgresql.org/download/).
-
 - Install Python 3.10 or above
-
 - Create virtual environment
 
   ```console
@@ -135,8 +128,7 @@ By default, database is created with no data. To seed database with some example
   ```
 
 !!! note
-
-  This command should be executed after each upgrade to new Data.Rentgen version.
+    This command should be executed after each upgrade to new Data.Rentgen version.
 
 - Create partitions:
 

@@ -5,11 +5,14 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 ## Requirements
 
 - [Apache Flink](https://flink.apache.org/) 1.x
-- OpenLineage 1.31.0 or higher, recommended 1.34.0+
+- OpenLineage 1.31.0 or higher, recommended 1.40.1+
+- Running [message-broker][message-broker]
+- (Optional) [http2kafka][http2kafka]
 
 ## Limitations
 
 - Only `standalone-job` (application mode) is supported, but not `jobmanager` (session mode): (https://github.com/OpenLineage/OpenLineage/issues/2150)[OpenLineageissue]
+- Currently there is no way to pass job tags, [see issue](https://github.com/OpenLineage/OpenLineage/issues/4280)
 
 ## Entity mapping
 
@@ -22,7 +25,8 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 
   ```groovy title="build.gradle"
 
-  implementation "io.openlineage:openlineage-flink:1.34.0"
+  implementation "io.openlineage:openlineage-flink:1.40.1"
+  // For KafkaTransport only
   implementation "org.apache.kafka:kafka-clients:3.9.0"
   ```
 
@@ -51,7 +55,7 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 
 - Create `openlineage.yml` file with content like:
 
-  ```yaml title="openlineage.yml"
+```yaml KafkaTransport title="openlineage.yml"
 
   job:
       namespace: http://some.host.name:18081  # set namespace to match Flink address
@@ -76,11 +80,36 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
           value.serializer: org.apache.kafka.common.serialization.StringSerializer
           compression.type: zstd
           acks: all
-  ```
+```
+  
+```yaml HttpTransport (requires HTTP2Kafka) title="openlineage.yml"
+
+job:
+  # set namespace to match Flink address
+  namespace: http://some.host.name:18081
+  # set job name
+  name: flink_examples_stateful
+
+# Send RUNNING event every 1 hour.
+# Using default interval (1 minute) just floods Kafka with useless RUNNING events.
+trackingIntervalInSeconds: 3600
+
+transport:
+  type: http
+  # should be accessible inside jobmanager container
+  # not using localhost in docker!
+  url: http://http2kafka:8000
+  endpoint: /v1/openlineage
+  compression: gzip
+  auth:
+      type: api_key
+      # create a PersonalToken, and pass it here
+      apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
+```
 
 - Pass path to config file via `OPENLINEAGE_CONFIG` environment variable of `jobmanager`:
 
-  ```ini
+  ```bash
   OPENLINEAGE_CONFIG=/path/to/openlineage.yml
   ```
 

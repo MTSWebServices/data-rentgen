@@ -1,8 +1,6 @@
-(personal-tokens)=
+# Personal Tokens { #personal-tokens }
 
-# Personal Tokens
-
-Different {ref}`AuthProviders <auth-server>` uses different ways to authorize user - via cookie, via short-lived access token, and so on.
+Different [AuthProviders][auth-server] uses different ways to authorize user - via cookie, via short-lived access token, and so on.
 This is okay for navigating in UI using browser, but not so convenient for accessing API endpoints from some script.
 
 For example, OpenLineage is usually integrated into long running ETL processes, and it cannot make additional request to `/auth` endpoint,
@@ -17,7 +15,7 @@ Token is valid if:
 - It is not expired. Max token duration is 1 year (configurable).
 - It is not revoked.
 
-Personal tokens can be disabled in {ref}`Server config <auth-server-personal-tokens>`.
+Personal tokens can be disabled in [Server config][auth-server-personal-tokens].
 
 ## Managing personal tokens
 
@@ -25,27 +23,23 @@ Personal tokens can be disabled in {ref}`Server config <auth-server-personal-tok
 
 Go to user menu -> `Personal tokens`:
 
-```{image} user_menu.png
-```
+![user_menu](user_menu.png)
 
 Click on `Create`:
 
-```{image} empty_list.png
-```
+![empty_list](empty_list.png)
 
 Enter token name (mandatory) and expiration date (optional, max 1 year):
 
-```{image} create.png
-```
+![create](create.png)
 
 After token is created, its content will be copied to a clipboard:
 
-```{image} created.png
-```
+![created](created.png)
 
 Token content looks like this:
 
-```
+```text
 personal_token_AAAAAAAAAAA.BBBBBBBBBBBBBB.CCCCCCCCCCCC
 ```
 
@@ -55,16 +49,13 @@ personal_token_AAAAAAAAAAA.BBBBBBBBBBBBBB.CCCCCCCCCCCC
 
 Token can be refreshed, to update its expiration date. Go to tokens list:
 
-```{image} user_menu.png
-```
+![user_menu](user_menu.png)
 
-```{image} list.png
-```
+![list](list.png)
 
 And then click on `Refresh`:
 
-```{image} refresh.png
-```
+![refresh](refresh.png)
 
 The only field which can be changed here is `Until`. It can be set manually, or be reset to use max available until date (now + 1year).
 
@@ -76,16 +67,13 @@ Token can be revoked if it is not needed anymore or if it was leaked/compromised
 
 To do this, navigate to tokens list:
 
-```{image} user_menu.png
-```
+![user_menu](user_menu.png)
 
-```{image} list.png
-```
+![list](list.png)
 
 Click `Revoke` button, and then on `Confirm`:
 
-```{image} revoke.png
-```
+![revoke](revoke.png)
 
 After token is revoked, it cannot be used anymore.
 
@@ -93,15 +81,13 @@ After token is revoked, it cannot be used anymore.
 
 ### With OpenLineage
 
-:::{note}
-Due to OpenLineage limitations, {ref}`http2kafka` can be used only with Personal Tokens, and no other auth methods are supported.
-:::
+!!! note
+    Due to OpenLineage limitations, {ref}`http2kafka` can be used only with Personal Tokens, and no other auth methods are supported.
+
 
 Use [OpenLineage HTTPTransport](https://openlineage.io/docs/client/python#http-transport):
 
-```{code-block} yaml
-:caption: openlineage.yaml
-
+```yaml title="openlineage.yaml"
 transport:
     type: http
     url: http://localhost:8002  # http2kafka URL
@@ -113,9 +99,7 @@ transport:
         apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
 ```
 
-```{code-block} ini
-:caption: spark.conf
-
+```ini title="spark.conf"
 spark.openlineage.transport.type=http
 spark.openlineage.transport.url=http://localhost:8002  # http2kafka URL
 spark.openlineage.transport.endpoint=/v1/openlineage
@@ -129,13 +113,11 @@ spark.openlineage.transport.auth.apiKey=personal_token_AAAAAAAAAAAA.BBBBBBBBBBBB
 
 Open <http://localhost:8000> (API) or <http://localhost:8002> (HTTP2Kafka), and click on `Authorize` button:
 
-```{image} swagger_header.png
-```
+![swagger_header](swagger_header.png)
 
 Enter token content into `HTTPBearer` auth method, and click `Authorize`
 
-```{image} swagger_httpbearer.png
-```
+![swagger_httpbearer](swagger_httpbearer.png)`
 
 ### With `curl`
 
