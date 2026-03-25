@@ -54,21 +54,24 @@ Database structure
         * location_id: bigint <<FK>>
         * name: varchar(256)
         type: varchar(32)
+        parent_job_id: bigint null
         search_vector: tsvector
     }
 
     entity run {
-        * created_at: timestamptz
         * id: uuid(v7)
+        * created_at: timestamptz
         ----
         * job_id: bigint
         status: smallint
-        parent_run_id: bigint null
+        parent_run_id: uuid(v7) null
         started_at: timestamptz null
         started_by_user_id: bigint null
         start_reason: varchar(32)
         ended_at: timestamptz null
         end_reason: text null
+        expected_start_at: timestamptz null
+        expected_end_at: timestamptz null
         external_id: text null
         attempt: varchar(64) null
         persistent_log_url: timestamptz null
@@ -84,8 +87,8 @@ Database structure
     }
 
     entity operation {
-        * created_at: timestamptz
         * id: uuid(v7)
+        * created_at: timestamptz
         ----
         * run_id: uuid(v7)
         status: smallint
@@ -156,6 +159,33 @@ Database structure
         fingerprint: uuid(v5)
     }
 
+    entity tag {
+        * id: bigint
+        ----
+        * name: varchar(64)
+    }
+
+    entity tag_value {
+        * id: bigint
+        ----
+        * tag_id: bigint
+        * value: varchar(256)
+    }
+
+    entity dataset_tag_value {
+        * id: bigint
+        ----
+        * dataset_id: bigint
+        * tag_value_id: bigint
+    }
+
+    entity job_tag_value {
+        * id: bigint
+        ----
+        * job_id: bigint
+        * tag_value_id: bigint
+    }
+
     entity personal_token {
         * id: uuid(v7)
         ----
@@ -165,6 +195,14 @@ Database structure
         since: date
         until: date
         revoked_at: timestamptz
+    }
+
+    entity job_dependency {
+        * id: bigint
+        ----
+        * from_dataset_id: bigint
+        * to_dataset_id: bigint
+        type: text null
     }
 
     address ||--o{ location
@@ -201,6 +239,13 @@ Database structure
     column_lineage "target_dataset_id" ||--o{ dataset
     column_lineage "fingerprint" ||--o{ dataset_column_relation
 
+    tag_value ||--o{ tag
+    dataset_tag_value ||--o{ tag_value
+    job_tag_value ||--o{ tag_value
+
     personal_token ||--o{ user
+
+    job_dependency "from_job_id" ||--o{ job
+    job_dependency "to_job_id" ||--o{ job
 
     @enduml

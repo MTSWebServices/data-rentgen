@@ -1,17 +1,20 @@
 .. _auth-server-keycloak:
 
 Keycloak Provider
-===================
+=================
 
 Description
 -----------
 
-Keycloak auth provider uses `python-keycloak <https://pypi.org/project/python-keycloak/>`_ library to interact with Keycloak server. During the authentication process,
-KeycloakAuthProvider redirects user to Keycloak authentication page.
+Using `OpenID Connect (OIDC) auth with Keycloak <https://www.keycloak.org/securing-apps/oidc-layers>`_.
 
-After successful authentication, Keycloak redirects user back to Data.Rentgen with authorization code.
-Then KeycloakAuthProvider exchanges authorization code for an access token and uses it to get user information from Keycloak server.
-If user is not found in Data.Rentgen database, KeycloakAuthProvider creates it. Finally, KeycloakAuthProvider returns user with access token.
+Unlike other auth providers, access token + refresh token returned from Keycloak are stored in http-only encrypted cookie,
+so JavaScript on Frontend have no access to it.
+
+.. warning::
+
+    This provider requires human interaction with browser and Keycloak login page, and not suitable for API access from
+    scripts.
 
 Interaction schema
 ------------------
@@ -26,74 +29,69 @@ Interaction schema
             participant "Backend"
             participant "Keycloak"
 
-            == Frontend Authentication at Keycloak ==
+            == GET /v1/datasets ==
 
-            Frontend -> Backend : Request endpoint with authentication (/v1/locations)
+            activate "Frontend"
 
-            Backend x-[#red]> Frontend: 401 with redirect url in 'details' response field
+            alt No session cookie
+                "Frontend" -> "Backend" ++ : Cookie none
+                "Backend" x-[#red]> "Frontend": 401 with redirect url in 'details' response field
+                "Frontend" -> "Keycloak" ++ : Redirect user to Keycloak login page
 
-            Frontend -> Keycloak : Redirect user to Keycloak login page
+                "Keycloak" -> "Frontend" : Redirect to to Frontend '/callback'
 
-            alt Successful login
-                Frontend --> Keycloak : Log in with login and password
+                "Frontend" -> "Backend" : Send request to Backend '/v1/auth/callback'
+
+                "Backend" -> "Keycloak" : Exchange authorization code to access+refresh token pair
+                "Keycloak" --> "Backend" -- : Return token pair
+                "Backend" --> "Frontend" -- : Set session cookie
+
             else Login failed
-                Keycloak x-[#red]> Frontend -- : Display error (401 Unauthorized)
+                "Frontend" -> "Backend" ++ : Cookie none
+                "Backend" x-[#red]> "Frontend" --: 401 with redirect url in 'details' response field
+                "Frontend" -> "Keycloak" ++ : Redirect user to Keycloak login page
+                "Keycloak" x-[#red]> "Frontend" -- : Wrong credentials or user does not exist
             end
 
-            Keycloak -> Frontend : Callback to Frontend /callback which is proxy between Keycloak and Backend
-
-            Frontend -> Backend : Send request to Backend '/v1/auth/callback'
-
-            Backend -> Keycloak : Check original 'state' and exchange code for token's
-            Keycloak --> Backend : Return token's
-            Backend --> Frontend : Set token's in user's browser in cookies
-
-            Frontend --> Backend : Request to /v1/locations with session cookies
-            Backend -> Backend : Get user info from token and check user in internal backend database
-            Backend -> Backend : Create user in internal backend database if not exist
-            Backend -[#green]> Frontend -- : Return requested data
-
-
-            == GET v1/datasets ==
-
-
             alt Successful case
-                "Frontend" -> "Backend" ++ : access_token
-                "Backend" --> "Backend" : Validate token
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" -> "Backend" : Get data
+                "Frontend" -> "Backend" ++ : Cookie session_cookie
+                "Backend" -[#green]> "Backend" : Decrypt cookie
+                "Backend" --> "Keycloak" ++ : Decode access_token
+                "Keycloak" -[#green]> "Backend" -- : Successful
+                "Backend" -> "Database" ++ : Fetch user info
+                "Database" -> "Backend" : Return user into
+                "Backend" -> "Database" : Fetch data
+                "Database" -> "Backend" -- : Return data
                 "Backend" -[#green]> "Frontend" -- : Return data
 
-            else Token is expired (Successful case)
-                "Frontend" -> "Backend" ++ : access_token, refresh_token
-                "Backend" --> "Backend" : Validate token
-                "Backend" -[#yellow]> "Backend" : Token is expired
-                "Backend" --> "Keycloak" : Try to refresh token
-                "Backend" --> "Backend" : Validate new token
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" -> "Backend" : Get data
+            else Access token is expired or malformed
+                "Frontend" -> "Backend" ++ : Cookie session_cookie
+                "Backend" -[#green]> "Backend" : Decrypt cookie
+                "Backend" --> "Keycloak" ++ : Decode access_token
+                "Keycloak" x-[#red]> "Backend" : Expired token
+                "Backend" --> "Keycloak" : Exchange refresh token to new access_token
+                "Keycloak" --> "Backend" -- : Successful
+                "Backend" -> "Database" ++ : Check user in internal backend database
+                "Database" -> "Backend" : Return user
+                "Backend" -> "Database" : Fetch data
+                "Database" -> "Backend" -- : Return data
                 "Backend" -[#green]> "Frontend" -- : Return data
 
-            else Create new User
-                "Frontend" -> "Backend" ++ : access_token
-                "Backend" --> "Backend" : Validate token
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" --> "Backend" : Create new user
-                "Backend" -> "Backend" : Get data
-                "Backend" -[#green]> "Frontend" -- : Return data
-
-            else Token is expired and bad refresh token
-                "Frontend" -> "Backend" ++ : access_token, refresh_token
-                "Backend" --> "Backend" : Validate token
-                "Backend" -[#yellow]> "Backend" : Token is expired
-                "Backend" --> "Keycloak" : Try to refresh token
+            else Access token is expired, refresh token is expired or malformed
+                "Frontend" -> "Backend" ++ : Cookie session_cookie
+                "Backend" -[#yellow]> "Backend" : Decrypt cookie
+                "Backend" --> "Keycloak" ++ : Decode access_token
+                "Keycloak" x-[#red]> "Backend" : Expired token
+                "Backend" --> "Keycloak" : Exchange refresh token to new access_token
+                "Keycloak" x-[#red]> "Backend" -- : Bad refresh_token
                 "Backend" x-[#red]> "Frontend" -- : RedirectResponse can't refresh
 
-            else Bad Token payload
-                "Frontend" -> "Backend" ++ : access_token, refresh_token
-                "Backend" --> "Backend" : Validate token
+            else Bad response from Keycloak
+                "Frontend" -> "Backend" ++ : Cookie session_cookie
+                "Backend" -[#green]> "Backend" : Decrypt cookie
+                "Backend" --> "Keycloak" ++ : Decode access_token
+                "Keycloak" x-[#red]> "Backend" -- : Error
                 "Backend" x-[#red]> "Frontend" -- : 307 Authorization error
-
             end
 
             deactivate "Frontend"
@@ -105,5 +103,3 @@ Basic Configuration
 
 .. autopydantic_model:: data_rentgen.server.settings.auth.keycloak.KeycloakAuthProviderSettings
 .. autopydantic_model:: data_rentgen.server.settings.auth.keycloak.KeycloakSettings
-
-

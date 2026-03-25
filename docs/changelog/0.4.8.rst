@@ -1,0 +1,4 @@
+0.4.8 (2025-01-26)
+==================
+
+Fixed issue with updating Location's ``external_id`` field - server returned response coe 200 but ignored the input value.

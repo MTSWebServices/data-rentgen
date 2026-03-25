@@ -24,8 +24,8 @@ sys.path.insert(0, os.fspath(PROJECT_ROOT_DIR))
 # -- Project information -----------------------------------------------------
 
 project = "Data.Rentgen"
-copyright = "2024-2025 MTS PJSC"
-author = "DataOps.ETL"
+copyright = "2024-present MTS PJSC"
+author = "MWS Data Bridge"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -33,10 +33,12 @@ author = "DataOps.ETL"
 #
 # The short X.Y version.
 
-# this value is updated automatically by `poetry version ...` and poetry-bumpversion plugin
-ver = Version.parse("0.4.0")
-version = ver.base_version
+VERSION_FILE = PROJECT_ROOT_DIR / "data_rentgen" / "VERSION"
+ver = Version.parse(VERSION_FILE.read_text())
+
 # The full version, including alpha/beta/rc tags.
+version = ver.base_version
+# Release version
 release = ver.public
 
 # -- General configuration ---------------------------------------------------
@@ -57,6 +59,7 @@ extensions = [
     "sphinx_favicon",
     "sphinx_last_updated_by_git",
     "sphinxarg.ext",
+    "sphinx_tabs.tabs",
 ]
 
 numpydoc_show_class_members = True
@@ -147,7 +150,7 @@ htmlhelp_basename = "data-rentgen-doc"
 
 
 # which is the equivalent to:
-issues_uri = "https://github.com/MobileTeleSystems/data-rentgen/issues/{issue}"
-issues_pr_uri = "https://github.com/MobileTeleSystems/data-rentgen/pulls/{pr}"
-issues_commit_uri = "https://github.com/MobileTeleSystems/data-rentgen/commit/{commit}"
+issues_uri = "https://github.com/MTSWebServices/data-rentgen/issues/{issue}"
+issues_pr_uri = "https://github.com/MTSWebServices/data-rentgen/pulls/{pr}"
+issues_commit_uri = "https://github.com/MTSWebServices/data-rentgen/commit/{commit}"
 issues_user_uri = "https://github.com/{user}"

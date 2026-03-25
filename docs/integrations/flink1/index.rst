@@ -9,12 +9,15 @@ Requirements
 ------------
 
 * `Apache Flink <https://flink.apache.org/>`_ 1.x
-* OpenLineage 1.31.0 or higher, recommended 1.34.0+
+* OpenLineage 1.31.0 or higher, recommended 1.40.1+
+* Running :ref:`message-broker`
+* (Optional) :ref:`http2kafka`
 
 Limitations
 -----------
 
-* Only ``standalone-job`` (application mode) is supported, but not ``jobmanager`` (session mode): `https://github.com/OpenLineage/OpenLineage/issues/2150 <OpenLineage issue>`_
+* Only ``standalone-job`` (application mode) is supported, but not ``jobmanager`` (session mode): `OpenLineage issue <https://github.com/OpenLineage/OpenLineage/issues/2150>`_
+* Currently there is no way to pass job tags, `see issue <https://github.com/OpenLineage/OpenLineage/issues/4280>`_.
 
 Entity mapping
 --------------
@@ -30,7 +33,8 @@ Installation
   .. code-block:: groovy
     :caption: build.gradle
 
-    implementation "io.openlineage:openlineage-flink:1.34.0"
+    implementation "io.openlineage:openlineage-flink:1.40.1"
+    // For KafkaTransport only
     implementation "org.apache.kafka:kafka-clients:3.9.0"
 
 * Register ``OpenLineageFlinkJobListener`` in the code of your Flink job:
@@ -59,36 +63,68 @@ Setup
 
 * Create ``openlineage.yml`` file with content like:
 
-  .. code-block:: yaml
-    :caption: openlineage.yml
+  .. tabs::
 
-    job:
-        namespace: http://some.host.name:18081  # set namespace to match Flink address
-        name: flink_examples_stateful  # set job name
+    .. code-tab:: yaml KafkaTransport
+      :caption: openlineage.yaml
 
-    # Send RUNNING event every 1 hour.
-    # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
-    trackingIntervalInSeconds: 3600
+      job:
+          # set namespace to match Flink address
+          namespace: http://some.host.name:18081
+          # set job name
+          name: flink_examples_stateful
 
-    transport:
-        type: kafka
-        topicName: input.runs
-        properties:
-            bootstrap.servers: broker:9092  # not using localhost in docker
-            security.protocol: SASL_PLAINTEXT
-            sasl.mechanism: SCRAM-SHA-256
-            sasl.jaas.config: |
-                org.apache.kafka.common.security.scram.ScramLoginModule required
-                username="data_rentgen"
-                password="changeme";
-            key.serializer: org.apache.kafka.common.serialization.StringSerializer
-            value.serializer: org.apache.kafka.common.serialization.StringSerializer
-            compression.type: zstd
-            acks: all
+      # Send RUNNING event every 1 hour.
+      # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
+      trackingIntervalInSeconds: 3600
+
+      transport:
+          type: kafka
+          topicName: input.runs
+          properties:
+              # should be accessible inside jobmanager container
+              # not using localhost in docker!
+              bootstrap.servers: broker:9092
+              security.protocol: SASL_PLAINTEXT
+              sasl.mechanism: SCRAM-SHA-256
+              # Kafka auth credentials
+              sasl.jaas.config: |
+                  org.apache.kafka.common.security.scram.ScramLoginModule required
+                  username="data_rentgen"
+                  password="changeme";
+              key.serializer: org.apache.kafka.common.serialization.StringSerializer
+              value.serializer: org.apache.kafka.common.serialization.StringSerializer
+              compression.type: zstd
+              acks: all
+
+    .. code-tab:: yaml HttpTransport (requires HTTP2Kafka)
+      :caption: openlineage.yaml
+
+      job:
+          # set namespace to match Flink address
+          namespace: http://some.host.name:18081
+          # set job name
+          name: flink_examples_stateful
+
+      # Send RUNNING event every 1 hour.
+      # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
+      trackingIntervalInSeconds: 3600
+
+      transport:
+          type: http
+          # should be accessible inside jobmanager container
+          # not using localhost in docker!
+          url: http://http2kafka:8000
+          endpoint: /v1/openlineage
+          compression: gzip
+          auth:
+              type: api_key
+              # create a PersonalToken, and pass it here
+              apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
 
 * Pass path to config file via ``OPENLINEAGE_CONFIG`` environment variable of ``jobmanager``:
 
-  .. code:: ini
+  .. code:: bash
 
     OPENLINEAGE_CONFIG=/path/to/openlineage.yml
 

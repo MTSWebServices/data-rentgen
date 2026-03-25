@@ -1,0 +1,347 @@
+0.5.0 (2026-03-19)
+=====================================
+
+OpenLineage-related features
+----------------------------
+
+Extracting dataset & job tags
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:issue:`367`, :issue:`368`, :issue:`369`, :issue:`372`
+
+Now DataRentgen extracts tags from OpenLineage events:
+  - dataset tags (currently not reported by any integration)
+  - job & run tags
+
+Some of tags are created based on engine versions:
+  - ``airflow.version``
+  - ``dbt.version``
+  - ``flink.version``
+  - ``hive.version``
+  - ``spark.version``
+  - ``openlineage_adapter.version``
+  - ``openlineage_client.version`` (only for Python client v1.38.0 or higher)
+
+Note that passing job & run tags depends on integration. For example, tags can be setup for Spark, Airflow and dbt, but not for Flink or Hive.
+Also tags are configured in a different way in each integration.
+
+Extracting ``nominalTime``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:issue:`378`
+
+Now DataRentgen extracts ``nominalTime`` run facet, and stores values in ``run.expected_start_at``, ``run.expected_end_at`` fields.
+
+Extracting ``jobDependencies``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:issue:`402`
+
+Now DataRentgen extracts information from `jobDependencies <https://openlineage.io/docs/spec/facets/run-facets/job_dependencies/>`_ facet, and store it in ``job_dependency`` table.
+For now this is just a simple tuple ``from_dataset_id, to_dataset_id, type`` (arbitrary string provided by integration, not enum).
+This can be changed in future versions of Data.Rentgen.
+
+Currently the only integration providing this kind of information is Airflow. But it is implemented only in most recent version of OpenLineage provider for Airflow (`2.10 or higher <https://github.com/apache/airflow/pull/59521>`_).
+For now provider also doesn't send facet with information about direct task -> task dependencies - only indirect ones are included (declared via `Asset <https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/assets.html>`_).
+So there is a fallback for Airflow which extracts these dependencies from ``downstream_task_ids`` and ``upstream_task_ids`` task fields.
+
+
+REST API features
+-----------------
+
+Added ``GET /v1/jobs/hierarchy`` endpoint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This endpoint can be used retrieve job hierarchy graph (parents, dependencies) for a given job. (:issue:`407`, :issue:`412`)
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "relations": {
+            "parents": [
+                {
+                    "from": {"kind": "JOB", "id": "1"},
+                    "to": {"kind": "JOB", "id": "2"}
+                }
+            ],
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": "3"},
+                    "to": {"kind": "JOB", "id": "1"},
+                    "type": "DIRECT_DEPENDENCY"
+                },
+                {
+                    "from": {"kind": "JOB", "id": "1"},
+                    "to": {"kind": "JOB", "id": "4"},
+                    "type": "DIRECT_DEPENDENCY"
+                }
+            ]
+        },
+        "nodes": {
+            "jobs": {
+                "1": {
+                    "id": 1,
+                    "parent_job_id": null,
+                    "name": "my_job",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
+                    }
+                },
+                "2": {
+                    "id": 2,
+                    "parent_job_id": 1,
+                    "name": "my_job.child_task",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
+                    }
+                },
+                "3": {
+                    "id": 3,
+                    "parent_job_id": null,
+                    "name": "source_job",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
+                    }
+                },
+                "4": {
+                    "id": 4,
+                    "parent_job_id": null,
+                    "name": "target_job",
+                    "type": "SPARK_APPLICATION",
+                    "location": {
+                        "name": "my_cluster",
+                        "type": "YARN"
+                    }
+                }
+            }
+        }
+    }
+
+Added parent relation between jobs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Jobs can now reference a parent job via ``parent_job_id`` field. (:issue:`394`)
+
+Before:
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
+                    "id": "42",
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... }
+                }
+            }
+        ]
+    }
+
+After:
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
+                    "id": "42",
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... },
+                    "parent_job_id": "10"
+                }
+            }
+        ]
+    }
+
+Added JOB-JOB and RUN-RUN relations to lineage API
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For example, it is possible to get Airflow DAG → Airflow Task → Spark app chain from a single response. (:issue:`392`, :issue:`399`, :issue:`401`)
+
+Before:
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "relations": {
+            "parents": [
+                {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "parent-run-uuid"}},
+                {"from": {"kind": "JOB", "id": "2"}, "to": {"kind": "RUN", "id": "run-uuid"}}
+            ],
+            "symlinks": [],
+            "inputs": [...],
+            "outputs": [...]
+        },
+        "nodes": {...}
+    }
+
+After:
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "relations": {
+            "parents": [
+                {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "RUN", "id": "parent-run-uuid"}},
+                {"from": {"kind": "JOB", "id": "2"}, "to": {"kind": "RUN", "id": "run-uuid"}},
+                # NEW:
+                {"from": {"kind": "JOB", "id": "1"}, "to": {"kind": "JOB", "id": "2"}},
+                {"from": {"kind": "RUN", "id": "parent-run-uuid"}, "to": {"kind": "RUN", "id": "run-uuid"}}
+            ],
+            "symlinks": [],
+            "inputs": [...],
+            "outputs": [...]
+        },
+        "nodes": {...}
+    }
+
+Include ``job`` to ``GET /v1/runs`` response
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This allows to show job type & name for specific run without sending additional requests. :issue:`411`
+
+Before:
+
+.. dropdown:: Response example
+
+  .. code:: python
+
+    {
+        "meta": {
+            "page": 1,
+            "page_size": 20,
+            "total_count": 1,
+            "pages_count": 1,
+            "has_next": False,
+            "has_previous": False,
+            "next_page": None,
+            "previous_page": None,
+        },
+        "items": [
+            {
+                "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                "data": {
+                    "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                    "created_at": "2024-07-05T09:05:49.584000",
+                    "job_id": "123",
+                    ...
+                },
+                "statistics": { ... }
+            }
+        ]
+    }
+
+After:
+
+.. dropdown:: Response example
+
+  .. code:: python
+
+    {
+        "meta": {
+            "page": 1,
+            "page_size": 20,
+            "total_count": 1,
+            "pages_count": 1,
+            "has_next": False,
+            "has_previous": False,
+            "next_page": None,
+            "previous_page": None,
+        },
+        "items": [
+            {
+                "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                "data": {
+                    "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                    "created_at": "2024-07-05T09:05:49.584000",
+                    "job_id": "123",
+                    ...
+                },
+                "job": {
+                    "id": "123",
+                    "name": "myjob",
+                    ...
+                },
+                "statistics": { ... }
+            }
+        ]
+    }
+
+Include ``last_run`` field to ``GET /v1/jobs`` response
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This allows to show last start time, status and duration for each job in the list, without additional requests. :issue:`387`
+
+Before:
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
+                    "id": "42",
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... },
+                    "parent_job_id": "10"
+                }
+            }
+        ]
+    }
+
+After:
+
+.. dropdown:: Response example
+
+  .. code-block:: python
+
+    {
+        "meta": { ... },
+        "items": [
+            {
+                "id": "42",
+                "data": {
+                    "id": "42",
+                    "name": "my-spark-task",
+                    "type": "SPARK_APPLICATION",
+                    "location": { ... },
+                    "parent_job_id": "10"
+                },
+                "last_run": {
+                    "id": "01908224-8410-79a2-8de6-a769ad6944c9",
+                    "created_at": "2024-07-05T09:05:49.584000",
+                    "job_id": "123",
+                    ...
+                }
+            }
+        ]
+    }

@@ -1,0 +1,13 @@
+0.4.1 (2025-10-08)
+==================
+
+Features
+--------
+
+- Add new ``GET /v1/locations/types`` endpoint returning list of all known location types. (:issue:`328`)
+- Add new filter to ``GET /v1/jobs``  (:issue:`328`):
+    - location_type: ``list[str]``
+- Add new filter to ``GET /v1/datasets``  (:issue:`328`):
+    - location_type: ``list[str]``
+- Allow passing multiple ``location_type`` filters to ``GET /v1/locations``. (:issue:`328`)
+- Allow passing multiple values to ``GET`` endpoinds with filters like ``job_id``, ``parent_run_id``, and so on. (:issue:`329`)

@@ -35,6 +35,7 @@ Entities
         [Operation] --> [Run]: PARENT
         [Run] --> [User]: started by
         [Run] --> [Run]: PARENT
+        [Job] --> [Job]: PARENT
         [Dataset1] ..> [Operation]: INPUT
         [Operation] ..> [Dataset1]: OUTPUT
 
@@ -112,6 +113,7 @@ That's why the information about datasets is very limited:
 - ``location: Location`` - Location where data is actually stored in, like RDMBS instance or cluster.
 - ``name: str`` - qualified name of Dataset, like ``mydb.myschema.mytable`` or ``/app/warehouse/hive/managed/myschema.df/mytable``
 - ``schema: Schema | None`` - schema of dataset.
+- ``tags: list[Tag]`` - tags of dataset.
 
 .. image:: dataset_list.png
 
@@ -174,7 +176,24 @@ It contains following fields:
   - ``DBT_JOB``
   - ``UNKNOWN``
 
+- ``parent_job_id: int`` - parent Job which started this specific Job, e.g. Spark applicationId was started by Airflow Task Instance, or Airflow Task Instance is a started by Airflow DagRun.
+- ``tags: list[Tag]`` - tags of job.
+
 .. image:: job_list.png
+
+Tags
+~~~~
+
+Datasets and jobs can have multiple tags which are arbitrary ``key: value`` pairs.
+
+- ``id: int`` - tag identifier
+- ``name: str`` - tag name, usually in format ``source.name``, e.g. ``airflow.version``,  ``company.team``
+- ``values: list[TagValue]`` - tag values bound to dataset/job:
+
+  - ``id: int`` - tag value identifier
+  -  ``value: str`` - tag value, e.g. ``1.3.4``, ``production``, ``Some team``
+
+.. image:: tags.png
 
 User
 ~~~~
@@ -202,10 +221,12 @@ It contains following fields:
 - ``id: uuidv7`` - unique identifier, generated on client.
 - ``created_at: timestamp`` - extracted UUIDv7 timestamp, used for filtering purpose.
 - ``job_id: int`` - bound to specific Job.
-- ``parent_run_id: uuidv7`` - parent Run which triggered this specific Run, e.g. Spark applicationId was triggered by Airflow Task Instance, or Airflow Task Instance is a child of Airflow DagRun.
+- ``parent_run_id: uuidv7`` - parent Run which started this specific Run, e.g. Spark applicationId was started by Airflow Task Instance, or Airflow Task Instance is a started by Airflow DagRun.
 - ``started_at: timestamp | None`` - timestamp when OpenLineage event with ``eventType=START`` was received.
 - ``started_by user: User | None`` - Spark session started as specific OS user/Kerberos principal.
 - ``start_reason: Enum | None`` - "why this Run was started?":
+- ``expected_start_at: timestamp | None`` - scheduled/expected start time of the run, which may differ from ``started_at`` (actual start time).
+- ``expected_end_at: timestamp | None`` - scheduled/expected end time of the run, which may differ from ``ended_at`` (actual end time).
 
   - ``MANUAL``
   - ``AUTOMATIC`` - e.g. by schedule or triggered by another run.
@@ -282,24 +303,37 @@ It contains following fields:
     Currently, OpenLineage sends only symlinks ``HDFS location → Hive table`` which `do not exist in the real world <https://github.com/OpenLineage/OpenLineage/issues/2718#issuecomment-2134746258>`_.
     Message consumer automatically adds a reverse symlink ``Hive table → HDFS location`` to simplify building lineage graph, but this is temporary solution.
 
-.. image:: dataset_symlinks.png
+.. image:: symlink_relation.png
 
 Parent Relation
 ~~~~~~~~~~~~~~~
 
 Relation between child run/operation and its parent. For example:
 
-- Spark applicationName is parent for all its runs (applicationId).
-- Spark applicationId is parent for all its Spark job or Spark execution.
+- Spark job (applicationName) is parent for all its runs (applicationId).
 - Airflow DAG is parent of Airflow task.
-- Airflow Task Instance triggered a Spark applicationId, dbt run, and so on.
+- Airflow Task Instance can start a Spark run (applicationId), dbt run, and so on.
 
 It contains following fields:
 
 - ``from: Job | Run`` - parent entity.
-- ``to: Run | Operation`` - child entity.
+- ``to: Job | Run | Operation`` - child entity.
 
-.. image:: parent.png
+.. image:: parent_relation.png
+
+Dependency relation
+~~~~~~~~~~~~~~~~~~~
+
+Relation between job/job or run/run which shows the order of executing ETL jobs.
+For example, one Airflow Task can depend on another Airflow Task.
+
+It contains following fields:
+
+- ``from: Job | Run`` - entity which should be waited before current job/run will be started.
+- ``to: Job | Run`` - entity which waits.
+- ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INDIRECT_DEPENDENCY``.
+
+.. image:: dependency_relation.png
 
 Input relation
 ~~~~~~~~~~~~~~
@@ -316,7 +350,7 @@ It contains following fields:
 - ``num_bytes: int | None`` - number of bytes read from dataset. For ``granularity=JOB|RUN`` it is a sum of all read bytes from this dataset. For ``granularity=DATASET`` always ``None``.
 - ``num_files: int | None`` - number of files read from dataset. For ``granularity=JOB|RUN`` it is a sum of all read files from this dataset. For ``granularity=DATASET`` always ``None``.
 
-.. image:: input.png
+.. image:: input_relation.png
 
 Output relation
 ~~~~~~~~~~~~~~~
@@ -345,7 +379,7 @@ It contains following fields:
 - ``num_bytes: int | None`` - number of bytes written from dataset. For ``granularity=JOB|RUN`` it is a sum of all written bytes to this dataset.
 - ``num_files: int | None`` - number of files written from dataset. For ``granularity=JOB|RUN`` it is a sum of all written files to this dataset.
 
-.. image:: output.png
+.. image:: output_relation.png
 
 Direct Column Lineage relation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

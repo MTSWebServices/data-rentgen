@@ -4,6 +4,7 @@
     :hidden:
 
     self
+    comparison
 
 .. toctree::
     :maxdepth: 2
@@ -12,6 +13,7 @@
 
     install
     entities/index
+    personal_tokens/index
 
 .. toctree::
     :maxdepth: 2
@@ -84,6 +86,12 @@ Run-level lineage graph
 .. image:: entities/run_lineage.png
     :alt: Job-level lineage graph
 
+Hierarchy graph
+~~~~~~~~~~~~~~~
+
+.. image:: integrations/airflow/job_hierarchy.png
+    :alt: Job hierarchy
+
 Datasets
 ~~~~~~~~
 
@@ -121,13 +129,13 @@ Hive query
     :alt: Hive query details
 
 Airflow DagRun
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. image:: integrations/airflow/dag_run_details.png
     :alt: Airflow DagRun details
 
 Airflow TaskInstance
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. image:: integrations/airflow/task_run_details.png
     :alt: Airflow TaskInstance details

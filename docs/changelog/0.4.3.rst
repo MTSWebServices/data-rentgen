@@ -1,0 +1,14 @@
+0.4.3 (2025-11-21)
+==================
+
+Features
+---------
+
+- Disable ``server.session.enabled`` by default. It is required only by KeycloakAuthProvider which is not used by default.
+
+Bug Fixes
+---------
+
+- Escape unprintable ASCII symbols in SQL queries before storing them in Postgres. Previously saving queries containing ``\x00`` symbol lead to exceptions.
+- Kafka topic with malformed messages doesn't have to use the same number partitions as input topics.
+- Prevent OpenLineage from reporting events which `claim to read 8 Exabytes of data <https://github.com/OpenLineage/OpenLineage/pull/4165>`_, this is actually a Spark quirk.

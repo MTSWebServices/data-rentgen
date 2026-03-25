@@ -6,9 +6,11 @@ Dummy Auth provider
 Description
 -----------
 
-This auth provider allows to sign-in with any username and password, and and then issues an access token.
+This auth provider allows to sign-in with any username and password, and then issues an access token.
 
-After successful auth, username is saved to backend database.
+.. warning::
+
+    This provider is used only for demo and testing purposes. It should **NEVER** be used on production!
 
 Interaction schema
 ------------------
@@ -21,49 +23,39 @@ Interaction schema
             title DummyAuthProvider
             participant "Client"
             participant "Backend"
+            participant "Database"
 
             == POST v1/auth/token ==
 
             activate "Client"
-            alt Successful case
-                "Client" -> "Backend" ++ : login + password
-                "Backend" --> "Backend" : Password is completely ignored
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" -> "Backend" : Create user if not exist
+            alt New user
+                "Client" -> "Backend" ++ : Pass login + password (ignored)
+                "Backend" --> "Database" ++ : Fetch user info
+                "Database" x-[#red]> "Backend" : No such user
+                "Backend" --> "Database" : Create new user
+                "Database" -[#green]> "Backend" -- : Return user info
                 "Backend" -[#green]> "Client" -- : Generate and return access_token
 
-            else User is blocked
-                "Client" -> "Backend" ++ : login + password
-                "Backend" --> "Backend" : Password is completely ignored
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" x-[#red]> "Client" -- : 401 Unauthorized
-
-            else User is deleted
-                "Client" -> "Backend" ++ : login + password
-                "Backend" --> "Backend" : Password is completely ignored
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" x-[#red]> "Client" -- : 404 Not found
+            else Existing user
+                "Client" -> "Backend" ++ : Pass login + password (ignored)
+                "Backend" --> "Database" ++ : Fetch user info
+                "Database" -[#green]> "Backend" -- : Return user info
+                "Backend" -[#green]> "Client" -- : Generate and return access_token
             end
 
             == GET v1/datasets ==
 
             alt Successful case
-                "Client" -> "Backend" ++ : access_token
-                "Backend" --> "Backend" : Validate token
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" -> "Backend" : Get data
+                "Client" -> "Backend" ++ : Authorization Bearer access_token
+                "Backend" -[#green]> "Backend" : Validate token
+                "Backend" --> "Database" ++ : Get data
+                "Database" -[#green]> "Backend" -- : Return data
                 "Backend" -[#green]> "Client" -- : Return data
 
-            else Token is expired
-                "Client" -> "Backend" ++ : access_token
-                "Backend" --> "Backend" : Validate token
+            else Token is expired or malformed
+                "Client" -> "Backend" ++ : Authorization Bearer access_token
+                "Backend" -[#red]x "Backend" : Validate token
                 "Backend" x-[#red]> "Client" -- : 401 Unauthorized
-
-            else User is not found
-                "Client" -> "Backend" ++ : access_token
-                "Backend" --> "Backend" : Validate token
-                "Backend" --> "Backend" : Check user in internal backend database
-                "Backend" x-[#red]> "Client" -- : 404 Not found
             end
 
             deactivate "Client"

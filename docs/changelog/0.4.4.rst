@@ -1,0 +1,8 @@
+0.4.4 (2025-11-21)
+==================
+
+Bug Fixes
+---------
+
+- 0.4.3 release broken inputs with 0 bytes statistics, fixed
+

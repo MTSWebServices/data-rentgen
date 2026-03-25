@@ -1,0 +1,13 @@
+0.4.2 (2025-10-29)
+==================
+
+Bug fixes
+---------
+
+- Fix search query filter on UI Run list page.
+- Fix passing multiple filters to ``GET /v1/runs``.
+
+Doc only Changes
+----------------
+
+- Document ``DATA_RENTGEN__UI__AUTH_PROVIDER`` config variable.

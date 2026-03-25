@@ -3,7 +3,6 @@
 Authentication and Authorization
 ================================
 
-
 Overview
 --------
 
@@ -11,9 +10,10 @@ To access the service's endpoints, a client must authenticate. The service provi
 
 Currently, the service does not implement a role-based model, and all users have the same level of permissions.
 
-Authentication is implemented via middleware as follows: before each endpoint call, the `get_user()` function is invoked. This function attempts to retrieve the username from the provided token.
+Authentication is implemented via middleware as follows: before each endpoint call, the ``get_user()`` function is invoked.
+This function attempts to retrieve the username from the provided token.
 
-Data Rentgen supports different auth provider implementations. You can change implementation via settings:
+Data.Rentgen supports different auth provider implementations. You can change implementation via settings:
 
 .. autopydantic_model:: data_rentgen.server.settings.auth.AuthSettings
 
@@ -28,6 +28,7 @@ Right now service has two scenarios for authentication:
 
     dummy
     keycloak
+    personal_tokens
 
 .. toctree::
     :maxdepth: 1
