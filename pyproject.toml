@@ -65,8 +65,10 @@ exclude = ["docs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  "fastapi~=0.135.1",
-  "uvicorn>=0.41,<0.43",
+  "fastapi~=0.135.2",
+  # starlette 1.0.0 break cookies
+  "starlette<1.0",
+  "uvicorn~=0.42.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
   "pyjwt~=2.12.1",
@@ -79,8 +81,10 @@ consumer = [
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  "fastapi~=0.135.1",
-  "uvicorn>=0.41,<0.43",
+  "fastapi~=0.135.2",
+  # starlette 1.0.0 break cookies
+  "starlette<1.0",
+  "uvicorn~=0.42.0",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=4.3.4",
   "faststream[kafka,cli]~=0.6.5",
@@ -93,7 +97,7 @@ gssapi = [
   "gssapi~=1.11.1",
 ]
 seed = [
-  "faker>=40.8.1,<40.12.0"
+  "faker~=40.11.1"
 ]
 
 [dependency-groups]
