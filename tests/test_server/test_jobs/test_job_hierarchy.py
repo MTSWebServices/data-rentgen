@@ -304,3 +304,72 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
         },
         "nodes": {"jobs": jobs_to_json([expected_job])},
     }
+
+
+@pytest.mark.parametrize(
+    ["direction", "depth", "start_node_idx", "expected_deps"],
+    [
+        ("UPSTREAM", 1, 1, [(0, 1, "INDIRECT_DEPENDENCY")]),
+        ("DOWNSTREAM", 1, 3, [(3, 4, "INDIRECT_DEPENDENCY")]),
+        (
+            "BOTH",
+            2,
+            2,
+            [
+                (1, 2, "DIRECT_DEPENDENCY"),
+                (2, 3, "DIRECT_DEPENDENCY"),
+                (3, 4, "INDIRECT_DEPENDENCY"),
+                (0, 1, "INDIRECT_DEPENDENCY"),
+            ],
+        ),
+    ],
+    ids=["indirect-upstream", "indirect-downstream", "indirect-both"],
+)
+async def test_get_job_hierarchy_with_indirect_dependencies(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+    direction: str,
+    depth: int,
+    start_node_idx: int,
+    expected_deps: list[tuple[int, int, str]],
+):
+    dags, tasks, sparks = job_dependency_chain_with_indirect_dependencies
+    start_node = tasks[start_node_idx]
+
+    expected_ids = set()
+    for from_idx, to_idx, _ in expected_deps:
+        expected_ids.add(from_idx)
+        expected_ids.add(to_idx)
+    expected_dags = [dags[idx] for idx in expected_ids]
+    expected_tasks = [tasks[idx] for idx in expected_ids]
+    expected_sparks = [sparks[start_node_idx]]
+    expected_nodes = await enrich_jobs(expected_dags + expected_tasks + expected_sparks, async_session)
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": direction,
+            "depth": depth,
+            "include_indirect": True,
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(expected_nodes),
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": str(tasks[from_idx].id)},
+                    "to": {"kind": "JOB", "id": str(tasks[to_idx].id)},
+                    "type": dep_type,
+                }
+                for from_idx, to_idx, dep_type in expected_deps
+            ],
+        },
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
+    }

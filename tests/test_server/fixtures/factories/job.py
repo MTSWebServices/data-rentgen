@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from random import randint
 from typing import TYPE_CHECKING
 
 import pytest_asyncio
 
 from data_rentgen.db.models import Job, JobDependency, TagValue
+from data_rentgen.utils.uuid import generate_new_uuid
 from tests.test_server.fixtures.factories.base import random_string
+from tests.test_server.fixtures.factories.dataset import create_dataset
+from tests.test_server.fixtures.factories.input import create_input
 from tests.test_server.fixtures.factories.job_type import create_job_type
 from tests.test_server.fixtures.factories.location import create_location
+from tests.test_server.fixtures.factories.output import create_output
 from tests.test_server.utils.delete import clean_db
 
 if TYPE_CHECKING:
@@ -459,6 +464,135 @@ async def job_dependency_chain(
         (dag1, dag2, dag3),
         (task1, task2, task3),
         (spark1, spark2, spark3),
+    )
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
+async def job_dependency_chain_with_indirect_dependencies(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+    job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
+) -> AsyncGenerator[tuple[tuple[Job, Job, Job, Job, Job], ...], None]:
+    """
+    Extends `job_dependency_chain` with two extra parent-child chains:
+    - left:  left_dag  -> left_task  -> left_spark
+    - right: right_dag -> right_task -> right_spark
+
+    The chains are connected to the central fixture on task level via IO relations:
+    - left_task  -> task1  (indirect via input/output relation)
+    - task3      -> right_task (indirect via input/output relation)
+    """
+    (dag1, dag2, dag3), (task1, task2, task3), (spark1, spark2, spark3) = job_dependency_chain
+
+    async with async_session_maker() as async_session:
+        location = await create_location(async_session)
+        job_type_dag = await create_job_type(async_session, {"type": "AIRFLOW_DAG"})
+        job_type_task = await create_job_type(async_session, {"type": "AIRFLOW_TASK"})
+        job_type_spark = await create_job_type(async_session, {"type": "SPARK_APPLICATION"})
+
+        left_dag = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "left_dag"},
+        )
+        left_task = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "left_task", "parent_job_id": left_dag.id},
+        )
+        left_spark = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "left_spark", "parent_job_id": left_task.id},
+        )
+
+        right_dag = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_dag.id,
+            job_kwargs={"name": "right_dag"},
+        )
+        right_task = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_task.id,
+            job_kwargs={"name": "right_task", "parent_job_id": right_dag.id},
+        )
+        right_spark = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "right_spark", "parent_job_id": right_task.id},
+        )
+
+        left_dataset_location = await create_location(async_session)
+        left_dataset = await create_dataset(async_session, location_id=left_dataset_location.id)
+        right_dataset_location = await create_location(async_session)
+        right_dataset = await create_dataset(async_session, location_id=right_dataset_location.id)
+
+        # Connect left chain to central chain: left_task -> task1
+        left_created_at = datetime.now(tz=UTC)
+        left_operation_id = generate_new_uuid(left_created_at)
+        left_output = await create_output(
+            async_session,
+            output_kwargs={
+                "created_at": left_created_at,
+                "operation_id": left_operation_id,
+                "run_id": generate_new_uuid(left_created_at),
+                "job_id": left_task.id,
+                "dataset_id": left_dataset.id,
+                "schema_id": None,
+            },
+        )
+        await create_input(
+            async_session,
+            input_kwargs={
+                "created_at": left_created_at - timedelta(seconds=1),
+                "operation_id": left_operation_id,
+                "run_id": left_output.run_id,
+                "job_id": task1.id,
+                "dataset_id": left_dataset.id,
+                "schema_id": None,
+            },
+        )
+
+        # Connect central chain to right chain: task3 -> right_task
+        right_created_at = datetime.now(tz=UTC) + timedelta(seconds=10)
+        right_operation_id = generate_new_uuid(right_created_at)
+        right_output = await create_output(
+            async_session,
+            output_kwargs={
+                "created_at": right_created_at,
+                "operation_id": right_operation_id,
+                "run_id": generate_new_uuid(right_created_at),
+                "job_id": task3.id,
+                "dataset_id": right_dataset.id,
+                "schema_id": None,
+            },
+        )
+        await create_input(
+            async_session,
+            input_kwargs={
+                "created_at": right_created_at - timedelta(seconds=1),
+                "operation_id": right_operation_id,
+                "run_id": right_output.run_id,
+                "job_id": right_task.id,
+                "dataset_id": right_dataset.id,
+                "schema_id": None,
+            },
+        )
+
+        async_session.expunge_all()
+
+    yield (
+        (left_dag, dag1, dag2, dag3, right_dag),
+        (left_task, task1, task2, task3, right_task),
+        (left_spark, spark1, spark2, spark3, right_spark),
     )
 
     async with async_session_maker() as async_session:

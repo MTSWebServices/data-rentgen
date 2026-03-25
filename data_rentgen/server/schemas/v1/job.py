@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -118,4 +119,20 @@ class JobHierarchyQueryV1(BaseModel):
         examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
     )
     depth: int = Field(description="Levels of dependencies to dive into", default=1)
-    model_config = ConfigDict(extra="ignore")
+    include_indirect: bool = Field(
+        default=False,
+        description="Include or not indirect connections between jobs",
+        examples=[True, False],
+    )
+    since: datetime | None = Field(
+        default=None,
+        description="",
+        examples=["2008-09-15T15:53:00+05:00"],
+    )
+    until: datetime | None = Field(
+        default=None,
+        description="",
+        examples=["2008-09-15T15:53:00+05:00"],
+    )
+
+    model_config = ConfigDict(extra="forbid")
