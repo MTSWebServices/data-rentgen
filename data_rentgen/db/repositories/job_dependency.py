@@ -140,7 +140,7 @@ class JobDependencyRepository(Repository[JobDependency]):
                 select(
                     Output.job_id.label("from_job_id"),
                     Input.job_id.label("to_job_id"),
-                    literal("INDIRECT_DEPENDENCY").label("type"),
+                    literal("INFERRED_FROM_LINEAGE").label("type"),
                 )
                 .join(Input, Output.operation_id == Input.operation_id)
                 .where(

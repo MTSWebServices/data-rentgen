@@ -310,24 +310,24 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
 @pytest.mark.parametrize(
     ["direction", "depth", "start_node_idx", "expected_deps"],
     [
-        ("UPSTREAM", 1, 1, [(0, 1, "INDIRECT_DEPENDENCY")]),
+        ("UPSTREAM", 1, 1, [(0, 1, "INFERRED_FROM_LINEAGE")]),
         (
             "UPSTREAM",
             2,
             2,
             [
                 (1, 2, "DIRECT_DEPENDENCY"),
-                (0, 1, "INDIRECT_DEPENDENCY"),
+                (0, 1, "INFERRED_FROM_LINEAGE"),
             ],
         ),
-        ("DOWNSTREAM", 1, 3, [(3, 4, "INDIRECT_DEPENDENCY")]),
+        ("DOWNSTREAM", 1, 3, [(3, 4, "INFERRED_FROM_LINEAGE")]),
         (
             "DOWNSTREAM",
             2,
             2,
             [
                 (2, 3, "DIRECT_DEPENDENCY"),
-                (3, 4, "INDIRECT_DEPENDENCY"),
+                (3, 4, "INFERRED_FROM_LINEAGE"),
             ],
         ),
         (
@@ -337,8 +337,8 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
             [
                 (1, 2, "DIRECT_DEPENDENCY"),
                 (2, 3, "DIRECT_DEPENDENCY"),
-                (3, 4, "INDIRECT_DEPENDENCY"),
-                (0, 1, "INDIRECT_DEPENDENCY"),
+                (3, 4, "INFERRED_FROM_LINEAGE"),
+                (0, 1, "INFERRED_FROM_LINEAGE"),
             ],
         ),
     ],
