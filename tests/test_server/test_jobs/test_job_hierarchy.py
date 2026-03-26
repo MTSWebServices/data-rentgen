@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-
+from datetime import UTC, datetime
 from http import HTTPStatus
 
 import pytest
@@ -310,7 +310,25 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
     ["direction", "depth", "start_node_idx", "expected_deps"],
     [
         ("UPSTREAM", 1, 1, [(0, 1, "INDIRECT_DEPENDENCY")]),
+        (
+            "UPSTREAM",
+            2,
+            2,
+            [
+                (1, 2, "DIRECT_DEPENDENCY"),
+                (0, 1, "INDIRECT_DEPENDENCY"),
+            ],
+        ),
         ("DOWNSTREAM", 1, 3, [(3, 4, "INDIRECT_DEPENDENCY")]),
+        (
+            "DOWNSTREAM",
+            2,
+            2,
+            [
+                (2, 3, "DIRECT_DEPENDENCY"),
+                (3, 4, "INDIRECT_DEPENDENCY"),
+            ],
+        ),
         (
             "BOTH",
             2,
@@ -323,7 +341,13 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
             ],
         ),
     ],
-    ids=["indirect-upstream", "indirect-downstream", "indirect-both"],
+    ids=[
+        "indirect-upstream-depth-1",
+        "indirect-upstream-depth-2",
+        "indirect-downstream-depth-1",
+        "indirect-downstream-depth-2",
+        "indirect-both-depth-2",
+    ],
 )
 async def test_get_job_hierarchy_with_indirect_dependencies(
     test_client: AsyncClient,
@@ -354,7 +378,8 @@ async def test_get_job_hierarchy_with_indirect_dependencies(
             "start_node_id": start_node.id,
             "direction": direction,
             "depth": depth,
-            "include_indirect": True,
+            "infer_from_lineage": True,
+            "since": datetime.min.replace(tzinfo=UTC).isoformat(),
         },
     )
 

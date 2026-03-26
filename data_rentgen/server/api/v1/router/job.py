@@ -95,7 +95,7 @@ async def get_job_hierarchy(
         start_node_id=query_args.start_node_id,
         direction=query_args.direction,
         depth=query_args.depth,
-        include_indirect=query_args.include_indirect,
+        infer_from_lineage=query_args.infer_from_lineage,
         since=query_args.since,
         until=query_args.until,
     )

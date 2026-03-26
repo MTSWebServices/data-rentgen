@@ -116,7 +116,7 @@ class JobService:
         since: datetime | None = None,
         until: datetime | None = None,
         *,
-        include_indirect: bool = False,
+        infer_from_lineage: bool = False,
     ) -> JobHierarchyResult:
         logger.info(
             "Get jobs hierarchy with start at job with id %s, direction %s, depth %s",
@@ -138,7 +138,7 @@ class JobService:
             job_ids=list(job_ids),
             direction=direction,
             depth=depth,
-            include_indirect=include_indirect,
+            infer_from_lineage=infer_from_lineage,
             since=since,
             until=until,
         )

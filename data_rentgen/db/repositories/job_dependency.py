@@ -82,9 +82,9 @@ class JobDependencyRepository(Repository[JobDependency]):
         since: datetime | None = None,
         until: datetime | None = None,
         *,
-        include_indirect: bool = False,
+        infer_from_lineage: bool = False,
     ) -> list[JobDependency]:
-        core_query = self._get_core_hierarchy_query(include_indirect=include_indirect)
+        core_query = self._get_core_hierarchy_query(include_indirect=infer_from_lineage)
 
         query: Select | CompoundSelect
         match direction:
@@ -101,8 +101,8 @@ class JobDependencyRepository(Repository[JobDependency]):
             query, {"job_ids": job_ids, "depth": depth, "since": since, "until": until}
         )
         return [
-            JobDependency(from_job_id=from_job_id, to_job_id=to_job_id, type=type_)
-            for (from_job_id, to_job_id, type_, _) in result.all()
+            JobDependency(from_job_id=item.from_job_id, to_job_id=item.to_job_id, type=item.type)
+            for item in result.all()
         ]
 
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
