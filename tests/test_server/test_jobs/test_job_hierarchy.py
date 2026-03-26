@@ -1,15 +1,16 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data_rentgen.db.models import Job
+from data_rentgen.db.models import Input, Job, Output
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import jobs_ancestors_to_json, jobs_to_json
+from tests.test_server.utils.convert_to_json import format_datetime, jobs_ancestors_to_json, jobs_to_json
 from tests.test_server.utils.enrich import enrich_jobs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -397,4 +398,150 @@ async def test_get_job_hierarchy_with_indirect_dependencies(
             ],
         },
         "nodes": {"jobs": jobs_to_json(expected_nodes)},
+    }
+
+
+async def test_get_job_hierarchy_with_indirect_dependencies_with_since_and_until(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+):
+    dags, tasks, sparks = job_dependency_chain_with_indirect_dependencies
+    start_node = tasks[2]
+
+    # Cover both indirect links connected to task0 and task4.
+    edge_task_ids = [tasks[0].id, tasks[4].id]
+    min_input_created_at = await async_session.scalar(
+        select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
+    ) - timedelta(seconds=2)
+    max_output_created_at = await async_session.scalar(
+        select(func.max(Output.created_at)).where(Output.job_id.in_(edge_task_ids)),
+    ) + timedelta(seconds=2)
+
+    expected_nodes = await enrich_jobs([*dags[1:4], *tasks[1:4], sparks[2]], async_session)
+    expected_deps = [
+        (1, 2, "DIRECT_DEPENDENCY"),
+        (2, 3, "DIRECT_DEPENDENCY"),
+    ]
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+            "since": max_output_created_at.isoformat(),
+            "until": min_input_created_at.isoformat(),
+        },
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(expected_nodes),
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": str(tasks[from_idx].id)},
+                    "to": {"kind": "JOB", "id": str(tasks[to_idx].id)},
+                    "type": dep_type,
+                }
+                for from_idx, to_idx, dep_type in expected_deps
+            ],
+        },
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
+    }
+
+
+async def test_get_job_hierarchy_with_indirect_dependencies_without_since(
+    test_client: AsyncClient,
+    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+):
+    _, tasks, _ = job_dependency_chain_with_indirect_dependencies
+    start_node = tasks[2]
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+        },
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+    assert response.json() == {
+        "error": {
+            "code": "invalid_request",
+            "details": [
+                {
+                    "code": "value_error",
+                    "context": {},
+                    "input": {
+                        "depth": 2,
+                        "direction": "BOTH",
+                        "infer_from_lineage": True,
+                        "since": None,
+                        "start_node_id": start_node.id,
+                        "until": None,
+                    },
+                    "location": [],
+                    "message": "Value error, Inferring from lineage graph only possible with 'since' param",
+                },
+            ],
+            "message": "Invalid request",
+        },
+    }
+
+
+async def test_get_job_hierarchy_with_indirect_dependencies_since_less_then_until(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+):
+    _, tasks, _ = job_dependency_chain_with_indirect_dependencies
+    start_node = tasks[2]
+
+    edge_task_ids = [tasks[0].id, tasks[4].id]
+    min_input_created_at = await async_session.scalar(
+        select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
+    ) - timedelta(seconds=2)
+    max_output_created_at = await async_session.scalar(
+        select(func.max(Output.created_at)).where(Output.job_id.in_(edge_task_ids)),
+    ) + timedelta(seconds=2)
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+            "since": min_input_created_at.isoformat(),
+            "until": max_output_created_at.isoformat(),
+        },
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+    assert response.json() == {
+        "error": {
+            "code": "invalid_request",
+            "details": [
+                {
+                    "code": "value_error",
+                    "context": {},
+                    "input": format_datetime(max_output_created_at),
+                    "location": [
+                        "until",
+                    ],
+                    "message": "Value error, 'since' should be less than 'until'",
+                },
+            ],
+            "message": "Invalid request",
+        },
     }
