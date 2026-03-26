@@ -64,7 +64,7 @@
 
 - Marquez store and show lineage for any OpenLineage integration.
   Data.Rentgen may require some adjustments for that.
-  
+
 - Marquez store and show any facet produced by OpenLineage integration, including custom ones.
   Data.Rentgen stores only selected facets.
 

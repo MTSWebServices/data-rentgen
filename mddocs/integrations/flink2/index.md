@@ -28,9 +28,9 @@ Using [OpenLineage integration with Apache Flink 2.x](https://openlineage.io/doc
     - [openlineage-flink](https://mvnrepository.com/artifact/io.openlineage/openlineage-flink)
     - [kafka-clients](https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients)
     - [zstd-jni](https://mvnrepository.com/artifact/com.github.luben/zstd-jni)
-  
+
   - HttpTransport (requires HTTP2Kafka):
-  
+
     - [openlineage-flink](https://mvnrepository.com/artifact/io.openlineage/openlineage-flink)
 
 - Set environment variable `CLASSPATH` of Flink's `JobManager` to point to this directory path:

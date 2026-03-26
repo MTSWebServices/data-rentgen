@@ -79,7 +79,7 @@ spark = (
         #"io.openlineage:openlineage-spark_2.12:1.40.1",
     )
     .config(
-        "spark.extraListeners", 
+        "spark.extraListeners",
         "io.openlineage.spark.agent.OpenLineageSparkListener"
     )
     # set Spark session master & applicationName
@@ -121,15 +121,15 @@ spark = (
     .config("spark.openlineage.transport.topicName", "input.runs")
     .config(
         # should be accessible from Spark driver
-        "spark.openlineage.transport.properties.bootstrap.servers", 
+        "spark.openlineage.transport.properties.bootstrap.servers",
         "localhost:9093",
     )
     .config(
-        "spark.openlineage.transport.properties.security.protocol", 
+        "spark.openlineage.transport.properties.security.protocol",
         "SASL_PLAINTEXT",
     )
     .config(
-        "spark.openlineage.transport.properties.sasl.mechanism", 
+        "spark.openlineage.transport.properties.sasl.mechanism",
         "SCRAM-SHA-256",
         )
     .config(

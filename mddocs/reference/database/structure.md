@@ -9,21 +9,21 @@ erDiagram
 
     address {
         bigint id UK, PK
-        bigint location_id UK, FK  
+        bigint location_id UK, FK
         varchar(256) url UK
     }
 
     location {
         bigint id UK
         varchar(32) type  UK
-        varchar(256) name UK 
+        varchar(256) name UK
         varchar(256) external_id
         tsvector search_vector
     }
 
     user {
-        bigint id UK, PK 
-        varchar(256) name UK 
+        bigint id UK, PK
+        varchar(256) name UK
     }
    dataset {
         bigint id UK

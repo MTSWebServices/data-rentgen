@@ -28,7 +28,7 @@ providing users the ability to navigate entities and build lineage graph.
   ----8<----
   docker-compose.yml
   ----8<----
-  ```  
+  ```
 
 ??? note ".env.docker"
 

@@ -23,7 +23,7 @@ We provide three types of views: `day`, `week` and `month`, based on the time pe
 By default these materialized views are empty(`WITH NO DATA`).
 In order to fill these tables with data you need to run refresh script (see below).
 
-<!-- TODO: 
+<!-- TODO:
 .. argparse::
    :module: data_rentgen.db.scripts.refresh_analytic_views
    :func: get_parser
