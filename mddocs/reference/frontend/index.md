@@ -24,17 +24,9 @@ providing users the ability to navigate entities and build lineage graph.
 
 ### "docker-compose.yml"
 
-<<<<<<< HEAD
 --8<--
 docker-compose.yml:140:151
 --8<--
-=======
-  ```yaml hl_lines="140-151" linenums="1"
-  ----8<----
-  docker-compose.yml
-  ----8<----
-  ```
->>>>>>> 546e6c68e793dbe53e36c343b657b63dc206a289
 
 ### ".env.docker"
 
