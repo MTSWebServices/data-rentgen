@@ -1,6 +1,4 @@
-(comparison)=
-
-# Comparison with other tools
+# Comparison with other tools { #comparison }
 
 ## Why not [DataHub](https://datahubproject.io/)?
 

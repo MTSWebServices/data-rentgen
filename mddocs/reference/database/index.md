@@ -11,8 +11,7 @@ After a database is started, it is required to run migration script. If database
 Migration script is a thin wrapper around [Alembic cli](https://alembic.sqlalchemy.org/en/latest/tutorial.html#running-our-first-migration), options and commands are just the same.
 
 !!! warning
-
-  Other containers (consumer, server) should be stopped while running migrations, to prevent interference.
+    Other containers (consumer, server) should be stopped while running migrations, to prevent interference.
 
 ## Partitions
 
@@ -63,17 +62,15 @@ By default, database is created with no data. To seed database with some example
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-### "docker-compose.yml"
+!!! note "docker-compose.yml"
+    --8<--
+    docker-compose.yml:1:69,176
+    --8<--
 
---8<--
-docker-compose.yml:1:69,176
---8<--
-
-### ".env.docker"
-
---8<--
-.env.docker:1:5,23
---8<--
+!!! note ".env.docker"
+    --8<--
+    .env.docker:1:5,23
+    --8<--
 
 - Add scripts to crontab:
 

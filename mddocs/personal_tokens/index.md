@@ -84,7 +84,6 @@ After token is revoked, it cannot be used anymore.
 !!! note
     Due to OpenLineage limitations, {ref}`http2kafka` can be used only with Personal Tokens, and no other auth methods are supported.
 
-
 Use [OpenLineage HTTPTransport](https://openlineage.io/docs/client/python#http-transport):
 
 ```yaml title="openlineage.yaml"

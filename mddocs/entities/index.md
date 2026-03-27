@@ -292,9 +292,8 @@ It contains following fields:
   - `WAREHOUSE` - from Hive table to HDFS/S3 location.
 
 !!! note
-
-  Currently, OpenLineage sends only symlinks `HDFS location → Hive table` which [do not exist in the real world](https://github.com/OpenLineage/OpenLineage/issues/2718#issuecomment-2134746258).
-  Message consumer automatically adds a reverse symlink `Hive table → HDFS location` to simplify building lineage graph, but this is temporary solution.
+    Currently, OpenLineage sends only symlinks `HDFS location → Hive table` which [do not exist in the real world](https://github.com/OpenLineage/OpenLineage/issues/2718#issuecomment-2134746258).
+    Message consumer automatically adds a reverse symlink `Hive table → HDFS location` to simplify building lineage graph, but this is temporary solution.
 
 ![symlink_relation](symlink_relation.png)
 

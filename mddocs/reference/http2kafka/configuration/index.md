@@ -10,7 +10,6 @@
 [openapi][configuration-http2kafka-openapi]
 [debug][configuration-http2kafka-debug]
 
-<!-- TODO: Check the place -->
-<!-- ::: data_rentgen.http2kafka.settings.Http2KafkaApplicationSettings -->
+::: data_rentgen.http2kafka.settings.Http2KafkaApplicationSettings
 
 ::: data_rentgen.server.settings.ServerSettings

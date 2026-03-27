@@ -4,7 +4,10 @@ Some of OpenLineage integrations support only HttpTransport, but not KafkaTransp
 
 Data.Rentgen HTTP → Kafka proxy is optional component which provides a simple HTTP API receiving
 [OpenLineage run events](https://openlineage.io/docs/spec/object-model) in JSON format and sending them to Kafka topic as is,
-so they can be handled by {ref}`message-consumer` in a proper way.
+so they can be handled by [message-consumer][message-consumer] in a proper way.
+
+!!! warning
+    Due to OpenLineage limitations, HTTP2kafka can be used only with [personal-tokens][personal-tokens], and no other auth methods are supported.
 
 ## OpenLineage HttpTransport or KafkaTransport?
 
@@ -36,23 +39,15 @@ If this is not possible, http2kafka is the way to go.
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-<!-- TODO везде, где literal include нужно сделать инклюды-->>
+!!! note "docker-compose.yml"
+    --8<--
+    docker-compose.yml:155:73
+    --8<--
 
-??? note "docker-compose.yml"
-
-    ```yaml hl_lines="155-173" linenums="1"
-    ----8<----
-    docker-compose.yml
-    ----8<----
-    ```
-
-??? note ".env.docker"
-
-    ```ini hl_lines="29-34" linenums="1"
-    ----8<----
-    .env.docker
-    ----8<----
-    ```
+!!! note ".env.docker"
+    --8<--
+    .env.docker:29:34
+    --8<--
 
 - After component is started and ready, open <http://localhost:8002/docs>.
 
@@ -60,7 +55,7 @@ If this is not possible, http2kafka is the way to go.
 
 - Install Python 3.10 or above
 
-- Setup {ref}`message-broker`
+- Setup [message-broker][message-broker]
 
 - Create virtual environment
 

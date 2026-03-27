@@ -14,52 +14,44 @@ Data.Rentgen is build using following components:
 
 ## Architecture diagram
 
-```plantuml
+```mermaid
+stateDiagram-v2
+direction LR
 
-    @startuml
-        title Data.Rentgen artitecture
-        skinparam componentStyle rectangle
-        left to right direction
+state "OpenLineage" as OpenLineage {
+state "OpenLineage Spark" as SPARK
+state "OpenLineage Airflow" as AIRFLOW
+state "OpenLineage Hive" as HIVE
+state "OpenLineage Flink" as FLINK
+state "OpenLineage dbt" as DBT
+state "OpenLineage other" as OTHER
+state "OpenLineage KafkaTransport" as KAFKA_TRANSPORT
+state "OpenLineage HttpTransport" as HTTP_TRANSPORT
+SPARK --> KAFKA_TRANSPORT
+AIRFLOW --> KAFKA_TRANSPORT
+HIVE --> KAFKA_TRANSPORT
+FLINK --> KAFKA_TRANSPORT
+DBT --> KAFKA_TRANSPORT
+KAFKA_TRANSPORT --> KAFKA
+OTHER --> HTTP_TRANSPORT
+HTTP_TRANSPORT --> HTTP2KAFKA
+}
+state User
+USER --> FRONTEND
+state "Data.Rentgen" as Data.Rentgen {
+state "Kafka"  as KAFKA
+state "Message consumer" as CONSUMER
+state "PostgreSQL" as DB
+state "REST API server" as API
+state "Frontend" as FRONTEND
+state "HTTP2Kafka" as HTTP2KAFKA
 
-        frame "Data.Rentgen" {
-            queue "Kafka" as KAFKA
-            component "Message consumer" as CONSUMER
-            database "PostgreSQL" as DB
-            component "REST API server" as API
-            component "Frontend" as FRONTEND
-            component "HTTP2Kafka" as HTTP2KAFKA
-        }
+HTTP2KAFKA --> KAFKA
 
-        frame "OpenLineage" {
-            agent "OpenLineage Spark" as SPARK
-            agent "OpenLineage Airflow" as AIRFLOW
-            agent "OpenLineage Hive" as HIVE
-            agent "OpenLineage Flink" as FLINK
-            agent "OpenLineage dbt" as DBT
-            agent "OpenLineage other" as OTHER
-            agent "OpenLineage KafkaTransport" as KAFKA_TRANSPORT
-            agent "OpenLineage HttpTransport" as HTTP_TRANSPORT
-        }
+KAFKA --> CONSUMER
+CONSUMER --> DB
 
-        actor "User" as USER
-
-        [SPARK] --> [KAFKA_TRANSPORT]
-        [AIRFLOW] --> [KAFKA_TRANSPORT]
-        [HIVE] --> [KAFKA_TRANSPORT]
-        [FLINK] --> [KAFKA_TRANSPORT]
-        [DBT] --> [KAFKA_TRANSPORT]
-        [KAFKA_TRANSPORT] --> [KAFKA]
-
-        [OTHER] --> [HTTP_TRANSPORT]
-        [HTTP_TRANSPORT] --> [HTTP2KAFKA]
-        [HTTP2KAFKA] --> [KAFKA]
-
-        [KAFKA] --> [CONSUMER]
-        [CONSUMER] --> [DB]
-
-        [API] --> [DB]
-        [FRONTEND] --> [API]
-        [USER] --> [FRONTEND]
-
-    @enduml
+API --> DB
+FRONTEND --> API
+}
 ```

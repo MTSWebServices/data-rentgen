@@ -2,21 +2,26 @@
 
 Welcome! There are many ways to contribute, including submitting bug reports, improving documentation, submitting feature requests, reviewing new submissions, or contributing code that can be incorporated into the project.
 
+## Review process
+
+For any **significant** changes please create a new GitHub issue and
+enhancements that you wish to make. Describe the feature you would like
+to see, why you need it, and how it will work. Discuss your ideas
+transparently and get community feedback before proceeding.
+
+Small changes can directly be crafted and submitted to the GitHub
+Repository as a Pull Request. This requires creating a **repo fork** using
+[instruction](https://docs.github.com/en/get-started/quickstart/fork-a-repo)
+
 ## Initial setup for local development
 
 ### Install Git
 
 Please follow [instruction](https://docs.github.com/en/get-started/quickstart/set-up-git).
 
-### Create a fork
-
-If you are not a member of a development team building Data.Rentgen, you should create a fork before making any changes.
-
-Please follow [instruction](https://docs.github.com/en/get-started/quickstart/fork-a-repo).
-
 ### Clone the repo
 
-Open terminal and run these commands:
+Open terminal and run these commands to clone a **forked** repo:
 
 ```bash
 git clone https://github.com/MobileTeleSystems/data-rentgen -b develop
@@ -40,14 +45,16 @@ If you already have venv, but need to install dependencies required for developm
 make venv-install
 ```
 
-We are using [poetry](https://python-poetry.org/docs/managing-dependencies/) for managing dependencies and building the package.
+We are using [uv](https://docs.astral.sh/uv/) for managing dependencies and building the package.
 It allows to keep development environment the same for all developers due to using lock file with fixed dependency versions.
 
 There are *extra* dependencies (included into package as optional):
 
-* `backend`
-* `client-sync`
+* `server`
+* `consumer`
+* `http2kafka`
 * `postgres`
+* `gssapi`
 * `seed`
 
 And *groups* (not included into package, used locally and in CI):
@@ -61,16 +68,16 @@ And *groups* (not included into package, used locally and in CI):
 [pre-commit](https://pre-commit.com/) hooks allows to validate & fix repository content before making new commit.
 It allows to run linters, formatters, fix file permissions and so on. If something is wrong, changes cannot be committed.
 
-Firstly, install pre-commit hooks:
+Firstly, install [prek](https://prek.j178.dev/):
 
 ```bash
-pre-commit install --install-hooks
+prek install --install-hooks
 ```
 
 Ant then test hooks run:
 
 ```bash
-pre-commit run
+prek run
 ```
 
 ## How to
@@ -185,14 +192,6 @@ If documentation should be build cleanly instead of reusing existing build resul
 make docs-fresh
 ```
 
-## Review process
-
-Please create a new GitHub issue for any significant changes and enhancements that you wish to make. Provide the feature you would like to see, why you need it, and how it will work. Discuss your ideas transparently and get community feedback before proceeding.
-
-Significant Changes that you wish to contribute to the project should be discussed first in a GitHub issue that clearly outlines the changes and benefits of the feature.
-
-Small Changes can directly be crafted and submitted to the GitHub Repository as a Pull Request.
-
 ### Create pull request
 
 Commit your changes:
@@ -221,12 +220,15 @@ Finally, name your file following the convention that Towncrier understands: it 
 
 In general the name will follow `<pr_number>.<category>.rst` pattern, where the categories are:
 
-* `feature`: Any new feature
-* `bugfix`: A bug fix
-* `improvement`: An improvement
-* `doc`: A change to the documentation
-* `dependency`: Dependency-related changes
-* `misc`: Changes internal to the repo like CI, test and build changes
+* `feature`: Any new feature. Adding new functionality that has not yet existed.
+* `removal`: Signifying a deprecation or removal of public API.
+* `bugfix`: A bug fix.
+* `improvement`: An improvement. Improving functionality that already existed.
+* `doc`: A change to the documentation.
+* `dependency`: Indicates that there have been changes in dependencies.
+* `misc`: Changes internal to the repo like CI, test and build changes.
+* `breaking`: introduces a breaking API change.
+* `significant`: Indicates that significant changes have been made to the code.
 
 A pull request may have more than one of these components, for example
 a code change may introduce a new feature that deprecates an old
@@ -236,18 +238,23 @@ changes accompanying the relevant code changes.
 
 #### Examples for adding changelog entries to your Pull Requests
 
-```rst
+```rst title="docs/changelog/next_release/1234.doc.1.rst"
 Added a ``:github:user:`` role to Sphinx config -- by :github:user:`someuser`
 ```
 
-```rst
-Fixed behavior of ``backend`` -- by :github:user:`someuser`
+```rst title="docs/changelog/next_release/2345.bugfix.rst"
+Fixed behavior of ``server`` -- by :github:user:`someuser`
 ```
 
-```rst
+```rst title="docs/changelog/next_release/3456.feature.rst"
 Added support of ``timeout`` in ``LDAP``
 -- by :github:user:`someuser`, :github:user:`anotheruser` and :github:user:`otheruser`
 ```
+
+!!! tip
+    See `pyproject.toml <pyproject.toml>`_ for all available categories (`tool.towncrier.type`).
+    Towncrier philosophy:
+    https://towncrier.readthedocs.io/en/stable/#philosophy
 
 #### How to skip change notes check?
 
@@ -255,85 +262,88 @@ Just add `ci:skip-changelog` label to pull request.
 
 #### Release Process
 
+!!! note
+    This is for repo maintainers only
+
 Before making a release from the `develop` branch, follow these steps:
 
-1. Checkout to `develop` branch and update it to the actual state
+0. Checkout to `develop` branch and update it to the actual state
 
-```bash
-git checkout develop
-git pull -p
-```
+ ```bash
+ git checkout develop
+ git pull -p
+ ```
 
 1. Backup `NEXT_RELEASE.rst`
 
-```bash
-cp "docs/changelog/NEXT_RELEASE.rst" "docs/changelog/temp_NEXT_RELEASE.rst"
-```
+ ```bash
+ cp "docs/changelog/NEXT_RELEASE.rst" "docs/changelog/temp_NEXT_RELEASE.rst"
+ ```
 
-1. Build the Release notes with Towncrier
+2. Build the Release notes with Towncrier
 
-```bash
-VERSION=$(poetry version -s)
-towncrier build "--version=${VERSION}" --yes
-```
+ ```bash
+ VERSION=$(poetry version -s)
+ towncrier build "--version=${VERSION}" --yes
+ ```
 
-1. Change file with changelog to release version number
+3. Change file with changelog to release version number
 
-```bash
-mv docs/changelog/NEXT_RELEASE.rst "docs/changelog/${VERSION}.rst"
-```
+ ```bash
+ mv docs/changelog/NEXT_RELEASE.rst "docs/changelog/${VERSION}.rst"
+ ```
 
-1. Remove content above the version number heading in the `${VERSION}.rst` file
+4. Remove content above the version number heading in the `${VERSION}.rst` file
 
-```bash
+ ```bash
 awk '!/^.*towncrier release notes start/' "docs/changelog/${VERSION}.rst" > temp && mv temp "docs/changelog/${VERSION}.rst"
-```
+ ```
 
-1. Update Changelog Index
+5. Update Changelog Index
 
-```bash
-awk -v version=${VERSION} '/DRAFT/{print;print "    " version;next}1' docs/changelog/index.rst > temp && mv temp docs/changelog/index.rst
-```
+ ```bash
+ awk -v version=${VERSION} '/DRAFT/{print;print "    " version;next}1' docs/changelog/index.rst > temp && mv temp docs/changelog/index.rst
+ ```
 
-1. Restore `NEXT_RELEASE.rst` file from backup
+6. Restore `NEXT_RELEASE.rst` file from backup
 
-```bash
-mv "docs/changelog/temp_NEXT_RELEASE.rst" "docs/changelog/NEXT_RELEASE.rst"
-```
+ ```bash
+ mv "docs/changelog/temp_NEXT_RELEASE.rst" "docs/changelog/NEXT_RELEASE.rst"
+ ```
 
-1. Commit and push changes to `develop` branch
+7. Commit and push changes to `develop` branch
 
-```bash
-git add .
-git commit -m "Prepare for release ${VERSION}"
-git push
-```
+ ```bash
+ git add .
+ git commit -m "Prepare for release ${VERSION}"
+ git push
+ ```
 
-1. Merge `develop` branch to `master`, **WITHOUT** squashing
+8. Merge `develop` branch to `master`, **WITHOUT** squashing
 
-```bash
-git checkout master
-git pull
-git merge develop
-git push
-```
+ ```bash
+ git checkout master
+ git pull
+ git merge develop
+ git push
+ ```
 
-1. Add git tag to the latest commit in `master` branch
+9. Add git tag to the latest commit in `master` branch
 
-```bash
-git tag "$VERSION"
-git push origin "$VERSION"
-```
+ ```bash
+ git tag "$VERSION"
+ git push origin "$VERSION"
+ ```
 
-1. Update version in `develop` branch **after release**:
+10. Update version in `develop` branch **after release**:
 
-```bash
-git checkout develop
+ ```bash
+ git checkout develop
 
-NEXT_VERSION=$(echo "$VERSION" | awk -F. '/[0-9]+\./{$NF++;print}' OFS=.)
-poetry version "$NEXT_VERSION"
+ NEXT_VERSION=$(echo "$VERSION" | awk -F. '/[0-9]+\./{$NF++;print}' OFS=.)
+ poetry version "$NEXT_VERSION"
 
-git add .
-git commit -m "Bump version"
-git push
-```
+ git add .
+ git commit -m "Bump version"
+ git push
+ ```
