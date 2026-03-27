@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from data_rentgen.server.schemas.v1.job_response import JobResponseV1
 from data_rentgen.server.schemas.v1.pagination import PaginateQueryV1
@@ -118,4 +119,38 @@ class JobHierarchyQueryV1(BaseModel):
         examples=["DOWNSTREAM", "UPSTREAM", "BOTH"],
     )
     depth: int = Field(description="Levels of dependencies to dive into", default=1)
-    model_config = ConfigDict(extra="ignore")
+    infer_from_lineage: bool = Field(
+        default=False,
+        description="Include or not indirect connections between jobs",
+        examples=[True, False],
+    )
+    since: datetime | None = Field(
+        default=None,
+        description="",
+        examples=["2008-09-15T15:53:00+05:00"],
+    )
+    until: datetime | None = Field(
+        default=None,
+        description="",
+        examples=["2008-09-15T15:53:00+05:00"],
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("until", mode="after")
+    @classmethod
+    def _check_until(cls, value: datetime | None, info: ValidationInfo) -> datetime | None:
+        since = info.data.get("since")
+        if since and value and since.timestamp() >= value.timestamp():
+            msg = "'since' should be less than 'until'"
+            raise ValueError(msg)
+        return value
+
+    @field_validator("since", mode="after")
+    @classmethod
+    def _check_since(cls, value: datetime | None, info: ValidationInfo) -> datetime | None:
+        infer_from_lineage = info.data.get("infer_from_lineage")
+        if infer_from_lineage and not value:
+            msg = "'since' is mandatory when 'infer_from_lineage' is used"
+            raise ValueError(msg)
+        return value

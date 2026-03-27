@@ -3,6 +3,7 @@
 import logging
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from itertools import groupby
 from typing import Annotated, Literal
 
@@ -112,6 +113,10 @@ class JobService:
         start_node_id: int,
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
         depth: int,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        *,
+        infer_from_lineage: bool = False,
     ) -> JobHierarchyResult:
         logger.info(
             "Get jobs hierarchy with start at job with id %s, direction %s, depth %s",
@@ -133,6 +138,9 @@ class JobService:
             job_ids=list(job_ids),
             direction=direction,
             depth=depth,
+            infer_from_lineage=infer_from_lineage,
+            since=since,
+            until=until,
         )
         dependency_job_ids = {d.from_job_id for d in dependencies} | {d.to_job_id for d in dependencies}
         job_ids |= dependency_job_ids
@@ -142,6 +150,9 @@ class JobService:
         jobs = await self._uow.job.list_by_ids(list(job_ids))
         return JobHierarchyResult(
             parents={(p.parent_job_id, p.child_job_id) for p in ancestor_relations + descendant_relations},
-            dependencies={(d.from_job_id, d.to_job_id, d.type) for d in dependencies},
+            dependencies={
+                (d.from_job_id, d.to_job_id, d.type)
+                for d in sorted(dependencies, key=lambda x: (x.from_job_id, x.to_job_id, x.type))
+            },
             jobs=[JobServiceResult.from_orm(job) for job in jobs],
         )

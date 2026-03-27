@@ -331,7 +331,7 @@ It contains following fields:
 
 - ``from: Job | Run`` - entity which should be waited before current job/run will be started.
 - ``to: Job | Run`` - entity which waits.
-- ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INDIRECT_DEPENDENCY``.
+- ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INFERRED_FROM_LINEAGE``.
 
 .. image:: dependency_relation.png
 

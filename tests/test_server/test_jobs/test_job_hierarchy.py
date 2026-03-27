@@ -1,15 +1,16 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data_rentgen.db.models import Job
+from data_rentgen.db.models import Input, Job, Output
 from tests.fixtures.mocks import MockedUser
-from tests.test_server.utils.convert_to_json import jobs_ancestors_to_json, jobs_to_json
+from tests.test_server.utils.convert_to_json import format_datetime, jobs_ancestors_to_json, jobs_to_json
 from tests.test_server.utils.enrich import enrich_jobs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -207,22 +208,25 @@ async def test_get_job_hierarchy_with_direction_downstream(
 @pytest.mark.parametrize(
     ["depth", "direction", "expected_dep_indices", "expected_job_indices"],
     [
-        (1, "DOWNSTREAM", [(2, 3)], [2, 3]),
-        (2, "DOWNSTREAM", [(2, 3), (3, 4)], [2, 3, 4]),
-        (1, "UPSTREAM", [(1, 2)], [1, 2]),
-        (2, "UPSTREAM", [(0, 1), (1, 2)], [0, 1, 2]),
-        (1, "BOTH", [(1, 2), (2, 3)], [1, 2, 3]),
-        (2, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
-        (5, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
-    ],
-    ids=[
-        "depth_1-downstream",
-        "depth_2-downstream",
-        "depth_1-upstream",
-        "depth_2-upstream",
-        "depth_1-both",
-        "depth_2-both",
-        "depth_5-both",
+        pytest.param(1, "DOWNSTREAM", [(2, 3)], [2, 3], id="depth_1-downstream"),
+        pytest.param(2, "DOWNSTREAM", [(2, 3), (3, 4)], [2, 3, 4], id="depth_2-downstream"),
+        pytest.param(1, "UPSTREAM", [(1, 2)], [1, 2], id="depth_1-upstream"),
+        pytest.param(2, "UPSTREAM", [(0, 1), (1, 2)], [0, 1, 2], id="depth_2-upstream"),
+        pytest.param(1, "BOTH", [(1, 2), (2, 3)], [1, 2, 3], id="depth_1-both"),
+        pytest.param(
+            2,
+            "BOTH",
+            [(0, 1), (1, 2), (2, 3), (3, 4)],
+            [0, 1, 2, 3, 4],
+            id="depth_2-both",
+        ),
+        pytest.param(
+            5,
+            "BOTH",
+            [(0, 1), (1, 2), (2, 3), (3, 4)],
+            [0, 1, 2, 3, 4],
+            id="depth_5-both",
+        ),
     ],
 )
 async def test_get_job_hierarchy_with_depth(
@@ -269,10 +273,9 @@ async def test_get_job_hierarchy_with_depth(
 @pytest.mark.parametrize(
     ["direction", "start_node_index"],
     [
-        ("UPSTREAM", 0),
-        ("DOWNSTREAM", 4),
+        pytest.param("UPSTREAM", 0, id="upstream_boundary"),
+        pytest.param("DOWNSTREAM", 4, id="downstream_boundary"),
     ],
-    ids=["upstream_boundary", "downstream_boundary"],
 )
 async def test_get_job_hierarchy_with_depth_on_boundary(
     test_client: AsyncClient,
@@ -303,4 +306,235 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
             "dependencies": [],
         },
         "nodes": {"jobs": jobs_to_json([expected_job])},
+    }
+
+
+@pytest.mark.parametrize(
+    ["direction", "depth", "start_node_idx", "expected_deps"],
+    [
+        pytest.param("UPSTREAM", 1, 1, [(0, 1, "INFERRED_FROM_LINEAGE")], id="inferred-upstream-depth-1"),
+        pytest.param(
+            "UPSTREAM",
+            2,
+            2,
+            [
+                (1, 2, "DIRECT_DEPENDENCY"),
+                (0, 1, "INFERRED_FROM_LINEAGE"),
+            ],
+            id="inferred-upstream-depth-2",
+        ),
+        pytest.param("DOWNSTREAM", 1, 3, [(3, 4, "INFERRED_FROM_LINEAGE")], id="inferred-downstream-depth-1"),
+        pytest.param(
+            "DOWNSTREAM",
+            2,
+            2,
+            [
+                (2, 3, "DIRECT_DEPENDENCY"),
+                (3, 4, "INFERRED_FROM_LINEAGE"),
+            ],
+            id="inferred-downstream-depth-2",
+        ),
+        pytest.param(
+            "BOTH",
+            2,
+            2,
+            [
+                (1, 2, "DIRECT_DEPENDENCY"),
+                (2, 3, "DIRECT_DEPENDENCY"),
+                (3, 4, "INFERRED_FROM_LINEAGE"),
+                (0, 1, "INFERRED_FROM_LINEAGE"),
+            ],
+            id="inferred-both-depth-2",
+        ),
+    ],
+)
+async def test_get_job_hierarchy_with_inferred_dependencies(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+    direction: str,
+    depth: int,
+    start_node_idx: int,
+    expected_deps: list[tuple[int, int, str]],
+):
+    dags, tasks, sparks = job_dependency_chain_with_lineage
+    start_node = tasks[start_node_idx]
+
+    expected_ids = set()
+    for from_idx, to_idx, _ in expected_deps:
+        expected_ids.add(from_idx)
+        expected_ids.add(to_idx)
+    expected_dags = [dags[idx] for idx in expected_ids]
+    expected_tasks = [tasks[idx] for idx in expected_ids]
+    expected_sparks = [sparks[start_node_idx]]
+    expected_nodes = await enrich_jobs(expected_dags + expected_tasks + expected_sparks, async_session)
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": direction,
+            "depth": depth,
+            "infer_from_lineage": True,
+            "since": datetime.min.replace(tzinfo=UTC).isoformat(),
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(expected_nodes),
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": str(tasks[from_idx].id)},
+                    "to": {"kind": "JOB", "id": str(tasks[to_idx].id)},
+                    "type": dep_type,
+                }
+                for from_idx, to_idx, dep_type in expected_deps
+            ],
+        },
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
+    }
+
+
+async def test_get_job_hierarchy_with_inferred_dependencies_with_since_and_until(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+):
+    dags, tasks, sparks = job_dependency_chain_with_lineage
+    start_node = tasks[2]
+
+    # Cover both inferred links connected to task0 and task4.
+    edge_task_ids = [tasks[0].id, tasks[4].id]
+    min_input_created_at = await async_session.scalar(
+        select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
+    ) - timedelta(seconds=2)
+    max_output_created_at = await async_session.scalar(
+        select(func.max(Output.created_at)).where(Output.job_id.in_(edge_task_ids)),
+    ) + timedelta(seconds=2)
+
+    expected_nodes = await enrich_jobs([*dags[1:4], *tasks[1:4], sparks[2]], async_session)
+    expected_deps = [
+        (1, 2, "DIRECT_DEPENDENCY"),
+        (2, 3, "DIRECT_DEPENDENCY"),
+    ]
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+            "since": max_output_created_at.isoformat(),
+            "until": min_input_created_at.isoformat(),
+        },
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(expected_nodes),
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": str(tasks[from_idx].id)},
+                    "to": {"kind": "JOB", "id": str(tasks[to_idx].id)},
+                    "type": dep_type,
+                }
+                for from_idx, to_idx, dep_type in expected_deps
+            ],
+        },
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
+    }
+
+
+async def test_get_job_hierarchy_with_inferred_dependencies_without_since(
+    test_client: AsyncClient,
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+):
+    _, tasks, _ = job_dependency_chain_with_lineage
+    start_node = tasks[2]
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+        },
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+    assert response.json() == {
+        "error": {
+            "code": "invalid_request",
+            "details": [
+                {
+                    "code": "value_error",
+                    "context": {},
+                    "input": None,
+                    "location": [
+                        "since",
+                    ],
+                    "message": "Value error, 'since' is mandatory when 'infer_from_lineage' is used",
+                },
+            ],
+            "message": "Invalid request",
+        },
+    }
+
+
+async def test_get_job_hierarchy_with_inferred_dependencies_since_less_then_until(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    mocked_user: MockedUser,
+):
+    _, tasks, _ = job_dependency_chain_with_lineage
+    start_node = tasks[2]
+
+    edge_task_ids = [tasks[0].id, tasks[4].id]
+    min_input_created_at = await async_session.scalar(
+        select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
+    ) - timedelta(seconds=2)
+    max_output_created_at = await async_session.scalar(
+        select(func.max(Output.created_at)).where(Output.job_id.in_(edge_task_ids)),
+    ) + timedelta(seconds=2)
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+            "since": min_input_created_at.isoformat(),
+            "until": max_output_created_at.isoformat(),
+        },
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+    assert response.json() == {
+        "error": {
+            "code": "invalid_request",
+            "details": [
+                {
+                    "code": "value_error",
+                    "context": {},
+                    "input": format_datetime(max_output_created_at),
+                    "location": [
+                        "until",
+                    ],
+                    "message": "Value error, 'since' should be less than 'until'",
+                },
+            ],
+            "message": "Invalid request",
+        },
     }
