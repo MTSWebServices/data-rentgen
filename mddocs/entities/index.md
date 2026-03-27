@@ -19,7 +19,7 @@ flowchart LR
    dataset2[(dataset 2)]
    operations@{shape: procs}
    runs@{shape: procs, fill: yellow}
-   
+
    style runs fill:lightyellow
    job
    style job fill:lightblue
@@ -28,7 +28,7 @@ flowchart LR
 
    dataset1 -- SYMLINK ---> dataset2
    dataset2 -- SYMLINK --> dataset1
- 
+
    dataset2 -- located in --> locations2
 
    dataset1 -. INPUT .-> operations
@@ -36,10 +36,10 @@ flowchart LR
    dataset1 -- located in --> locations1
 
    operations -- PARENT --> runs
-   
+
    runs -- PARENT ----> job
    runs -- started by ----> user
-   
+
    job -- located in ---> locations3
 
    runs -- PARENT --> runs

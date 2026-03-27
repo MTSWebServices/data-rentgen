@@ -81,7 +81,7 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
           compression.type: zstd
           acks: all
 ```
-  
+
 ```yaml HttpTransport (requires HTTP2Kafka) title="openlineage.yml"
 
 job:
