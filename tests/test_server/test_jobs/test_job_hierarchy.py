@@ -208,22 +208,25 @@ async def test_get_job_hierarchy_with_direction_downstream(
 @pytest.mark.parametrize(
     ["depth", "direction", "expected_dep_indices", "expected_job_indices"],
     [
-        (1, "DOWNSTREAM", [(2, 3)], [2, 3]),
-        (2, "DOWNSTREAM", [(2, 3), (3, 4)], [2, 3, 4]),
-        (1, "UPSTREAM", [(1, 2)], [1, 2]),
-        (2, "UPSTREAM", [(0, 1), (1, 2)], [0, 1, 2]),
-        (1, "BOTH", [(1, 2), (2, 3)], [1, 2, 3]),
-        (2, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
-        (5, "BOTH", [(0, 1), (1, 2), (2, 3), (3, 4)], [0, 1, 2, 3, 4]),
-    ],
-    ids=[
-        "depth_1-downstream",
-        "depth_2-downstream",
-        "depth_1-upstream",
-        "depth_2-upstream",
-        "depth_1-both",
-        "depth_2-both",
-        "depth_5-both",
+        pytest.param(1, "DOWNSTREAM", [(2, 3)], [2, 3], id="depth_1-downstream"),
+        pytest.param(2, "DOWNSTREAM", [(2, 3), (3, 4)], [2, 3, 4], id="depth_2-downstream"),
+        pytest.param(1, "UPSTREAM", [(1, 2)], [1, 2], id="depth_1-upstream"),
+        pytest.param(2, "UPSTREAM", [(0, 1), (1, 2)], [0, 1, 2], id="depth_2-upstream"),
+        pytest.param(1, "BOTH", [(1, 2), (2, 3)], [1, 2, 3], id="depth_1-both"),
+        pytest.param(
+            2,
+            "BOTH",
+            [(0, 1), (1, 2), (2, 3), (3, 4)],
+            [0, 1, 2, 3, 4],
+            id="depth_2-both",
+        ),
+        pytest.param(
+            5,
+            "BOTH",
+            [(0, 1), (1, 2), (2, 3), (3, 4)],
+            [0, 1, 2, 3, 4],
+            id="depth_5-both",
+        ),
     ],
 )
 async def test_get_job_hierarchy_with_depth(
@@ -270,10 +273,9 @@ async def test_get_job_hierarchy_with_depth(
 @pytest.mark.parametrize(
     ["direction", "start_node_index"],
     [
-        ("UPSTREAM", 0),
-        ("DOWNSTREAM", 4),
+        pytest.param("UPSTREAM", 0, id="upstream_boundary"),
+        pytest.param("DOWNSTREAM", 4, id="downstream_boundary"),
     ],
-    ids=["upstream_boundary", "downstream_boundary"],
 )
 async def test_get_job_hierarchy_with_depth_on_boundary(
     test_client: AsyncClient,
@@ -310,8 +312,8 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
 @pytest.mark.parametrize(
     ["direction", "depth", "start_node_idx", "expected_deps"],
     [
-        ("UPSTREAM", 1, 1, [(0, 1, "INFERRED_FROM_LINEAGE")]),
-        (
+        pytest.param("UPSTREAM", 1, 1, [(0, 1, "INFERRED_FROM_LINEAGE")], id="inferred-upstream-depth-1"),
+        pytest.param(
             "UPSTREAM",
             2,
             2,
@@ -319,9 +321,10 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
                 (1, 2, "DIRECT_DEPENDENCY"),
                 (0, 1, "INFERRED_FROM_LINEAGE"),
             ],
+            id="inferred-upstream-depth-2",
         ),
-        ("DOWNSTREAM", 1, 3, [(3, 4, "INFERRED_FROM_LINEAGE")]),
-        (
+        pytest.param("DOWNSTREAM", 1, 3, [(3, 4, "INFERRED_FROM_LINEAGE")], id="inferred-downstream-depth-1"),
+        pytest.param(
             "DOWNSTREAM",
             2,
             2,
@@ -329,8 +332,9 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
                 (2, 3, "DIRECT_DEPENDENCY"),
                 (3, 4, "INFERRED_FROM_LINEAGE"),
             ],
+            id="inferred-downstream-depth-2",
         ),
-        (
+        pytest.param(
             "BOTH",
             2,
             2,
@@ -340,27 +344,21 @@ async def test_get_job_hierarchy_with_depth_on_boundary(
                 (3, 4, "INFERRED_FROM_LINEAGE"),
                 (0, 1, "INFERRED_FROM_LINEAGE"),
             ],
+            id="inferred-both-depth-2",
         ),
     ],
-    ids=[
-        "indirect-upstream-depth-1",
-        "indirect-upstream-depth-2",
-        "indirect-downstream-depth-1",
-        "indirect-downstream-depth-2",
-        "indirect-both-depth-2",
-    ],
 )
-async def test_get_job_hierarchy_with_indirect_dependencies(
+async def test_get_job_hierarchy_with_inferred_dependencies(
     test_client: AsyncClient,
     async_session: AsyncSession,
-    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
     mocked_user: MockedUser,
     direction: str,
     depth: int,
     start_node_idx: int,
     expected_deps: list[tuple[int, int, str]],
 ):
-    dags, tasks, sparks = job_dependency_chain_with_indirect_dependencies
+    dags, tasks, sparks = job_dependency_chain_with_lineage
     start_node = tasks[start_node_idx]
 
     expected_ids = set()
@@ -401,16 +399,16 @@ async def test_get_job_hierarchy_with_indirect_dependencies(
     }
 
 
-async def test_get_job_hierarchy_with_indirect_dependencies_with_since_and_until(
+async def test_get_job_hierarchy_with_inferred_dependencies_with_since_and_until(
     test_client: AsyncClient,
     async_session: AsyncSession,
-    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
     mocked_user: MockedUser,
 ):
-    dags, tasks, sparks = job_dependency_chain_with_indirect_dependencies
+    dags, tasks, sparks = job_dependency_chain_with_lineage
     start_node = tasks[2]
 
-    # Cover both indirect links connected to task0 and task4.
+    # Cover both inferred links connected to task0 and task4.
     edge_task_ids = [tasks[0].id, tasks[4].id]
     min_input_created_at = await async_session.scalar(
         select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
@@ -454,12 +452,12 @@ async def test_get_job_hierarchy_with_indirect_dependencies_with_since_and_until
     }
 
 
-async def test_get_job_hierarchy_with_indirect_dependencies_without_since(
+async def test_get_job_hierarchy_with_inferred_dependencies_without_since(
     test_client: AsyncClient,
-    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
     mocked_user: MockedUser,
 ):
-    _, tasks, _ = job_dependency_chain_with_indirect_dependencies
+    _, tasks, _ = job_dependency_chain_with_lineage
     start_node = tasks[2]
 
     response = await test_client.get(
@@ -481,16 +479,11 @@ async def test_get_job_hierarchy_with_indirect_dependencies_without_since(
                 {
                     "code": "value_error",
                     "context": {},
-                    "input": {
-                        "depth": 2,
-                        "direction": "BOTH",
-                        "infer_from_lineage": True,
-                        "since": None,
-                        "start_node_id": start_node.id,
-                        "until": None,
-                    },
-                    "location": [],
-                    "message": "Value error, Inferring from lineage graph only possible with 'since' param",
+                    "input": None,
+                    "location": [
+                        "since",
+                    ],
+                    "message": "Value error, 'since' is mandatory when 'infer_from_lineage' is used",
                 },
             ],
             "message": "Invalid request",
@@ -498,13 +491,13 @@ async def test_get_job_hierarchy_with_indirect_dependencies_without_since(
     }
 
 
-async def test_get_job_hierarchy_with_indirect_dependencies_since_less_then_until(
+async def test_get_job_hierarchy_with_inferred_dependencies_since_less_then_until(
     test_client: AsyncClient,
     async_session: AsyncSession,
-    job_dependency_chain_with_indirect_dependencies: tuple[tuple[Job, Job, Job, Job, Job], ...],
+    job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
     mocked_user: MockedUser,
 ):
-    _, tasks, _ = job_dependency_chain_with_indirect_dependencies
+    _, tasks, _ = job_dependency_chain_with_lineage
     start_node = tasks[2]
 
     edge_task_ids = [tasks[0].id, tasks[4].id]

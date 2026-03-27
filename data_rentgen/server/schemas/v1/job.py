@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from data_rentgen.server.schemas.v1.job_response import JobResponseV1
 from data_rentgen.server.schemas.v1.pagination import PaginateQueryV1
@@ -146,9 +146,11 @@ class JobHierarchyQueryV1(BaseModel):
             raise ValueError(msg)
         return value
 
-    @model_validator(mode="after")
-    def _check_indirect_flag(self):
-        if self.infer_from_lineage and not self.since:
-            msg = "Inferring from lineage graph only possible with 'since' param"
+    @field_validator("since", mode="after")
+    @classmethod
+    def _check_since(cls, value: datetime | None, info: ValidationInfo) -> datetime | None:
+        infer_from_lineage = info.data.get("infer_from_lineage")
+        if infer_from_lineage and not value:
+            msg = "'since' is mandatory when 'infer_from_lineage' is used"
             raise ValueError(msg)
-        return self
+        return value

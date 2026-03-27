@@ -471,7 +471,7 @@ async def job_dependency_chain(
 
 
 @pytest_asyncio.fixture
-async def job_dependency_chain_with_indirect_dependencies(
+async def job_dependency_chain_with_lineage(
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
     job_dependency_chain: tuple[tuple[Job, Job, Job], ...],
 ) -> AsyncGenerator[tuple[tuple[Job, Job, Job, Job, Job], ...], None]:
@@ -481,8 +481,8 @@ async def job_dependency_chain_with_indirect_dependencies(
     - right: right_dag -> right_task -> right_spark
 
     The chains are connected to the central fixture on task level via IO relations:
-    - left_task  -> task1  (indirect via input/output relation)
-    - task3      -> right_task (indirect via input/output relation)
+    - left_task  -> task1  (inferred via input/output relation)
+    - task3      -> right_task (inferred via input/output relation)
     """
     (dag1, dag2, dag3), (task1, task2, task3), (spark1, spark2, spark3) = job_dependency_chain
 
