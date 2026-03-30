@@ -173,7 +173,7 @@ To fill up this facet, it is required to:
 
   ```py
   from airflow.providers.standard.operators.bash import BashOperator
-  
+
   task = BashOperator(
     task_id="dbt_run_task",
     cwd="/path/to/project",
@@ -188,11 +188,11 @@ To fill up this facet, it is required to:
   )
   ```
 
-=== "SSHOperator"  
+=== "SSHOperator"
 
   ``` py
   from airflow.providers.ssh.operators.ssh import SSHOperator
-  
+
   task = SSHOperator(
     task_id="dbt_run_task",
     ssh_conn_id="some_host",
@@ -209,7 +209,7 @@ To fill up this facet, it is required to:
 
   ```py title=
   from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
-  
+
   task = SSHOperator(
     task_id="dbt_run_task",
     cmds=["bash", "-cx"],

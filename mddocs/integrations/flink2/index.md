@@ -42,7 +42,7 @@ Using [OpenLineage integration with Apache Flink 2.x](https://openlineage.io/doc
 - Configure Flink `JobManager` to load these dependencies using its own ClassLoader:
 
    ```yaml title="config.yaml"
-  
+
    # For KafkaTransport
    classloader.parent-first-patterns.additional: ["io.openlineage.", "org.apache.kafka.","com.github.luben."]
    # For HttpTransport
