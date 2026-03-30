@@ -22,17 +22,15 @@ providing users the ability to navigate entities and build lineage graph.
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-### "docker-compose.yml"
+  !!! note "docker-compose.yml"
+      --8<--
+      docker-compose.yml:140:151
+      --8<--
 
---8<--
-docker-compose.yml:140:151
---8<--
-
-### ".env.docker"
-
---8<--
-.env.docker:36:37
---8<--
+  !!! note ".env.docker"
+      --8<--
+      .env.docker:36:37
+      --8<--
 
 - After frontend is started and ready, open <http://localhost:3000>.
 

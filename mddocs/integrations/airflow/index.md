@@ -107,10 +107,10 @@ Setup OpenLineage integration using `airflow.cfg` config file:
 
   ```ini
   [openlineage]
-      # set here address of Airflow Web UI
-      namespace = http://airflow.hostname.fqdn:8080
-      # set here HTTP2Kafka url & create PersonalToken
-      transport = {"type": "http", "url": "http://localhost:8002", "endpoint": "/v1/openlineage", "compression": "gzip", "auth": {"type": "api_key", "apiKey": "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC"}}
+  # set here address of Airflow Web UI
+  namespace = http://airflow.hostname.fqdn:8080
+  # set here HTTP2Kafka url & create PersonalToken
+  transport = {"type": "http", "url": "http://localhost:8002", "endpoint": "/v1/openlineage", "compression": "gzip", "auth": {"type": "api_key", "apiKey": "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC"}}
   ```
 
 ### Via Airflow environment variables

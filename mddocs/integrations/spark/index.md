@@ -289,8 +289,8 @@ DataRentgen can use this information to bind Spark application to the run it was
 To fill up this facet, it is required to:
 
 - Setup OpenLineage integration for Spark
-- Setup :ref:`OpenLineage integration for Airflow <overview-setup-airflow>`
-- `Pass parent Run info from Airflow to Spark <https://openlineage.io/docs/integrations/spark/configuration/airflow#preserving-job-hierarchy>`_:
+- Setup [OpenLineage integration for Airflow][overview-setup-airflow]
+- [Pass parent Run info from Airflow to Spark](https://openlineage.io/docs/integrations/spark/configuration/airflow#preserving-job-hierarchy):
 
 ``` python title="dag.py"
 def my_etl(

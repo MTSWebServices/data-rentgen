@@ -82,7 +82,7 @@ After token is revoked, it cannot be used anymore.
 ### With OpenLineage
 
 !!! note
-    Due to OpenLineage limitations, {ref}`http2kafka` can be used only with Personal Tokens, and no other auth methods are supported.
+    Due to OpenLineage limitations, [http2kafka][http2kafka] can be used only with Personal Tokens, and no other auth methods are supported.
 
 Use [OpenLineage HTTPTransport](https://openlineage.io/docs/client/python#http-transport):
 
@@ -110,7 +110,7 @@ spark.openlineage.transport.auth.apiKey=personal_token_AAAAAAAAAAAA.BBBBBBBBBBBB
 
 ### With Swagger UI
 
-Open <http://localhost:8000> (API) or <http://localhost:8002> (HTTP2Kafka), and click on `Authorize` button:
+Open [API](http://localhost:8000) or [HTTP2Kafka](http://localhost:8002), and click on `Authorize` button:
 
 ![swagger_header](swagger_header.png)
 
