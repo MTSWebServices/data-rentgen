@@ -82,13 +82,13 @@ Using [OpenLineage integration with Apache Flink 2.x](https://openlineage.io/doc
 - Create `openlineage.yml` file with content like:
 
   === KafkaTransport
-  
+
     ```yaml title="openlineage.yml"
-  
+
        # Send RUNNING event every 1 hour.
        # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
     trackingIntervalInSeconds: 600
-  
+
     transport:
         type: kafka
         topicName: input.runs
@@ -112,11 +112,11 @@ Using [OpenLineage integration with Apache Flink 2.x](https://openlineage.io/doc
   === HttpTransport (requires HTTP2Kafka)
 
     ```yaml title="openlineage.yml"
-  
+
        # Send RUNNING event every 1 hour.
        # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
        trackingIntervalInSeconds: 3600
-  
+
        transport:
            type: http
            url: http://http2kafka:8000  # not using localhost in docker

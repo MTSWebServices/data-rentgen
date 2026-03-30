@@ -58,15 +58,15 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 === KafkaTransport
 
   ```yaml title="openlineage.yml"
-  
+
     job:
         namespace: http://some.host.name:18081  # set namespace to match Flink address
         name: flink_examples_stateful  # set job name
-  
+
     # Send RUNNING event every 1 hour.
     # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
     trackingIntervalInSeconds: 3600
-  
+
     transport:
         type: kafka
         topicName: input.runs
@@ -87,17 +87,17 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 === HttpTransport (requires HTTP2Kafka)
 
   ```yaml title="openlineage.yml"
-  
+
   job:
     # set namespace to match Flink address
     namespace: http://some.host.name:18081
     # set job name
     name: flink_examples_stateful
-  
+
   # Send RUNNING event every 1 hour.
   # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
   trackingIntervalInSeconds: 3600
-  
+
   transport:
     type: http
     # should be accessible inside jobmanager container

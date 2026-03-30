@@ -64,13 +64,13 @@ Change `hive-site.xml` configuration file:
           <name>hive.conf.validation</name>
           <value>false</value>
       </property>
-  
+
       <!-- Set path to downloaded jars -->
       <property>
           <name>hive.aux.jars.path</name>
           <value>/path/to/jars/</value>
       </property>
-  
+
       <!-- Enable OpenLineage integration based on Hive hooks -->
       <property>
           <name>hive.server2.session.hook</name>
@@ -84,7 +84,7 @@ Change `hive-site.xml` configuration file:
           <name>hive.exec.failure.hooks</name>
           <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
       </property>
-  
+
       <!-- Setup OpenLineage Kafka transport -->
       <property>
           <name>hive.openlineage.transport.type</name>
@@ -127,7 +127,7 @@ Change `hive-site.xml` configuration file:
           <name>hive.openlineage.transport.properties.acks</name>
           <value>all</value>
       </property>
-  
+
       <!-- Set default namespace for jobs -->
       <property>
           <name>hive.openlineage.namespace</name>
@@ -146,13 +146,13 @@ Change `hive-site.xml` configuration file:
                 <name>hive.conf.validation</name>
                 <value>false</value>
             </property>
-  
+
             <!-- Set path to downloaded jars -->
             <property>
                 <name>hive.aux.jars.path</name>
                 <value>/path/to/jars/</value>
             </property>
-  
+
             <!-- Enable OpenLineage integration based on Hive hooks -->
             <property>
                 <name>hive.server2.session.hook</name>
@@ -166,7 +166,7 @@ Change `hive-site.xml` configuration file:
                 <name>hive.exec.failure.hooks</name>
                 <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
             </property>
-  
+
             <!-- Setup OpenLineage HttpTransport -->
             <property>
                 <name>hive.openlineage.transport.type</name>
@@ -194,7 +194,7 @@ Change `hive-site.xml` configuration file:
                 <!-- Create a PersonalToken, and pass it here -->
                 <value>personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC</value>
            </property>
-  
+
             <!-- Set default namespace for jobs -->
             <property>
                 <name>hive.openlineage.namespace</name>
