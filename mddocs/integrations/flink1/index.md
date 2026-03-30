@@ -55,7 +55,9 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 
 - Create `openlineage.yml` file with content like:
 
-```yaml KafkaTransport title="openlineage.yml"
+=== KafkaTransport
+
+```yaml title="openlineage.yml"
 
   job:
       namespace: http://some.host.name:18081  # set namespace to match Flink address
@@ -82,7 +84,9 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
           acks: all
 ```
 
-```yaml HttpTransport (requires HTTP2Kafka) title="openlineage.yml"
+=== HttpTransport (requires HTTP2Kafka)
+
+```yaml title="openlineage.yml"
 
 job:
   # set namespace to match Flink address

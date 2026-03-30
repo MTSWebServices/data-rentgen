@@ -21,12 +21,16 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 
 ## Install
 
-```console title="KafkaTransport"
+=== "KafkaTransport"
+
+```console
 $ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
 ...
 ```
 
-```console title="HttpTransport (requires HTTP2Kafka)"
+=== "HttpTransport (requires HTTP2Kafka)"
+
+```console
 $ pip install "openlineage-dbt>=1.40.1"
 ...
 ```
@@ -35,7 +39,9 @@ $ pip install "openlineage-dbt>=1.40.1"
 
 - Create `openlineage.yml` file with content like:
 
-```yaml title="KafkaTransport"
+=== "KafkaTransport"
+
+```yaml
   transport:
       type: kafka
       topic: input.runs
@@ -51,7 +57,9 @@ $ pip install "openlineage-dbt>=1.40.1"
           acks: all
 ```
 
-```yaml title="KafkaTransport"
+=== "KafkaTransport"
+
+```yaml
   transport:
      # "type: http" for OpenLineage below 1.35.0
      type: async_http

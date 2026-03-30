@@ -21,7 +21,9 @@ Using [OpenLineage integration with Apache Spark](https://openlineage.io/docs/in
 
 - Create `openlineage.yml` file with content like:
 
-  ```yaml KafkaTransport title="openlineage.yml"
+=== KafkaTransport
+
+  ```yaml title="openlineage.yml"
   transport:
       type: kafka
       topicName: input.runs
@@ -40,7 +42,9 @@ Using [OpenLineage integration with Apache Spark](https://openlineage.io/docs/in
           acks: all
   ```
 
-  ```yaml HttpTransport (requires HTTP2Kafka) title="openlineage.yml"
+  === HttpTransport (requires HTTP2Kafka)
+
+  ```yaml title="openlineage.yml"
   transport:
      type: http
      # http2kafka URL, should be accessible from Spark driver
@@ -96,7 +100,9 @@ spark = (
 
 Add OpenLineage integration package, setup `OpenLineageSparkListener` in SparkSession config:
 
-```python KafkaTransport title="etl.py"
+=== KafkaTransport
+
+```python title="etl.py"
 from pyspark.sql import SparkSession
 
 spark = (
@@ -153,7 +159,9 @@ spark = (
 )
 ```
 
-```python HttpTransport (requires HTTP2Kafka) title="etl.py"
+=== HttpTransport (requires HTTP2Kafka)
+
+```python title="etl.py"
 from pyspark.sql import SparkSession
 
 spark = (

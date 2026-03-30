@@ -49,7 +49,9 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 
 - Create `openlineage.yml` file with content like:
 
-  ```yaml title="KafkaTransport"
+  === "KafkaTransport"
+
+  ```yaml
   transport:
       type: kafka
       topic: input.runs
@@ -65,7 +67,9 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
           acks: all
   ```
 
-  ```yaml title="HttpTransport (requires HTTP2Kafka)"
+  === "HttpTransport (requires HTTP2Kafka)"
+
+  ```yaml
   transport:
     type: http
      # http2kafka URL, should be accessible from Airflow scheduler
@@ -89,7 +93,9 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 
 Setup OpenLineage integration using `airflow.cfg` config file:
 
-```ini title="KafkaTransport"
+=== "KafkaTransport"
+
+```ini
 [openlineage]
 # set here address of Airflow Web UI
 namespace = http://airflow.hostname.fqdn:8080
@@ -97,7 +103,9 @@ namespace = http://airflow.hostname.fqdn:8080
 transport = {"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", "security.protocol": "SASL_PLAINTEXT", "sasl.mechanism": "SCRAM-SHA-256", "sasl.username": "data_rentgen", "sasl.password": "changeme", "compression.type": "zstd", "acks": "all"}, "topic": "input.runs", "flush": true}
 ```
 
-```ini title="HttpTransport (requires HTTP2Kafka)"
+=== "HttpTransport (requires HTTP2Kafka)"
+
+```ini
 [openlineage]
     # set here address of Airflow Web UI
     namespace = http://airflow.hostname.fqdn:8080
@@ -109,14 +117,18 @@ transport = {"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", 
 
 Set environment variables for all Airflow components (e.g. via `docker-compose.yml`).Depending on your shell, you may remove single quotes
 
-```bash title="KafkaTransport"
+=== "KafkaTransport"
+
+```bash
 # set here address of Airflow Web UI
 AIRFLOW__OPENLINEAGE__NAMESPACE='http://airflow.hostname.fqdn:8080'
 # set here Kafka broker address & auth credentials
 AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", "security.protocol": "SASL_PLAINTEXT", "sasl.mechanism": "SCRAM-SHA-256", "sasl.username": "data_rentgen", "sasl.password": "changeme", "compression.type": "zstd", "acks": "all"}, "topic": "input.runs", "flush": true}'
 ```
 
-```bash title="HttpTransport (requires HTTP2Kafka)"
+=== "HttpTransport (requires HTTP2Kafka)"
+
+```bash
 # set here address of Airflow Web UI
 AIRFLOW__OPENLINEAGE__NAMESPACE='http://airflow.hostname.fqdn:8080'
 # set here HTTP2Kafka url & create PersonalToken

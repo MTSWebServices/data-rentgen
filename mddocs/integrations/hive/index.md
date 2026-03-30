@@ -54,7 +54,9 @@ Download these jars and place then in `/path/to/jars/` directory on HiveServer2 
 
 Change `hive-site.xml` configuration file:
 
-```xml KafkaTransport title="hive-site.xml"
+=== KafkaTransport
+
+```xml title="hive-site.xml"
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <!-- Set Hive to stop complaining on unknown properties -->
@@ -134,7 +136,9 @@ Change `hive-site.xml` configuration file:
 </configuration>
 ```
 
-```xml HttpTransport (requires HTTP2Kafka) title="hive-site.xml"
+=== HttpTransport (requires HTTP2Kafka)
+
+```xml title="hive-site.xml"
 <?xml version="1.0" encoding="UTF-8"?>
       <configuration>
           <!-- Set Hive to stop complaining on unknown properties -->
