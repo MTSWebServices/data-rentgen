@@ -56,152 +56,152 @@ Change `hive-site.xml` configuration file:
 
 === KafkaTransport
 
-```xml title="hive-site.xml"
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <!-- Set Hive to stop complaining on unknown properties -->
-    <property>
-        <name>hive.conf.validation</name>
-        <value>false</value>
-    </property>
-
-    <!-- Set path to downloaded jars -->
-    <property>
-        <name>hive.aux.jars.path</name>
-        <value>/path/to/jars/</value>
-    </property>
-
-    <!-- Enable OpenLineage integration based on Hive hooks -->
-    <property>
-        <name>hive.server2.session.hook</name>
-        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
-    </property>
-    <property>
-        <name>hive.exec.post.hooks</name>
-        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
-    </property>
-    <property>
-        <name>hive.exec.failure.hooks</name>
-        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
-    </property>
-
-    <!-- Setup OpenLineage Kafka transport -->
-    <property>
-        <name>hive.openlineage.transport.type</name>
-        <value>kafka</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.topicName</name>
-        <value>input.runs</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.bootstrap.servers</name>
-        <!-- Address should be accessible from HiveServer2 -->
-        <value>localhost:9093</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.security.protocol</name>
-        <value>SASL_PLAINTEXT</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.sasl.mechanism</name>
-        <value>SCRAM-SHA-256</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.sasl.jaas.config</name>
-        <value>org.apache.kafka.common.security.scram.ScramLoginModule required username="data_rentgen" password="changeme";</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.key.serializer</name>
-        <value>org.apache.kafka.common.serialization.StringSerializer</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.value.serializer</name>
-        <value>org.apache.kafka.common.serialization.StringSerializer</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.compression.type</name>
-        <value>zstd</value>
-    </property>
-    <property>
-        <name>hive.openlineage.transport.properties.acks</name>
-        <value>all</value>
-    </property>
-
-    <!-- Set default namespace for jobs -->
-    <property>
-        <name>hive.openlineage.namespace</name>
-        <value>hive://my.hive.host:10000</value>
-    </property>
-</configuration>
-```
+  ```xml title="hive-site.xml"
+  <?xml version="1.0" encoding="UTF-8"?>
+  <configuration>
+      <!-- Set Hive to stop complaining on unknown properties -->
+      <property>
+          <name>hive.conf.validation</name>
+          <value>false</value>
+      </property>
+  
+      <!-- Set path to downloaded jars -->
+      <property>
+          <name>hive.aux.jars.path</name>
+          <value>/path/to/jars/</value>
+      </property>
+  
+      <!-- Enable OpenLineage integration based on Hive hooks -->
+      <property>
+          <name>hive.server2.session.hook</name>
+          <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+      </property>
+      <property>
+          <name>hive.exec.post.hooks</name>
+          <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+      </property>
+      <property>
+          <name>hive.exec.failure.hooks</name>
+          <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+      </property>
+  
+      <!-- Setup OpenLineage Kafka transport -->
+      <property>
+          <name>hive.openlineage.transport.type</name>
+          <value>kafka</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.topicName</name>
+          <value>input.runs</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.bootstrap.servers</name>
+          <!-- Address should be accessible from HiveServer2 -->
+          <value>localhost:9093</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.security.protocol</name>
+          <value>SASL_PLAINTEXT</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.sasl.mechanism</name>
+          <value>SCRAM-SHA-256</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.sasl.jaas.config</name>
+          <value>org.apache.kafka.common.security.scram.ScramLoginModule required username="data_rentgen" password="changeme";</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.key.serializer</name>
+          <value>org.apache.kafka.common.serialization.StringSerializer</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.value.serializer</name>
+          <value>org.apache.kafka.common.serialization.StringSerializer</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.compression.type</name>
+          <value>zstd</value>
+      </property>
+      <property>
+          <name>hive.openlineage.transport.properties.acks</name>
+          <value>all</value>
+      </property>
+  
+      <!-- Set default namespace for jobs -->
+      <property>
+          <name>hive.openlineage.namespace</name>
+          <value>hive://my.hive.host:10000</value>
+      </property>
+  </configuration>
+  ```
 
 === HttpTransport (requires HTTP2Kafka)
 
-```xml title="hive-site.xml"
-<?xml version="1.0" encoding="UTF-8"?>
-      <configuration>
-          <!-- Set Hive to stop complaining on unknown properties -->
-          <property>
-              <name>hive.conf.validation</name>
-              <value>false</value>
-          </property>
-
-          <!-- Set path to downloaded jars -->
-          <property>
-              <name>hive.aux.jars.path</name>
-              <value>/path/to/jars/</value>
-          </property>
-
-          <!-- Enable OpenLineage integration based on Hive hooks -->
-          <property>
-              <name>hive.server2.session.hook</name>
-              <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
-          </property>
-          <property>
-              <name>hive.exec.post.hooks</name>
-              <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
-          </property>
-          <property>
-              <name>hive.exec.failure.hooks</name>
-              <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
-          </property>
-
-          <!-- Setup OpenLineage HttpTransport -->
-          <property>
-              <name>hive.openlineage.transport.type</name>
-              <value>http</value>
-          </property>
-          <property>
-              <name>hive.openlineage.transport.url</name>
-              <!-- http2kafka url, should be accessible from HiveServer2 -->
-              <value>http://localhost:8002</value>
-          </property>
-          <property>
-              <name>hive.openlineage.transport.endpoint</name>
-              <value>/v1/openlineage</value>
-          </property>
-          <property>
-              <name>hive.openlineage.transport.compression</name>
-              <value>gzip</value>
-          </property>
-          <property>
-              <name>hive.openlineage.transport.auth.type</name>
-              <value>api_key</value>
-          </property>
-          <property>
-              <name>hive.openlineage.transport.auth.apiKey</name>
-              <!-- Create a PersonalToken, and pass it here -->
-              <value>personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC</value>
-          </property>
-
-          <!-- Set default namespace for jobs -->
-          <property>
-              <name>hive.openlineage.namespace</name>
-              <value>hive://my.hive.host:10000</value>
-          </property>
-      </configuration>
-```
+  ```xml title="hive-site.xml"
+  <?xml version="1.0" encoding="UTF-8"?>
+        <configuration>
+            <!-- Set Hive to stop complaining on unknown properties -->
+            <property>
+                <name>hive.conf.validation</name>
+                <value>false</value>
+            </property>
+  
+            <!-- Set path to downloaded jars -->
+            <property>
+                <name>hive.aux.jars.path</name>
+                <value>/path/to/jars/</value>
+            </property>
+  
+            <!-- Enable OpenLineage integration based on Hive hooks -->
+            <property>
+                <name>hive.server2.session.hook</name>
+                <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+            </property>
+            <property>
+                <name>hive.exec.post.hooks</name>
+                <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+            </property>
+            <property>
+                <name>hive.exec.failure.hooks</name>
+                <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+            </property>
+  
+            <!-- Setup OpenLineage HttpTransport -->
+            <property>
+                <name>hive.openlineage.transport.type</name>
+                <value>http</value>
+            </property>
+            <property>
+                <name>hive.openlineage.transport.url</name>
+                <!-- http2kafka url, should be accessible from HiveServer2 -->
+                <value>http://localhost:8002</value>
+            </property>
+            <property>
+                <name>hive.openlineage.transport.endpoint</name>
+                <value>/v1/openlineage</value>
+           </property>
+           <property>
+                <name>hive.openlineage.transport.compression</name>
+                <value>gzip</value>
+            </property>
+            <property>
+                <name>hive.openlineage.transport.auth.type</name>
+                <value>api_key</value>
+            </property>
+            <property>
+                <name>hive.openlineage.transport.auth.apiKey</name>
+                <!-- Create a PersonalToken, and pass it here -->
+                <value>personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC</value>
+           </property>
+  
+            <!-- Set default namespace for jobs -->
+            <property>
+                <name>hive.openlineage.namespace</name>
+                <value>hive://my.hive.host:10000</value>
+            </property>
+        </configuration>
+  ```
 
 ## Collect and send lineage
 

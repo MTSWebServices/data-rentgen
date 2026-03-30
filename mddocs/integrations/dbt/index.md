@@ -41,37 +41,37 @@ $ pip install "openlineage-dbt>=1.40.1"
 
 === "KafkaTransport"
 
-```yaml
-  transport:
-      type: kafka
-      topic: input.runs
-      config:
-          # should be accessible from host
-          bootstrap.servers: localhost:9093
-          security.protocol: SASL_PLAINTEXT
-          sasl.mechanism: SCRAM-SHA-256
-          # Kafka auth credentials
-          sasl.username: data_rentgen
-          sasl.password: changeme
-          compression.type: zstd
-          acks: all
-```
+  ```yaml
+    transport:
+        type: kafka
+        topic: input.runs
+        config:
+            # should be accessible from host
+            bootstrap.servers: localhost:9093
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: SCRAM-SHA-256
+            # Kafka auth credentials
+            sasl.username: data_rentgen
+            sasl.password: changeme
+            compression.type: zstd
+            acks: all
+  ```
 
 === "KafkaTransport"
 
-```yaml
-  transport:
-     # "type: http" for OpenLineage below 1.35.0
-     type: async_http
-     # http2kafka URL, should be accessible from host
-     url: http://localhost:8002
-     endpoint: /v1/openlineage
-     compression: gzip
-     auth:
-         type: api_key
-         # create a PersonalToken, and pass it here
-         apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
-```
+  ```yaml
+    transport:
+       # "type: http" for OpenLineage below 1.35.0
+       type: async_http
+       # http2kafka URL, should be accessible from host
+       url: http://localhost:8002
+       endpoint: /v1/openlineage
+       compression: gzip
+       auth:
+           type: api_key
+           # create a PersonalToken, and pass it here
+           apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
+  ```
 
 - Set environment variables:
 
