@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="b">
+      <stop offset="0" stop-color="#00f9f9" stop-opacity=".686"/>
+      <stop offset=".787" stop-color="#14ffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="c">
+      <stop offset="0" stop-color="#54ffff" stop-opacity=".68"/>
+      <stop offset="1" stop-color="#0aa" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="a">
+      <stop offset="0" stop-color="#00b6b6" stop-opacity=".367"/>
+      <stop offset="1" stop-color="teal" stop-opacity=".964"/>
+    </linearGradient>
+    <linearGradient xlink:href="#a" id="d" x1="113.173" x2="41.473" y1="54.253" y2="175.097" gradientTransform="translate(1232.159 155.641) scale(.71251)" gradientUnits="userSpaceOnUse"/>
+    <radialGradient xlink:href="#b" id="e" cx="68.222" cy="6.54" r="25.748" fx="68.222" fy="6.54" gradientUnits="userSpaceOnUse" spreadMethod="reflect"/>
+    <radialGradient xlink:href="#c" id="g" cx="73.64" cy="116.186" r="1.058" fx="73.64" fy="116.186" gradientTransform="matrix(.71251 0 0 52.31073 1232.288 -5919.706)" gradientUnits="userSpaceOnUse"/>
+    <filter id="f" width="1.06" height="1.041" x="-.03" y="-.02" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation=".411"/>
+    </filter>
+  </defs>
+  <path fill="url(#d)" d="m1282.694 174.87-38.558 89.725 38.375 38.01-.182-25.219-16.63-17.359 16.63-38.559zm3.954.095.365 46.599 16.629 38.558-16.629 17.36-.182 25.22 38.376-38.011z" transform="translate(-1184.67 -102.7)"/>
+  <path fill="#0ee" fill-opacity=".357" stroke="url(#e)" stroke-width="2.8" d="M92.715-1.282 71.05 6.554l21.585 8.054-22.133-6.394L83.23 27.417 69.082 9.234l-.99 23.018-.758-23.026-14.33 18.04L65.925 8.19 43.73 14.363l21.665-7.837L43.81-1.528l22.133 6.394-12.728-19.203L67.36 3.846l.99-23.018.758 23.027 14.33-18.04L70.52 4.889Z" filter="url(#f)" paint-order="fill markers stroke" style="mix-blend-mode:overlay" transform="translate(51.631 68.015) scale(.71251)"/>
+  <path fill="#009f9f" fill-opacity=".498" d="m100.053 133.45-9.229 21.116 9.416 9.95 9.041-9.586z"/>
+  <path fill="url(#g)" d="M1284.003 102.701h1.508v110.685h-1.508z" paint-order="fill markers stroke" style="mix-blend-mode:overlay" transform="translate(-1184.67 -102.7)"/>
+</svg>
