@@ -60,17 +60,17 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 === "KafkaTransport"
 
   ```yaml
-   transport:
-     # "type: http" for OpenLineage below 1.35.0
-     type: async_http
-     # http2kafka URL, should be accessible from host
-     url: http://localhost:8002
-     endpoint: /v1/openlineage
-     compression: gzip
-     auth:
-         type: api_key
-         # create a PersonalToken, and pass it here
-         apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
+  transport:
+      # "type: http" for OpenLineage below 1.35.0
+      type: async_http
+      # http2kafka URL, should be accessible from host
+      url: http://localhost:8002
+      endpoint: /v1/openlineage
+      compression: gzip
+      auth:
+          type: api_key
+          # create a PersonalToken, and pass it here
+          apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
   ```
 
 - Set environment variables:

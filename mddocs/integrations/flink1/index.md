@@ -59,29 +59,29 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 
   ```yaml title="openlineage.yml"
 
-    job:
-        namespace: http://some.host.name:18081  # set namespace to match Flink address
-        name: flink_examples_stateful  # set job name
+  job:
+      namespace: http://some.host.name:18081  # set namespace to match Flink address
+      name: flink_examples_stateful  # set job name
 
-    # Send RUNNING event every 1 hour.
-    # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
-    trackingIntervalInSeconds: 3600
+  # Send RUNNING event every 1 hour.
+  # Using default interval (1 minute) just floods Kafka with useless RUNNING events.
+  trackingIntervalInSeconds: 3600
 
-    transport:
-        type: kafka
-        topicName: input.runs
-        properties:
-            bootstrap.servers: broker:9092  # not using localhost in docker
-            security.protocol: SASL_PLAINTEXT
-            sasl.mechanism: SCRAM-SHA-256
-            sasl.jaas.config: |
-                org.apache.kafka.common.security.scram.ScramLoginModule required
-                username="data_rentgen"
-                password="changeme";
-            key.serializer: org.apache.kafka.common.serialization.StringSerializer
-            value.serializer: org.apache.kafka.common.serialization.StringSerializer
-            compression.type: zstd
-            acks: all
+  transport:
+      type: kafka
+      topicName: input.runs
+      properties:
+          bootstrap.servers: broker:9092  # not using localhost in docker
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: SCRAM-SHA-256
+          sasl.jaas.config: |
+              org.apache.kafka.common.security.scram.ScramLoginModule required
+              username="data_rentgen"
+              password="changeme";
+          key.serializer: org.apache.kafka.common.serialization.StringSerializer
+          value.serializer: org.apache.kafka.common.serialization.StringSerializer
+          compression.type: zstd
+          acks: all
   ```
 
 === HttpTransport (requires HTTP2Kafka)
