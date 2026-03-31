@@ -86,18 +86,10 @@ async def test_get_job_hierarchy_with_direction_both(
     (
         (dag1, dag2, dag3),
         (task1, task2, task3),
-        (_, spark2, _),
+        (spark1, spark2, spark3),
     ) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [
-            dag1,
-            dag2,
-            dag3,
-            task1,
-            task2,
-            task3,
-            spark2,
-        ],
+        [dag1, dag2, dag3, task1, task2, task3, spark1, spark2, spark3],
         async_session,
     )
 
@@ -138,10 +130,10 @@ async def test_get_job_hierarchy_with_direction_upstream(
     (
         (dag1, dag2, _),
         (task1, task2, _),
-        (_, spark2, _),
+        (spark1, spark2, _),
     ) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [dag1, task1, dag2, task2, spark2],
+        [dag1, task1, spark1, dag2, task2, spark2],
         async_session,
     )
 
@@ -176,10 +168,10 @@ async def test_get_job_hierarchy_with_direction_downstream(
     (
         (_, dag2, dag3),
         (_, task2, task3),
-        (_, spark2, _),
+        (_, spark2, spark3),
     ) = job_dependency_chain
     expected_nodes = await enrich_jobs(
-        [dag2, task2, spark2, dag3, task3],
+        [dag2, task2, spark2, dag3, task3, spark3],
         async_session,
     )
 
@@ -367,7 +359,7 @@ async def test_get_job_hierarchy_with_inferred_dependencies(
         expected_ids.add(to_idx)
     expected_dags = [dags[idx] for idx in expected_ids]
     expected_tasks = [tasks[idx] for idx in expected_ids]
-    expected_sparks = [sparks[start_node_idx]]
+    expected_sparks = [sparks[idx] for idx in expected_ids]
     expected_nodes = await enrich_jobs(expected_dags + expected_tasks + expected_sparks, async_session)
 
     response = await test_client.get(
@@ -393,6 +385,16 @@ async def test_get_job_hierarchy_with_inferred_dependencies(
                     "type": dep_type,
                 }
                 for from_idx, to_idx, dep_type in expected_deps
+                if dep_type == "DIRECT_DEPENDENCY"
+            ]
+            + [
+                {
+                    "from": {"kind": "JOB", "id": str(sparks[from_idx].id)},
+                    "to": {"kind": "JOB", "id": str(sparks[to_idx].id)},
+                    "type": dep_type,
+                }
+                for from_idx, to_idx, dep_type in expected_deps
+                if dep_type == "INFERRED_FROM_LINEAGE"
             ],
         },
         "nodes": {"jobs": jobs_to_json(expected_nodes)},
@@ -408,8 +410,8 @@ async def test_get_job_hierarchy_with_inferred_dependencies_with_since_and_until
     dags, tasks, sparks = job_dependency_chain_with_lineage
     start_node = tasks[2]
 
-    # Cover both inferred links connected to task0 and task4.
-    edge_task_ids = [tasks[0].id, tasks[4].id]
+    # Cover both inferred links connected to spark0 and spark4.
+    edge_task_ids = [sparks[0].id, sparks[4].id]
     min_input_created_at = await async_session.scalar(
         select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
     ) - timedelta(seconds=2)
@@ -417,7 +419,7 @@ async def test_get_job_hierarchy_with_inferred_dependencies_with_since_and_until
         select(func.max(Output.created_at)).where(Output.job_id.in_(edge_task_ids)),
     ) + timedelta(seconds=2)
 
-    expected_nodes = await enrich_jobs([*dags[1:4], *tasks[1:4], sparks[2]], async_session)
+    expected_nodes = await enrich_jobs([*dags[1:4], *tasks[1:4], *sparks[1:4]], async_session)
     expected_deps = [
         (1, 2, "DIRECT_DEPENDENCY"),
         (2, 3, "DIRECT_DEPENDENCY"),
@@ -497,10 +499,10 @@ async def test_get_job_hierarchy_with_inferred_dependencies_since_less_then_unti
     job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
     mocked_user: MockedUser,
 ):
-    _, tasks, _ = job_dependency_chain_with_lineage
+    _, tasks, sparks = job_dependency_chain_with_lineage
     start_node = tasks[2]
 
-    edge_task_ids = [tasks[0].id, tasks[4].id]
+    edge_task_ids = [sparks[0].id, sparks[4].id]
     min_input_created_at = await async_session.scalar(
         select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
     ) - timedelta(seconds=2)
