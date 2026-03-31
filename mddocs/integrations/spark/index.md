@@ -311,13 +311,13 @@ To fill up this facet, it is required to:
           .config("spark.openlineage.rootRunId", root_run_id)
           .getOrCreate()
       )
-  
+
       with spark:
           # actual ETL code
-  
-  
+
+
   from airflow.providers.standard.operators.python import PythonOperator
-  
+
   task = PythonOperator(
       task_id="spark_etl",
       python_callable=my_etl,
