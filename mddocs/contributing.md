@@ -338,11 +338,10 @@ Before making a release from the `develop` branch, follow these steps:
 10. Update version in `develop` branch **after release**:
 
   ```bash
-  git checkout develop  
+  git checkout develop
   NEXT_VERSION=$(echo "$VERSION" | awk -F. '/[0-9]+\./{$NF++;print}' OFS=.)
-  poetry version "$NEXT_VERSION"  
+  poetry version "$NEXT_VERSION"
   git add .
   git commit -m "Bump version"
   git push
   ```
-  
