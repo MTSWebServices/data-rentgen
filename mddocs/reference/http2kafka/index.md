@@ -39,12 +39,12 @@ If this is not possible, http2kafka is the way to go.
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-  !!! note "docker-compose.yml"
+  ??? note "docker-compose.yml"
       --8<--
       docker-compose.yml:155:73
       --8<--
 
-  !!! note ".env.docker"
+  ??? note ".env.docker"
       --8<--
       .env.docker:29:34
       --8<--

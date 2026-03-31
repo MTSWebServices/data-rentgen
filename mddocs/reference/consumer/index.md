@@ -21,12 +21,12 @@ Data.Rentgen fetches messages from a [`message-broker`][message-broker] using a 
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-  !!! note "docker-compose.yml"
+  ??? note "docker-compose.yml"
       --8<--
       docker-compose.yml:120:138
       --8<--
 
-  !!! note ".env.docker"
+  ??? note ".env.docker"
       --8<--
       .env.docker:22:24,29:34
       --8<--

@@ -9,20 +9,18 @@
 
 Copy `docker-compose.yml` and `.env.docker` from this repo:
 
-### "docker-compose.yml"
+??? note "docker-compose.yml"
+    !include(../../docker-compose.yml)
 
-!include(../../docker-compose.yml)
-
-### note ".env.docker"
-
-!include(../../.env.docker)
+??? note ".env.docker"
+    !include(../../.env.docker)
 
 Then start containers using `docker-compose`:
 
-    ```console
-    $ VERSION=latest docker compose --profile all up -d --wait
-    ...
-    ```
+```console
+$ VERSION=latest docker compose --profile all up -d --wait
+...
+```
 
 `docker-compose` will download required images, create containers and start them in a proper order. Options can be set via `.env.docker` file or `environment` section in `docker-compose.yml`.
 

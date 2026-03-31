@@ -23,23 +23,23 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 
 === "KafkaTransport"
 
-  ```console
-  $ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
-  ...
-  ```
+```console
+$ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
+...
+```
 
 === "HttpTransport (requires HTTP2Kafka)"
 
-  ```console
-  $ pip install "openlineage-dbt>=1.40.1"
-  ...
-  ```
+```console
+$ pip install "openlineage-dbt>=1.40.1"
+...
+```
 
 ## Setup
 
 - Create `openlineage.yml` file with content like:
 
-=== "KafkaTransport"
+  === "KafkaTransport"
 
   ```yaml
   transport:
@@ -57,7 +57,7 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
           acks: all
   ```
 
-=== "KafkaTransport"
+  === "KafkaTransport"
 
   ```yaml
   transport:
@@ -170,11 +170,10 @@ To fill up this facet, it is required to:
 - Setup [OpenLineage integration for Airflow][overview-setup-airflow]
 - Pass parent Run info from Airflow to dbt by using [Airflow macros](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/macros.html#lineage-job-run-macros):
 
-=== "BashOperator"
+  === "BashOperator"
 
   ```py
   from airflow.providers.standard.operators.bash import BashOperator
-
   task = BashOperator(
     task_id="dbt_run_task",
     cwd="/path/to/project",
@@ -184,16 +183,15 @@ To fill up this facet, it is required to:
           # Pass parent Run info from Airflow to Spark
           "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
           # For apache-airflow-providers-openlineage 2.4.0 or above
-          "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
+          "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }",
         }
   )
   ```
 
-=== "SSHOperator"
+  === "SSHOperator"
 
   ``` py
   from airflow.providers.ssh.operators.ssh import SSHOperator
-
   task = SSHOperator(
     task_id="dbt_run_task",
     ssh_conn_id="some_host",
@@ -206,11 +204,10 @@ To fill up this facet, it is required to:
   )
   ```
 
-=== "KubernetesPodOperator"
+  === "KubernetesPodOperator"
 
   ```py title=
   from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
-
   task = SSHOperator(
     task_id="dbt_run_task",
     cmds=["bash", "-cx"],
@@ -218,7 +215,7 @@ To fill up this facet, it is required to:
       env_vars={
          "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
           # For apache-airflow-providers-openlineage 2.4.0 or above
-          "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
+          "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }",
     }
   )
   ```

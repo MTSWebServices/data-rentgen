@@ -23,39 +23,39 @@ Using [OpenLineage integration with Apache Spark](https://openlineage.io/docs/in
 
   === KafkaTransport
 
-    ```yaml title="openlineage.yml"
-    transport:
-        type: kafka
-        topicName: input.runs
-        properties:
-            # should be accessible from Spark driver
-            bootstrap.servers: localhost:9093
-            security.protocol: SASL_PLAINTEXT
-            sasl.mechanism: SCRAM-SHA-256
-            sasl.jaas.config: |
-                org.apache.kafka.common.security.scram.ScramLoginModule required
-                username="data_rentgen"
-                password="changeme";
-            key.serializer: org.apache.kafka.common.serialization.StringSerializer
-            value.serializer: org.apache.kafka.common.serialization.StringSerializer
-            compression.type: zstd
-            acks: all
-    ```
+  ```yaml title="openlineage.yml"
+  transport:
+      type: kafka
+      topicName: input.runs
+      properties:
+          # should be accessible from Spark driver
+          bootstrap.servers: localhost:9093
+          security.protocol: SASL_PLAINTEXT
+          sasl.mechanism: SCRAM-SHA-256
+          sasl.jaas.config: |
+              org.apache.kafka.common.security.scram.ScramLoginModule required
+              username="data_rentgen"
+              password="changeme";
+          key.serializer: org.apache.kafka.common.serialization.StringSerializer
+          value.serializer: org.apache.kafka.common.serialization.StringSerializer
+          compression.type: zstd
+          acks: all
+  ```
 
   === HttpTransport (requires HTTP2Kafka)
 
-    ```yaml title="openlineage.yml"
-      transport:
-         type: http
-         # http2kafka URL, should be accessible from Spark driver
-         url: http://localhost:8002
-         endpoint: /v1/openlineage
-         compression: gzip
-         auth:
-              type: api_key
-              # create a PersonalToken, and pass it here
-              apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
-    ```
+  ```yaml title="openlineage.yml"
+    transport:
+       type: http
+       # http2kafka URL, should be accessible from Spark driver
+       url: http://localhost:8002
+       endpoint: /v1/openlineage
+       compression: gzip
+       auth:
+            type: api_key
+            # create a PersonalToken, and pass it here
+            apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
+  ```
 
 - Pass path to config file via `OPENLINEAGE_CONFIG` environment variable:
 
@@ -102,102 +102,100 @@ Add OpenLineage integration package, setup `OpenLineageSparkListener` in SparkSe
 
 === KafkaTransport
 
-  ```python title="etl.py"
-  from pyspark.sql import SparkSession
-
-  spark = (
-      SparkSession.builder
-      # install OpenLineage integration and Kafka client
-      .config(
-          "spark.jars.packages",
-          "io.openlineage:openlineage-spark_2.12:1.40.1,org.apache.kafka:kafka-clients:3.9.0",
-      )
-      .config(
-          "spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener"
-      )
-      # set Spark session master & applicationName
-      .master("local")
-      .appName("mysession")
-      # set here location of Spark session, e.g. current host, YARN cluster or K8s cluster:
-      .config("spark.openlineage.namespace", "local://hostname.as.fqdn")
-      # .config("spark.openlineage.namespace", "yarn://some-cluster")
-      # .config("spark.openlineage.namespace", "k8s://some-cluster")
-      .config("spark.openlineage.transport.type", "kafka")
-      # set here Kafka connection address & credentials
-      .config("spark.openlineage.transport.topicName", "input.runs")
-      .config(
-          # should be accessible from Spark driver
-          "spark.openlineage.transport.properties.bootstrap.servers",
-          "localhost:9093",
-      )
-      .config(
-          "spark.openlineage.transport.properties.security.protocol",
-          "SASL_PLAINTEXT",
-      )
-      .config(
-          "spark.openlineage.transport.properties.sasl.mechanism",
-          "SCRAM-SHA-256",
-          )
-      .config(
-          "spark.openlineage.transport.properties.sasl.jaas.config",
-          'org.apache.kafka.common.security.scram.ScramLoginModule required username="data_rentgen" password="changeme";',
-      )
-      .config("spark.openlineage.transport.properties.acks", "all")
-      .config(
-          "spark.openlineage.transport.properties.key.serializer",
-          "org.apache.kafka.common.serialization.StringSerializer",
-      )
-      .config(
-          "spark.openlineage.transport.properties.value.serializer",
-          "org.apache.kafka.common.serialization.StringSerializer",
-     )
-      .config("spark.openlineage.transport.properties.compression.type", "zstd")
-      # few other important options
-      .config("spark.openlineage.jobName.appendDatasetName", "false")
-      .config("spark.openlineage.columnLineage.datasetLineageEnabled", "true")
-      .getOrCreate()
-  )
-  ```
+```python title="etl.py"
+from pyspark.sql import SparkSession
+spark = (
+    SparkSession.builder
+    # install OpenLineage integration and Kafka client
+    .config(
+        "spark.jars.packages",
+        "io.openlineage:openlineage-spark_2.12:1.40.1,org.apache.kafka:kafka-clients:3.9.0",
+    )
+    .config(
+        "spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener"
+    )
+    # set Spark session master & applicationName
+    .master("local")
+    .appName("mysession")
+    # set here location of Spark session, e.g. current host, YARN cluster or K8s cluster:
+    .config("spark.openlineage.namespace", "local://hostname.as.fqdn")
+    # .config("spark.openlineage.namespace", "yarn://some-cluster")
+    # .config("spark.openlineage.namespace", "k8s://some-cluster")
+    .config("spark.openlineage.transport.type", "kafka")
+    # set here Kafka connection address & credentials
+    .config("spark.openlineage.transport.topicName", "input.runs")
+    .config(
+        # should be accessible from Spark driver
+        "spark.openlineage.transport.properties.bootstrap.servers",
+        "localhost:9093",
+    )
+    .config(
+        "spark.openlineage.transport.properties.security.protocol",
+        "SASL_PLAINTEXT",
+    )
+    .config(
+        "spark.openlineage.transport.properties.sasl.mechanism",
+        "SCRAM-SHA-256",
+        )
+    .config(
+        "spark.openlineage.transport.properties.sasl.jaas.config",
+        'org.apache.kafka.common.security.scram.ScramLoginModule required username="data_rentgen"password="changeme";',
+    )
+    .config("spark.openlineage.transport.properties.acks", "all")
+    .config(
+        "spark.openlineage.transport.properties.key.serializer",
+        "org.apache.kafka.common.serialization.StringSerializer",
+    )
+    .config(
+        "spark.openlineage.transport.properties.value.serializer",
+        "org.apache.kafka.common.serialization.StringSerializer",
+   )
+    .config("spark.openlineage.transport.properties.compression.type", "zstd")
+    # few other important options
+    .config("spark.openlineage.jobName.appendDatasetName", "false")
+    .config("spark.openlineage.columnLineage.datasetLineageEnabled", "true")
+    .getOrCreate()
+)
+```
 
 === HttpTransport (requires HTTP2Kafka)
 
-  ```python title="etl.py"
-  from pyspark.sql import SparkSession
-
-  spark = (
-      SparkSession.builder
-      # install OpenLineage integration and Kafka client
-      .config(
-          "spark.jars.packages",
-          "io.openlineage:openlineage-spark_2.12:1.40.1",
-      )
-      .config(
-          "spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener"
-      )
-      # set Spark session master & applicationName
-      .master("local")
-      .appName("mysession")
-      # set here location of Spark session, e.g. current host, YARN cluster or K8s cluster:
-      .config("spark.openlineage.namespace", "local://hostname.as.fqdn")
-      # .config("spark.openlineage.namespace", "yarn://some-cluster")
-      # .config("spark.openlineage.namespace", "k8s://some-cluster")
-      .config("spark.openlineage.transport.type", "http")
-      # http2kafka url, should be accessible from Spark driver
-      .config("spark.openlineage.transport.url", "http://localhost:8002")
-      .config("spark.openlineage.transport.endpoint", "/v1/openlineage")
-      .config("spark.openlineage.transport.compression", "gzip")
-      .config("spark.openlineage.transport.auth.type", "api_key")
-      .config(
-      #Create a PersonalToken, and pass it here
-          "spark.openlineage.transport.auth.apiKey",
-          "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC",
-      )
-      # few other important options
-      .config("spark.openlineage.jobName.appendDatasetName", "false")
-      .config("spark.openlineage.columnLineage.datasetLineageEnabled", "true")
-      .getOrCreate()
-  )
-  ```
+```python title="etl.py"
+from pyspark.sql import SparkSession
+spark = (
+    SparkSession.builder
+    # install OpenLineage integration and Kafka client
+    .config(
+        "spark.jars.packages",
+        "io.openlineage:openlineage-spark_2.12:1.40.1",
+    )
+    .config(
+        "spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener"
+    )
+    # set Spark session master & applicationName
+    .master("local")
+    .appName("mysession")
+    # set here location of Spark session, e.g. current host, YARN cluster or K8s cluster:
+    .config("spark.openlineage.namespace", "local://hostname.as.fqdn")
+    # .config("spark.openlineage.namespace", "yarn://some-cluster")
+    # .config("spark.openlineage.namespace", "k8s://some-cluster")
+    .config("spark.openlineage.transport.type", "http")
+    # http2kafka url, should be accessible from Spark driver
+    .config("spark.openlineage.transport.url", "http://localhost:8002")
+    .config("spark.openlineage.transport.endpoint", "/v1/openlineage")
+    .config("spark.openlineage.transport.compression", "gzip")
+    .config("spark.openlineage.transport.auth.type", "api_key")
+    .config(
+    #Create a PersonalToken, and pass it here
+        "spark.openlineage.transport.auth.apiKey",
+        "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC",
+    )
+    # few other important options
+    .config("spark.openlineage.jobName.appendDatasetName", "false")
+    .config("spark.openlineage.columnLineage.datasetLineageEnabled", "true")
+    .getOrCreate()
+)
+```
 
 ## Collect and send lineage
 
@@ -292,49 +290,49 @@ To fill up this facet, it is required to:
 - Setup [OpenLineage integration for Airflow][overview-setup-airflow]
 - [Pass parent Run info from Airflow to Spark](https://openlineage.io/docs/integrations/spark/configuration/airflow#preserving-job-hierarchy):
 
-``` python title="dag.py"
-def my_etl(
-    parent_job_namespace: str,
-    parent_job_name: str,
-    parent_run_id: str,
-    root_job_namespace: str,
-    root_job_name: str,
-    root_run_id: str,
-):
-    spark = (
-        SparkSession.builder
-        # install OpenLineage integration (see above)
-        # Pass parent Run info from Airflow to Spark
-        .config("spark.openlineage.parentJobNamespace", parent_job_namespace)
-        .config("spark.openlineage.parentJobName", parent_job_name)
-        .config("spark.openlineage.parentRunId", parent_run_id)
-        .config("spark.openlineage.rootJobNamespace", root_job_namespace)
-        .config("spark.openlineage.rootJobName", root_job_name)
-        .config("spark.openlineage.rootRunId", root_run_id)
-        .getOrCreate()
-    )
-
-    with spark:
-        # actual ETL code
-
-
-from airflow.providers.standard.operators.python import PythonOperator
-
-task = PythonOperator(
-    task_id="spark_etl",
-    python_callable=my_etl,
-    # Using Jinja templates to pass Airflow macros to Python function
-    op_kwargs={
-        "parent_job_namespace": "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}",
-        "parent_job_name": "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}",
-        "parent_run_id": "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}",
-        # For apache-airflow-providers-openlineage 2.4.0 or above
-        "root_job_namespace": "{{ macros.OpenLineageProviderPlugin.lineage_root_job_namespace(task_instance) }}",
-        "root_job_name": "{{ macros.OpenLineageProviderPlugin.lineage_root_job_name(task_instance) }}",
-        "root_run_id": "{{ macros.OpenLineageProviderPlugin.lineage_root_run_id(task_instance) }}",
-    },
-)
-```
+  ``` python title="dag.py"
+  def my_etl(
+      parent_job_namespace: str,
+      parent_job_name: str,
+      parent_run_id: str,
+      root_job_namespace: str,
+      root_job_name: str,
+      root_run_id: str,
+  ):
+      spark = (
+          SparkSession.builder
+          # install OpenLineage integration (see above)
+          # Pass parent Run info from Airflow to Spark
+          .config("spark.openlineage.parentJobNamespace", parent_job_namespace)
+          .config("spark.openlineage.parentJobName", parent_job_name)
+          .config("spark.openlineage.parentRunId", parent_run_id)
+          .config("spark.openlineage.rootJobNamespace", root_job_namespace)
+          .config("spark.openlineage.rootJobName", root_job_name)
+          .config("spark.openlineage.rootRunId", root_run_id)
+          .getOrCreate()
+      )
+  
+      with spark:
+          # actual ETL code
+  
+  
+  from airflow.providers.standard.operators.python import PythonOperator
+  
+  task = PythonOperator(
+      task_id="spark_etl",
+      python_callable=my_etl,
+      # Using Jinja templates to pass Airflow macros to Python function
+      op_kwargs={
+          "parent_job_namespace": "{{ macros.OpenLineageProviderPlugin.lineage_job_namespace() }}",
+          "parent_job_name": "{{ macros.OpenLineageProviderPlugin.lineage_job_name(task_instance) }}",
+          "parent_run_id": "{{ macros.OpenLineageProviderPlugin.lineage_run_id(task_instance) }}",
+          # For apache-airflow-providers-openlineage 2.4.0 or above
+          "root_job_namespace": "{{ macros.OpenLineageProviderPlugin.lineage_root_job_namespace(task_instance) }}",
+          "root_job_name": "{{ macros.OpenLineageProviderPlugin.lineage_root_job_name(task_instance) }}",
+          "root_run_id": "{{ macros.OpenLineageProviderPlugin.lineage_root_run_id(task_instance) }}",
+      },
+  )
+  ```
 
   The exact way of substituting Airflow macros to SparkSession config may be different depending on used Airflow operator:
 

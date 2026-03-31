@@ -62,12 +62,12 @@ By default, database is created with no data. To seed database with some example
 
   Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-  !!! note "docker-compose.yml"
+  ??? note "docker-compose.yml"
       --8<--
       docker-compose.yml:1:69,176
       --8<--
 
-  !!! note ".env.docker"
+  ??? note ".env.docker"
       --8<--
       .env.docker:1:5,23
       --8<--

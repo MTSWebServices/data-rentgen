@@ -55,7 +55,7 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 
 - Create `openlineage.yml` file with content like:
 
-=== KafkaTransport
+  === KafkaTransport
 
   ```yaml title="openlineage.yml"
 
@@ -84,7 +84,7 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
           acks: all
   ```
 
-=== HttpTransport (requires HTTP2Kafka)
+  === HttpTransport (requires HTTP2Kafka)
 
   ```yaml title="openlineage.yml"
 
