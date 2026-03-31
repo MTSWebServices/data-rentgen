@@ -22,7 +22,7 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 - For Airflow 2.7 or higher, use [apache-airflow-providers-openlineage](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/index.html) 1.9.0 or higher:
 
   === "KafkaTransport"
-  
+
   ```console
   $ pip install "apache-airflow-providers-openlineage>=2.6.1" "openlineage-python[kafka]>=1.40.1" zstd
   ...
@@ -38,7 +38,7 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 - For Airflow 2.1.x-2.6.x, use [OpenLineage integration for Airflow](https://openlineage.io/docs/integrations/airflow/) 1.19.0 or higher
 
   === "KafkaTransport"
-  
+
   ```console
   $ pip install "openlineage-airflow>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
   ...
