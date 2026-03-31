@@ -23,33 +23,33 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 
   === "KafkaTransport"
 
-  ```console
-  $ pip install "apache-airflow-providers-openlineage>=2.6.1" "openlineage-python[kafka]>=1.40.1" zstd
-  ...
-  ```
+    ```console
+    $ pip install "apache-airflow-providers-openlineage>=2.6.1" "openlineage-python[kafka]>=1.40.1" zstd
+    ...
+    ```
 
   === "HttpTransport (requires HTTP2Kafka)"
 
-  ```console
-  $ pip install "apache-airflow-providers-openlineage>=2.6.1"
-  ...
-  ```
+    ```console
+    $ pip install "apache-airflow-providers-openlineage>=2.6.1"
+    ...
+    ```
 
 - For Airflow 2.1.x-2.6.x, use [OpenLineage integration for Airflow](https://openlineage.io/docs/integrations/airflow/) 1.19.0 or higher
 
   === "KafkaTransport"
 
-  ```console
-  $ pip install "openlineage-airflow>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
-  ...
-  ```
+    ```console
+    $ pip install "openlineage-airflow>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
+    ...
+    ```
 
   === "HttpTransport (requires HTTP2Kafka)"
 
-  ```console
-  $ pip install "openlineage-airflow>=1.40.1"
-  ...
-  ```
+    ```console
+    $ pip install "openlineage-airflow>=1.40.1"
+    ...
+    ```
 
 ## Setup
 
@@ -59,36 +59,36 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 
   === "KafkaTransport"
 
-  ```yaml
-  transport:
-      type: kafka
-      topic: input.runs
-      config:
-          # should be accessible from Airflow scheduler
-          bootstrap.servers: localhost:9093
-          security.protocol: SASL_PLAINTEXT
-          sasl.mechanism: SCRAM-SHA-256
-          # Kafka auth credentials
-          sasl.username: data_rentgen
-          sasl.password: changeme
-          compression.type: zstd
-          acks: all
-  ```
+    ```yaml
+    transport:
+        type: kafka
+        topic: input.runs
+        config:
+            # should be accessible from Airflow scheduler
+            bootstrap.servers: localhost:9093
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: SCRAM-SHA-256
+            # Kafka auth credentials
+            sasl.username: data_rentgen
+            sasl.password: changeme
+            compression.type: zstd
+            acks: all
+    ```
 
   === "HttpTransport (requires HTTP2Kafka)"
 
-  ```yaml
-  transport:
-    type: http
-     # http2kafka URL, should be accessible from Airflow scheduler
-     url: http://localhost:8002
-     endpoint: /v1/openlineage
-     compression: gzip
-     auth:
-      type: api_key
-      # create a PersonalToken, and pass it here
-      apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
-  ```
+    ```yaml
+    transport:
+      type: http
+       # http2kafka URL, should be accessible from Airflow scheduler
+       url: http://localhost:8002
+       endpoint: /v1/openlineage
+       compression: gzip
+       auth:
+        type: api_key
+        # create a PersonalToken, and pass it here
+        apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
+    ```
 
 - Pass path to config file via `AIRFLOW__OPENLINEAGE__CONFIG_PATH` environment variable:
 
@@ -103,23 +103,23 @@ Setup OpenLineage integration using `airflow.cfg` config file:
 
 === "KafkaTransport"
 
-```ini
-[openlineage]
-# set here address of Airflow Web UI
-namespace = http://airflow.hostname.fqdn:8080
-# set here Kafka connection address & credentials
-transport = {"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", "security.protocol":"SASL_PLAINTEXT", "sasl.mechanism": "SCRAM-SHA-256", "sasl.username": "data_rentgen", "sasl.password": "changeme","compression.type": "zstd", "acks": "all"}, "topic": "input.runs", "flush": true}
-```
+  ```ini
+  [openlineage]
+  # set here address of Airflow Web UI
+  namespace = http://airflow.hostname.fqdn:8080
+  # set here Kafka connection address & credentials
+  transport = {"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", "security.protocol":"SASL_PLAINTEXT", "sasl.mechanism": "SCRAM-SHA-256", "sasl.username": "data_rentgen", "sasl.password": "changeme","compression.type": "zstd", "acks": "all"},   "topic": "input.runs", "flush": true}
+  ```
 
 === "HttpTransport (requires HTTP2Kafka)"
 
-```ini
-[openlineage]
-# set here address of Airflow Web UI
-namespace = http://airflow.hostname.fqdn:8080
-# set here HTTP2Kafka url & create PersonalToken
-transport = {"type": "http", "url": "http://localhost:8002", "endpoint": "/v1/openlineage", "compression": "gzip","auth": {"type": "api_key", "apiKey": "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC"}}
-```
+  ```ini
+  [openlineage]
+  # set here address of Airflow Web UI
+  namespace = http://airflow.hostname.fqdn:8080
+  # set here HTTP2Kafka url & create PersonalToken
+  transport = {"type": "http", "url": "http://localhost:8002", "endpoint": "/v1/openlineage", "compression": "gzip","auth": {"type": "api_key", "apiKey": "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC"}}
+  ```
 
 ### Via Airflow environment variables
 
@@ -127,21 +127,21 @@ Set environment variables for all Airflow components (e.g. via `docker-compose.y
 
 === "KafkaTransport"
 
-```bash
-# set here address of Airflow Web UI
-AIRFLOW__OPENLINEAGE__NAMESPACE='http://airflow.hostname.fqdn:8080'
-# set here Kafka broker address & auth credentials
-AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", "securityprotocol": "SASL_PLAINTEXT", "sasl.mechanism": "SCRAM-SHA-256", "sasl.username": "data_rentgen", "sasl.password":"changeme", "compression.type": "zstd", "acks": "all"}, "topic": "input.runs", "flush": true}'
-```
+  ```bash
+  # set here address of Airflow Web UI
+  AIRFLOW__OPENLINEAGE__NAMESPACE='http://airflow.hostname.fqdn:8080'
+  # set here Kafka broker address & auth credentials
+  AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "kafka", "config": {"bootstrap.servers": "localhost:9093", "securityprotocol": "SASL_PLAINTEXT", "sasl.mechanism": "SCRAM-SHA-256", "sasl.username": "data_rentgen", "sasl.password":"changeme", "compression.type":   "zstd", "acks": "all"}, "topic": "input.runs", "flush": true}'
+  ```
 
 === "HttpTransport (requires HTTP2Kafka)"
 
-```bash
-# set here address of Airflow Web UI
-AIRFLOW__OPENLINEAGE__NAMESPACE='http://airflow.hostname.fqdn:8080'
-# set here HTTP2Kafka url & create PersonalToken
-AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "http", "url": "http://localhost:8002", "endpoint": "/v1/openlineage","compression": "gzip", "auth": {"type": "api_key", "apiKey": "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCCCCCCC"}}'
-```
+  ```bash
+  # set here address of Airflow Web UI
+  AIRFLOW__OPENLINEAGE__NAMESPACE='http://airflow.hostname.fqdn:8080'
+  # set here HTTP2Kafka url & create PersonalToken
+  AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "http", "url": "http://localhost:8002", "endpoint": "/v1/openlineage","compression": "gzip", "auth": {"type": "api_key", "apiKey": "personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCCCCCCC"}}'
+  ```
 
 ### Airflow 2.1.x and 2.2.x
 

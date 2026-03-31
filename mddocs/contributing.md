@@ -269,81 +269,80 @@ Before making a release from the `develop` branch, follow these steps:
 
 0. Checkout to `develop` branch and update it to the actual state
 
- ```bash
- git checkout develop
- git pull -p
- ```
+  ```bash
+  git checkout develop
+  git pull -p
+  ```
 
 1. Backup `NEXT_RELEASE.rst`
 
- ```bash
- cp "docs/changelog/NEXT_RELEASE.rst" "docs/changelog/temp_NEXT_RELEASE.rst"
- ```
+  ```bash
+  cp "docs/changelog/NEXT_RELEASE.rst" "docs/changelog/temp_NEXT_RELEASE.rst"
+  ```
 
 2. Build the Release notes with Towncrier
 
- ```bash
- VERSION=$(poetry version -s)
- towncrier build "--version=${VERSION}" --yes
- ```
+  ```bash
+  VERSION=$(poetry version -s)
+  towncrier build "--version=${VERSION}" --yes
+  ```
 
 3. Change file with changelog to release version number
 
- ```bash
- mv docs/changelog/NEXT_RELEASE.rst "docs/changelog/${VERSION}.rst"
- ```
+  ```bash
+  mv docs/changelog/NEXT_RELEASE.rst "docs/changelog/${VERSION}.rst"
+  ```
 
 4. Remove content above the version number heading in the `${VERSION}.rst` file
 
- ```bash
-awk '!/^.*towncrier release notes start/' "docs/changelog/${VERSION}.rst" > temp && mv temp "docs/changelog/${VERSION}.rst"
- ```
+  ```bash
+  awk '!/^.*towncrier release notes start/' "docs/changelog/${VERSION}.rst" > temp && mv temp "docs/changelog/${VERSION}.rst"
+  ```
 
 5. Update Changelog Index
 
- ```bash
- awk -v version=${VERSION} '/DRAFT/{print;print "    " version;next}1' docs/changelog/index.rst > temp && mv temp docs/changelog/index.rst
- ```
+  ```bash
+  awk -v version=${VERSION} '/DRAFT/{print;print "    " version;next}1' docs/changelog/index.rst > temp && mv temp docs/changelog/index.rst
+  ```
 
 6. Restore `NEXT_RELEASE.rst` file from backup
 
- ```bash
- mv "docs/changelog/temp_NEXT_RELEASE.rst" "docs/changelog/NEXT_RELEASE.rst"
- ```
+  ```bash
+  mv "docs/changelog/temp_NEXT_RELEASE.rst" "docs/changelog/NEXT_RELEASE.rst"
+  ```
 
 7. Commit and push changes to `develop` branch
 
- ```bash
- git add .
- git commit -m "Prepare for release ${VERSION}"
- git push
- ```
+  ```bash
+  git add .
+  git commit -m "Prepare for release ${VERSION}"
+  git push
+  ```
 
 8. Merge `develop` branch to `master`, **WITHOUT** squashing
 
- ```bash
- git checkout master
- git pull
- git merge develop
- git push
- ```
+  ```bash
+  git checkout master
+  git pull
+  git merge develop
+  git push
+  ```
 
 9. Add git tag to the latest commit in `master` branch
 
- ```bash
- git tag "$VERSION"
- git push origin "$VERSION"
- ```
+  ```bash
+  git tag "$VERSION"
+  git push origin "$VERSION"
+  ```
 
 10. Update version in `develop` branch **after release**:
 
- ```bash
- git checkout develop
-
- NEXT_VERSION=$(echo "$VERSION" | awk -F. '/[0-9]+\./{$NF++;print}' OFS=.)
- poetry version "$NEXT_VERSION"
-
- git add .
- git commit -m "Bump version"
- git push
- ```
+  ```bash
+  git checkout develop  
+  NEXT_VERSION=$(echo "$VERSION" | awk -F. '/[0-9]+\./{$NF++;print}' OFS=.)
+  poetry version "$NEXT_VERSION"  
+  git add .
+  git commit -m "Bump version"
+  git push
+  ```
+  

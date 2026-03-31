@@ -23,17 +23,17 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 
 === "KafkaTransport"
 
-```console
-$ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
-...
-```
+  ```console
+  $ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
+  ...
+  ```
 
 === "HttpTransport (requires HTTP2Kafka)"
 
-```console
-$ pip install "openlineage-dbt>=1.40.1"
-...
-```
+  ```console
+  $ pip install "openlineage-dbt>=1.40.1"
+  ...
+  ```
 
 ## Setup
 
@@ -41,37 +41,37 @@ $ pip install "openlineage-dbt>=1.40.1"
 
   === "KafkaTransport"
 
-  ```yaml
-  transport:
-      type: kafka
-      topic: input.runs
-      config:
-          # should be accessible from host
-          bootstrap.servers: localhost:9093
-          security.protocol: SASL_PLAINTEXT
-          sasl.mechanism: SCRAM-SHA-256
-          # Kafka auth credentials
-          sasl.username: data_rentgen
-          sasl.password: changeme
-          compression.type: zstd
-          acks: all
-  ```
+    ```yaml
+    transport:
+        type: kafka
+        topic: input.runs
+        config:
+            # should be accessible from host
+            bootstrap.servers: localhost:9093
+            security.protocol: SASL_PLAINTEXT
+            sasl.mechanism: SCRAM-SHA-256
+            # Kafka auth credentials
+            sasl.username: data_rentgen
+            sasl.password: changeme
+            compression.type: zstd
+            acks: all
+    ```
 
   === "KafkaTransport"
 
-  ```yaml
-  transport:
-      # "type: http" for OpenLineage below 1.35.0
-      type: async_http
-      # http2kafka URL, should be accessible from host
-      url: http://localhost:8002
-      endpoint: /v1/openlineage
-      compression: gzip
-      auth:
-          type: api_key
-          # create a PersonalToken, and pass it here
-          apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
-  ```
+    ```yaml
+    transport:
+        # "type: http" for OpenLineage below 1.35.0
+        type: async_http
+        # http2kafka URL, should be accessible from host
+        url: http://localhost:8002
+        endpoint: /v1/openlineage
+        compression: gzip
+        auth:
+            type: api_key
+            # create a PersonalToken, and pass it here
+            apiKey: personal_token_AAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCC
+    ```
 
 - Set environment variables:
 
@@ -172,50 +172,50 @@ To fill up this facet, it is required to:
 
   === "BashOperator"
 
-  ```py
-  from airflow.providers.standard.operators.bash import BashOperator
-  task = BashOperator(
-    task_id="dbt_run_task",
-    cwd="/path/to/project",
-    bash_command="dbt-ol run",
-    append_env=True,
-    env={
-          # Pass parent Run info from Airflow to Spark
-          "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
-          # For apache-airflow-providers-openlineage 2.4.0 or above
-          "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }",
-        }
-  )
-  ```
+    ```py
+    from airflow.providers.standard.operators.bash import BashOperator
+    task = BashOperator(
+      task_id="dbt_run_task",
+      cwd="/path/to/project",
+      bash_command="dbt-ol run",
+      append_env=True,
+      env={
+            # Pass parent Run info from Airflow to Spark
+            "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+            # For apache-airflow-providers-openlineage 2.4.0 or above
+            "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }",
+          }
+    )
+    ```
 
   === "SSHOperator"
 
-  ``` py
-  from airflow.providers.ssh.operators.ssh import SSHOperator
-  task = SSHOperator(
-    task_id="dbt_run_task",
-    ssh_conn_id="some_host",
-    command="cd /path/to/project && dbt-ol run",
-    environment={
-      "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
-      # For apache-airflow-providers-openlineage 2.4.0 or above
-      "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
-    }
-  )
-  ```
+    ``` py
+    from airflow.providers.ssh.operators.ssh import SSHOperator
+    task = SSHOperator(
+      task_id="dbt_run_task",
+      ssh_conn_id="some_host",
+      command="cd /path/to/project && dbt-ol run",
+      environment={
+        "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+        # For apache-airflow-providers-openlineage 2.4.0 or above
+        "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }}",
+      }
+    )
+    ```
 
   === "KubernetesPodOperator"
 
-  ```py title=
-  from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
-  task = SSHOperator(
-    task_id="dbt_run_task",
-    cmds=["bash", "-cx"],
-    arguments=["cd /path/to/project && dbt-ol run"],
-      env_vars={
-         "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
-          # For apache-airflow-providers-openlineage 2.4.0 or above
-          "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }",
-    }
-  )
-  ```
+    ```py title=
+    from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+    task = SSHOperator(
+      task_id="dbt_run_task",
+      cmds=["bash", "-cx"],
+      arguments=["cd /path/to/project && dbt-ol run"],
+        env_vars={
+           "OPENLINEAGE_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+            # For apache-airflow-providers-openlineage 2.4.0 or above
+            "OPENLINEAGE_ROOT_PARENT_ID": "{{ macros.OpenLineageProviderPlugin.lineage_root_parent_id(task_instance) }",
+      }
+    )
+    ```
