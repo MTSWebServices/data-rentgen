@@ -23,16 +23,17 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 
 === "KafkaTransport"
 
-```console
-$ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
-...
+  ```console
+  $ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
+  ...
+  ```
 
 === "HttpTransport (requires HTTP2Kafka)"
 
-```console
-$ pip install "openlineage-dbt>=1.40.1"
-...
-
+  ```console
+  $ pip install "openlineage-dbt>=1.40.1"
+  ...
+  ```
 
 ## Setup
 
@@ -74,10 +75,10 @@ $ pip install "openlineage-dbt>=1.40.1"
 
 - Set environment variables:
 
-```ini
-OPENLINEAGE_NAMESPACE=local://dbt.host.name
-OPENLINEAGE_CONFIG=/path/to/openlineage.yml
-```
+  ```ini
+  OPENLINEAGE_NAMESPACE=local://dbt.host.name
+  OPENLINEAGE_CONFIG=/path/to/openlineage.yml
+  ```
 
 ## Collect and send lineage
 
