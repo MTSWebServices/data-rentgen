@@ -210,3 +210,32 @@ def extracted_dataset_schema() -> SchemaDTO:
 @pytest.fixture
 def extracted_user() -> UserDTO:
     return UserDTO(name="myuser")
+
+
+@pytest.fixture
+def extracted_iceberg_metastore_location() -> LocationDTO:
+    return LocationDTO(
+        type="http",
+        name="test-iceberg:8181",
+        addresses={"http://test-iceberg:8181"},
+    )
+
+
+@pytest.fixture
+def extracted_iceberg_dataset1(
+    extracted_iceberg_metastore_location: LocationDTO,
+) -> DatasetDTO:
+    return DatasetDTO(
+        location=extracted_iceberg_metastore_location,
+        name="test_db.test_table",
+    )
+
+
+@pytest.fixture
+def extracted_iceberg_dataset2(
+    extracted_iceberg_metastore_location: LocationDTO,
+) -> DatasetDTO:
+    return DatasetDTO(
+        location=extracted_iceberg_metastore_location,
+        name="test_db.users_backup",
+    )
