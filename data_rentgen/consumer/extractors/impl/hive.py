@@ -81,6 +81,7 @@ class HiveExtractor(GenericExtractor):
             run=run,
             name=hive_query.queryId,
             description=hive_query.operationName,
+            # no started_at == run.started_at
             type=self._extract_operation_type(event),
             sql_query=self._extract_sql_query(event),
         )
@@ -94,7 +95,7 @@ class HiveExtractor(GenericExtractor):
     ) -> OutputTypeDTO:
         match operation.description:
             case None:
-                return OutputTypeDTO(0)
+                return OutputTypeDTO.UNKNOWN
             case value if value.startswith("CREATE"):
                 return OutputTypeDTO.CREATE
             case value if value.startswith("ALTER"):

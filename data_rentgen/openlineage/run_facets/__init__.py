@@ -44,6 +44,7 @@ from data_rentgen.openlineage.run_facets.spark_application import (
 from data_rentgen.openlineage.run_facets.spark_job import (
     OpenLineageSparkJobDetailsRunFacet,
 )
+from data_rentgen.openlineage.run_facets.starrocks_session import OpenLineageStarRocksSessionInfoRunFacet
 
 __all__ = [
     "DataRentgenOperationInfoFacet",
@@ -74,6 +75,7 @@ __all__ = [
     "OpenLineageSparkApplicationDetailsRunFacet",
     "OpenLineageSparkDeployMode",
     "OpenLineageSparkJobDetailsRunFacet",
+    "OpenLineageStarRocksSessionInfoRunFacet",
 ]
 
 
@@ -85,6 +87,8 @@ class OpenLineageRunFacets(OpenLineageBase):
     parent: OpenLineageParentRunFacet | None = None
     processing_engine: OpenLineageProcessingEngineRunFacet | None = None
     tags: OpenLineageRunTagsFacet | None = None
+    nominalTime: OpenLineageNominalTimeRunFacet | None = None
+    jobDependencies: OpenLineageJobDependenciesRunFacet | None = None
     dataRentgen_run: DataRentgenRunInfoFacet | None = None
     dataRentgen_operation: DataRentgenOperationInfoFacet | None = None
     spark_applicationDetails: OpenLineageSparkApplicationDetailsRunFacet | None = None
@@ -95,5 +99,4 @@ class OpenLineageRunFacets(OpenLineageBase):
     flink_job: OpenLineageFlinkJobDetailsRunFacet | None = None
     hive_query: OpenLineageHiveQueryInfoRunFacet | None = None
     hive_session: OpenLineageHiveSessionInfoRunFacet | None = None
-    nominalTime: OpenLineageNominalTimeRunFacet | None = None
-    jobDependencies: OpenLineageJobDependenciesRunFacet | None = None
+    starrocks_session: OpenLineageStarRocksSessionInfoRunFacet | None = None

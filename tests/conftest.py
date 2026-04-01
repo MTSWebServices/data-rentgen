@@ -16,6 +16,8 @@ pytest_plugins = [
     "tests.test_consumer.test_extractors.fixtures.hive_dto",
     "tests.test_consumer.test_extractors.fixtures.spark_raw",
     "tests.test_consumer.test_extractors.fixtures.spark_dto",
+    "tests.test_consumer.test_extractors.fixtures.starrocks_raw",
+    "tests.test_consumer.test_extractors.fixtures.starrocks_dto",
     "tests.test_consumer.test_extractors.fixtures.airflow_raw",
     "tests.test_consumer.test_extractors.fixtures.airflow_dto",
     "tests.test_consumer.test_extractors.fixtures.unknown_raw",
