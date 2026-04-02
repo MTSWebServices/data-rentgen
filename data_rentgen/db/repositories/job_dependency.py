@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Integer,
     Select,
+    and_,
     any_,
     bindparam,
     cast,
@@ -138,17 +139,21 @@ class JobDependencyRepository(Repository[JobDependency]):
                     Input.job_id.label("to_job_id"),
                     literal("INFERRED_FROM_LINEAGE").label("type"),
                 )
-                .join(Input, Output.operation_id == Input.operation_id)
-                .where(
-                    or_(
-                        bindparam("since", type_=DateTime(timezone=True)).is_(None),
-                        Input.created_at >= bindparam("since"),
+                .distinct()
+                .join(
+                    Input,
+                    and_(
+                        Output.dataset_id == Input.dataset_id,
+                        Output.created_at >= Input.created_at,
+                        Output.job_id != Input.job_id,
                     ),
+                )
+                .where(
+                    Input.created_at >= bindparam("since"),
                     or_(
                         bindparam("until", type_=DateTime(timezone=True)).is_(None),
                         Output.created_at <= bindparam("until"),
                     ),
-                    Output.created_at >= Input.created_at,
                 )
             )
         return query.cte("jobs_hierarchy_core_query")
