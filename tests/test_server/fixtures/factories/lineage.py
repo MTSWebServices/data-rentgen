@@ -12,6 +12,7 @@ from tests.test_server.fixtures.factories.dataset import create_dataset, make_sy
 from tests.test_server.fixtures.factories.input import create_input
 from tests.test_server.fixtures.factories.job import create_job
 from tests.test_server.fixtures.factories.job_type import create_job_type
+from tests.test_server.fixtures.factories.lineage_builder import LineageBuilder
 from tests.test_server.fixtures.factories.location import create_location
 from tests.test_server.fixtures.factories.operation import create_operation
 from tests.test_server.fixtures.factories.output import create_output
@@ -25,7 +26,6 @@ from tests.test_server.utils.lineage_result import LineageResult
 @pytest_asyncio.fixture()
 async def simple_lineage(
     async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
-    job: Job,
     user: User,
 ) -> AsyncGenerator[LineageResult, None]:
     # Two independent operations, run twice:
@@ -38,24 +38,33 @@ async def simple_lineage(
     num_operations = 2
     num_datasets = 4
 
-    lineage = LineageResult(jobs=[job])
     async with async_session_maker() as async_session:
+        builder = LineageBuilder(async_session)
+        job_location = await builder.create_location(key="simple_lineage_job_location")
+        job_type = await builder.create_job_type(key="simple_lineage_job_type")
+        job = await builder.create_job(
+            key="simple_lineage_job",
+            location=job_location,
+            job_type=job_type,
+        )
         created_at = datetime.now(tz=UTC)
+
         for n in range(num_runs):
-            run = await create_run(
-                async_session,
+            run = await builder.create_run(
+                key=f"run_{n}",
+                job=job,
                 run_kwargs={
                     "job_id": job.id,
                     "created_at": created_at + timedelta(seconds=0.1 * n),
                     "started_by_user_id": user.id,
                 },
             )
-            lineage.runs.append(run)
 
             # Each run has 2 operations
             operations = [
-                await create_operation(
-                    async_session,
+                await builder.create_operation(
+                    key=f"run_{n}_operation_{i}",
+                    run=run,
                     operation_kwargs={
                         "run_id": run.id,
                         "created_at": run.created_at + timedelta(seconds=0.2 * i),
@@ -63,17 +72,28 @@ async def simple_lineage(
                 )
                 for i in range(num_operations)
             ]
-            lineage.operations.extend(operations)
 
-            dataset_locations = [await create_location(async_session) for _ in range(num_datasets)]
-            datasets = [await create_dataset(async_session, location_id=location.id) for location in dataset_locations]
-            lineage.datasets.extend(datasets)
+            dataset_locations = [
+                await builder.create_location(key=f"run_{n}_dataset_location_{i}") for i in range(num_datasets)
+            ]
+            datasets = [
+                await builder.create_dataset(
+                    key=f"run_{n}_dataset_{i}",
+                    location=location,
+                )
+                for i, location in enumerate(dataset_locations)
+            ]
 
-            schema = await create_schema(async_session)
+            schema = await builder.create_schema(key=f"run_{n}_schema")
 
             inputs = [
-                await create_input(
-                    async_session,
+                await builder.create_input(
+                    key=f"run_{n}_input_{i}",
+                    operation=operation,
+                    run=run,
+                    job=job,
+                    dataset=datasets[2 * i],
+                    schema=schema,
                     input_kwargs={
                         "created_at": operation.created_at,
                         "operation_id": operation.id,
@@ -85,11 +105,16 @@ async def simple_lineage(
                 )
                 for i, operation in enumerate(operations)
             ]
-            lineage.inputs.extend(inputs)
 
             outputs = [
-                await create_output(
-                    async_session,
+                await builder.create_output(
+                    key=f"run_{n}_output_{i}",
+                    operation=operation,
+                    run=run,
+                    job=job,
+                    dataset=datasets[2 * i + 1],
+                    output_type=OutputType.APPEND,
+                    schema=schema,
                     output_kwargs={
                         "created_at": operation.created_at,
                         "operation_id": operation.id,
@@ -102,7 +127,11 @@ async def simple_lineage(
                 )
                 for i, operation in enumerate(operations)
             ]
-            lineage.outputs.extend(outputs)
+
+            _ = inputs, outputs
+
+        lineage = builder.build()
+        lineage.jobs = [job]
 
     yield lineage
 
