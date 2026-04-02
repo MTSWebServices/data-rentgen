@@ -536,14 +536,14 @@ async def job_dependency_chain_with_lineage(
         right_dataset = await create_dataset(async_session, location_id=right_dataset_location.id)
 
         # Connect left chain to central chain: left_spark -> spark1
-        left_created_at = datetime.now(tz=UTC)
-        left_operation_id = generate_new_uuid(left_created_at)
-        left_output = await create_output(
+        left_output_created_at = datetime.now(tz=UTC)
+        left_input_created_at = left_output_created_at - timedelta(seconds=1)
+        await create_output(
             async_session,
             output_kwargs={
-                "created_at": left_created_at,
-                "operation_id": left_operation_id,
-                "run_id": generate_new_uuid(left_created_at),
+                "created_at": left_output_created_at,
+                "operation_id": generate_new_uuid(left_output_created_at),
+                "run_id": generate_new_uuid(left_output_created_at),
                 "job_id": left_spark.id,
                 "dataset_id": left_dataset.id,
                 "schema_id": None,
@@ -552,9 +552,9 @@ async def job_dependency_chain_with_lineage(
         await create_input(
             async_session,
             input_kwargs={
-                "created_at": left_created_at - timedelta(seconds=1),
-                "operation_id": left_operation_id,
-                "run_id": left_output.run_id,
+                "created_at": left_input_created_at,
+                "operation_id": generate_new_uuid(left_input_created_at),
+                "run_id": generate_new_uuid(left_input_created_at),
                 "job_id": spark1.id,
                 "dataset_id": left_dataset.id,
                 "schema_id": None,
@@ -562,14 +562,14 @@ async def job_dependency_chain_with_lineage(
         )
 
         # Connect central chain to right chain: spark3 -> right_spark
-        right_created_at = datetime.now(tz=UTC) + timedelta(seconds=10)
-        right_operation_id = generate_new_uuid(right_created_at)
-        right_output = await create_output(
+        right_output_created_at = datetime.now(tz=UTC) + timedelta(seconds=10)
+        right_input_created_at = right_output_created_at - timedelta(seconds=1)
+        await create_output(
             async_session,
             output_kwargs={
-                "created_at": right_created_at,
-                "operation_id": right_operation_id,
-                "run_id": generate_new_uuid(right_created_at),
+                "created_at": right_output_created_at,
+                "operation_id": generate_new_uuid(right_output_created_at),
+                "run_id": generate_new_uuid(right_output_created_at),
                 "job_id": spark3.id,
                 "dataset_id": right_dataset.id,
                 "schema_id": None,
@@ -578,9 +578,9 @@ async def job_dependency_chain_with_lineage(
         await create_input(
             async_session,
             input_kwargs={
-                "created_at": right_created_at - timedelta(seconds=1),
-                "operation_id": right_operation_id,
-                "run_id": right_output.run_id,
+                "created_at": right_input_created_at,
+                "operation_id": generate_new_uuid(right_input_created_at),
+                "run_id": generate_new_uuid(right_input_created_at),
                 "job_id": right_spark.id,
                 "dataset_id": right_dataset.id,
                 "schema_id": None,
