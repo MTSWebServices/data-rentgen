@@ -75,33 +75,6 @@ class JobDependencyRepository(Repository[JobDependency]):
         await self._lock(job_dependency.from_job.id, job_dependency.to_job.id)
         return await self._get(job_dependency) or await self._create(job_dependency)
 
-    async def get_dependencies(
-        self,
-        job_ids: list[int],
-        direction: Literal["UPSTREAM", "DOWNSTREAM"],
-        depth: int,
-        since: datetime | None = None,
-        until: datetime | None = None,
-        *,
-        infer_from_lineage: bool = False,
-    ) -> list[JobDependency]:
-        core_query = self._get_core_hierarchy_query(include_indirect=infer_from_lineage)
-
-        query: Select | CompoundSelect
-        match direction:
-            case "UPSTREAM":
-                query = self._get_upstream_hierarchy_query(core_query)
-            case "DOWNSTREAM":
-                query = self._get_downstream_hierarchy_query(core_query)
-
-        result = await self._session.execute(
-            query, {"job_ids": job_ids, "depth": depth, "since": since, "until": until}
-        )
-        return [
-            JobDependency(from_job_id=item.from_job_id, to_job_id=item.to_job_id, type=item.type)
-            for item in result.all()
-        ]
-
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(
             get_one_query,
@@ -120,6 +93,33 @@ class JobDependencyRepository(Repository[JobDependency]):
         self._session.add(result)
         await self._session.flush([result])
         return result
+
+    async def get_dependencies(
+        self,
+        job_ids: list[int],
+        direction: Literal["UPSTREAM", "DOWNSTREAM"],
+        since: datetime | None = None,
+        until: datetime | None = None,
+        *,
+        infer_from_lineage: bool = False,
+    ) -> list[JobDependency]:
+        core_query = self._get_core_hierarchy_query(include_indirect=infer_from_lineage)
+
+        query: Select | CompoundSelect
+        match direction:
+            case "UPSTREAM":
+                query = select(core_query).where(core_query.c.to_job_id == any_(bindparam("job_ids")))
+            case "DOWNSTREAM":
+                query = select(core_query).where(core_query.c.from_job_id == any_(bindparam("job_ids")))
+
+        result = await self._session.execute(
+            query,
+            {"job_ids": job_ids, "since": since, "until": until},
+        )
+        return [
+            JobDependency(from_job_id=item.from_job_id, to_job_id=item.to_job_id, type=item.type)
+            for item in result.all()
+        ]
 
     def _get_core_hierarchy_query(
         self,
@@ -142,15 +142,13 @@ class JobDependencyRepository(Repository[JobDependency]):
                 .distinct()
                 .join(
                     Input,
-                    and_(
-                        Output.dataset_id == Input.dataset_id,
-                        Output.job_id != Input.job_id,
-                    ),
+                    Output.dataset_id == Input.dataset_id,
                 )
                 .where(
                     Input.created_at >= bindparam("since"),
                     Output.created_at >= bindparam("since"),
                     Output.created_at >= Input.created_at,
+                    Output.job_id != Input.job_id,
                     or_(
                         bindparam("until", type_=DateTime(timezone=True)).is_(None),
                         and_(
@@ -161,65 +159,3 @@ class JobDependencyRepository(Repository[JobDependency]):
                 )
             )
         return query.cte("jobs_hierarchy_core_query").prefix_with("NOT MATERIALIZED", dialect="postgresql")
-
-    def _get_upstream_hierarchy_query(
-        self,
-        core_query: CTE,
-    ) -> Select:
-        base_part = select(
-            core_query.c.from_job_id.label("from_job_id"),
-            core_query.c.to_job_id.label("to_job_id"),
-            core_query.c.type.label("type"),
-            literal(1).label("depth"),
-        ).where(core_query.c.to_job_id == any_(bindparam("job_ids")))
-
-        base_query_cte = base_part.cte(name="upstream_jobs_query", recursive=True)
-
-        recursive_part = (
-            select(
-                core_query.c.from_job_id.label("from_job_id"),
-                core_query.c.to_job_id.label("to_job_id"),
-                core_query.c.type.label("type"),
-                (base_query_cte.c.depth + literal(1)).label("depth"),
-            )
-            .join(
-                core_query,
-                core_query.c.to_job_id == base_query_cte.c.from_job_id,
-            )
-            .where(
-                base_query_cte.c.depth < bindparam("depth"),
-            )
-        )
-
-        return select(base_query_cte.union(recursive_part))
-
-    def _get_downstream_hierarchy_query(
-        self,
-        core_query: CTE,
-    ) -> Select:
-        base_part = select(
-            core_query.c.from_job_id.label("from_job_id"),
-            core_query.c.to_job_id.label("to_job_id"),
-            core_query.c.type.label("type"),
-            literal(1).label("depth"),
-        ).where(core_query.c.from_job_id == any_(bindparam("job_ids")))
-
-        base_part_cte = base_part.cte(name="downstream_jobs_query", recursive=True)
-
-        recursive_part = (
-            select(
-                core_query.c.from_job_id.label("from_job_id"),
-                core_query.c.to_job_id.label("to_job_id"),
-                core_query.c.type.label("type"),
-                (base_part_cte.c.depth + literal(1)).label("depth"),
-            )
-            .join(
-                core_query,
-                core_query.c.from_job_id == base_part_cte.c.to_job_id,
-            )
-            .where(
-                base_part_cte.c.depth < bindparam("depth"),
-            )
-        )
-
-        return select(base_part_cte.union(recursive_part))

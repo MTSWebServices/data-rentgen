@@ -125,15 +125,18 @@ class JobService:
         infer_from_lineage: bool = False,
         level: int = 0,
     ) -> JobHierarchyResult:
-        logger.info(
-            "Get jobs hierarchy with start at job with ids %s, direction %s, depth %s",
-            start_node_ids,
-            direction,
-            depth,
-        )
-
         if not start_node_ids:
             return JobHierarchyResult()
+
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "[Level %d] Get hierarchy by jobs %r, with direction %s, since %s, until %s",
+                level,
+                sorted(start_node_ids),
+                direction,
+                since,
+                until,
+            )
 
         # Add ancestors and descendants for current level
         ancestor_relations = await self._uow.job.list_ancestor_relations(start_node_ids)
@@ -154,7 +157,6 @@ class JobService:
                 await self._uow.job_dependency.get_dependencies(
                     job_ids=list(job_ids),
                     direction="UPSTREAM",
-                    depth=depth,
                     infer_from_lineage=infer_from_lineage,
                     since=since,
                     until=until,
@@ -166,12 +168,12 @@ class JobService:
                 await self._uow.job_dependency.get_dependencies(
                     job_ids=list(job_ids),
                     direction="DOWNSTREAM",
-                    depth=depth,
                     infer_from_lineage=infer_from_lineage,
                     since=since,
                     until=until,
                 )
             )
+
         result.dependencies.update(
             {(d.from_job_id, d.to_job_id, d.type) for d in upstream_dependecies}
             | {(d.from_job_id, d.to_job_id, d.type) for d in downstream_dependencies}
@@ -200,25 +202,35 @@ class JobService:
                     level=level + 1,
                 )
             )
-        else:
-            # Add parents for last dependencies
-            ids = {from_job_id for (from_job_id, _, _) in result.dependencies} | {
+
+        # After all recursive calls are merged
+        if level == 0:
+            # Add parents for all dependencies
+            dependency_job_ids = {from_job_id for (from_job_id, _, _) in result.dependencies} | {
                 to_job_id for (_, to_job_id, _) in result.dependencies
             }
-            result.parents.update(await self._uow.job.list_ancestor_relations(ids))
-            result.parents.update(await self._uow.job.list_descendant_relations(ids))
+            existing_parent_job_ids = {from_job_id for (from_job_id, _) in result.parents} | {
+                to_job_id for (_, to_job_id) in result.parents
+            }
+            fetch_parent_job_ids = dependency_job_ids - existing_parent_job_ids
+            result.parents.update(await self._uow.job.list_ancestor_relations(fetch_parent_job_ids))
+            result.parents.update(await self._uow.job.list_descendant_relations(fetch_parent_job_ids))
 
-        # Collect all job nodes once, after all recursive calls are merged.
-        if level == 0:
-            final_job_ids = (
+            # Collect all job nodes once
+            job_ids = (
                 start_node_ids
-                | {from_job_id for (from_job_id, _, _) in result.dependencies}
-                | {to_job_id for (_, to_job_id, _) in result.dependencies}
+                | dependency_job_ids
                 | {from_job_id for (from_job_id, _) in result.parents}
                 | {to_job_id for (_, to_job_id) in result.parents}
             )
-            result.jobs = [
-                JobServiceResult.from_orm(job) for job in await self._uow.job.list_by_ids(list(final_job_ids))
-            ]
+            result.jobs = [JobServiceResult.from_orm(job) for job in await self._uow.job.list_by_ids(job_ids)]
 
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "[Level %d] Found %d jobs, %d parents, %d dependencies",
+                level,
+                len(result.jobs),
+                len(result.parents),
+                len(result.dependencies),
+            )
         return result
