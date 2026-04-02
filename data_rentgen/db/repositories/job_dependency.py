@@ -144,19 +144,23 @@ class JobDependencyRepository(Repository[JobDependency]):
                     Input,
                     and_(
                         Output.dataset_id == Input.dataset_id,
-                        Output.created_at >= Input.created_at,
                         Output.job_id != Input.job_id,
                     ),
                 )
                 .where(
                     Input.created_at >= bindparam("since"),
+                    Output.created_at >= bindparam("since"),
+                    Output.created_at >= Input.created_at,
                     or_(
                         bindparam("until", type_=DateTime(timezone=True)).is_(None),
-                        Output.created_at <= bindparam("until"),
+                        and_(
+                            Input.created_at <= bindparam("until"),
+                            Output.created_at <= bindparam("until"),
+                        ),
                     ),
                 )
             )
-        return query.cte("jobs_hierarchy_core_query")
+        return query.cte("jobs_hierarchy_core_query").prefix_with("NOT MATERIALIZED", dialect="postgresql")
 
     def _get_upstream_hierarchy_query(
         self,
@@ -176,7 +180,7 @@ class JobDependencyRepository(Repository[JobDependency]):
                 core_query.c.from_job_id.label("from_job_id"),
                 core_query.c.to_job_id.label("to_job_id"),
                 core_query.c.type.label("type"),
-                (base_query_cte.c.depth + 1).label("depth"),
+                (base_query_cte.c.depth + literal(1)).label("depth"),
             )
             .join(
                 core_query,
@@ -207,7 +211,7 @@ class JobDependencyRepository(Repository[JobDependency]):
                 core_query.c.from_job_id.label("from_job_id"),
                 core_query.c.to_job_id.label("to_job_id"),
                 core_query.c.type.label("type"),
-                (base_part_cte.c.depth + 1).label("depth"),
+                (base_part_cte.c.depth + literal(1)).label("depth"),
             )
             .join(
                 core_query,
