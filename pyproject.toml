@@ -39,7 +39,7 @@ dependencies = [
   "sqlalchemy-utils~=0.42.0",
   "greenlet~=3.3.1",
   "pyyaml~=6.0.3",
-  "python-json-logger~=4.0.0",
+  "python-json-logger>=4.0,<4.2",
   "coloredlogs~=15.0.1",
   "uuid6~=2025.0.0",
   "python-dateutil~=2.9.0.post0",
@@ -97,7 +97,7 @@ gssapi = [
   "gssapi~=1.11.1",
 ]
 seed = [
-  "faker~=40.11.1"
+  "faker>=40.11.1,<40.13.0"
 ]
 
 [dependency-groups]
@@ -110,7 +110,7 @@ test = [
   "pytest-rerunfailures~=16.1",
   "coverage~=7.13.2",
   "psycopg2-binary~=2.9.11",
-  "deepdiff~=8.6.1",
+  "deepdiff>=8.6.1,<9.1.0",
   "respx~=0.22.0",
   "dirty_equals~=0.11",
   "gevent~=25.9.1",
@@ -118,7 +118,7 @@ test = [
 dev = [
   "prek~=0.3.0",
   "ruff~=0.15.2",
-  "mypy~=1.19.0",
+  "mypy>=1.19,<1.21",
   "sqlalchemy[mypy]~=2.0.44",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
