@@ -14,6 +14,7 @@ Currently we support consuming lineage from:
 * Apache Hive
 * Apache Flink
 * dbt
+* SyncMaster (proprietary integration, part of MWS Data Bridge)
 * StarRocks (proprietary integration, part of MWS Data Engine)
 
 **Note**: service is under active development, so API can be unstable.
