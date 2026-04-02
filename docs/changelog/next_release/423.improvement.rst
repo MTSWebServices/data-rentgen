@@ -1,2 +1,2 @@
-Improved ``/v1/jobs/hierarchy`` to return a fuller graph for deep traversals: hierarchy now aggregates dependencies level-by-level and includes all related job nodes (including lineage-inferred jobs).
+Improved ``/v1/jobs/hierarchy`` to return a deeper graph for traversals with depth>1: hierarchy now aggregates dependencies level-by-level and includes all related job nodes (including lineage-inferred jobs).
 
