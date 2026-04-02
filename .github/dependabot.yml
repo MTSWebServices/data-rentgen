@@ -24,6 +24,8 @@ updates:
       # do not use Sphinx 9
       - dependency-name: sphinx
         update-types: [version-update:semver-major]
+      - dependency-name: starlette
+        update-types: [version-update:semver-major]
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       python-packages:
