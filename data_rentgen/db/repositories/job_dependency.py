@@ -77,7 +77,7 @@ class JobDependencyRepository(Repository[JobDependency]):
     async def get_dependencies(
         self,
         job_ids: list[int],
-        direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
+        direction: Literal["UPSTREAM", "DOWNSTREAM"],
         depth: int,
         since: datetime | None = None,
         until: datetime | None = None,
@@ -92,10 +92,6 @@ class JobDependencyRepository(Repository[JobDependency]):
                 query = self._get_upstream_hierarchy_query(core_query)
             case "DOWNSTREAM":
                 query = self._get_downstream_hierarchy_query(core_query)
-            case "BOTH":
-                query = self._get_upstream_hierarchy_query(core_query).union(
-                    self._get_downstream_hierarchy_query(core_query)
-                )
 
         result = await self._session.execute(
             query, {"job_ids": job_ids, "depth": depth, "since": since, "until": until}

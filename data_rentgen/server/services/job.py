@@ -69,6 +69,12 @@ class JobHierarchyResult:
     dependencies: set[tuple[int, int, str | None]] = field(default_factory=set)
     jobs: list[JobServiceResult] = field(default_factory=list)
 
+    def merge(self, other: "JobHierarchyResult") -> "JobHierarchyResult":
+        self.parents.update(other.parents)
+        self.dependencies.update(other.dependencies)
+        self.jobs.extend(other.jobs)
+        return self
+
 
 class JobService:
     def __init__(self, uow: Annotated[UnitOfWork, Depends()]):
@@ -110,49 +116,109 @@ class JobService:
 
     async def get_jobs_hierarchy(
         self,
-        start_node_id: int,
+        start_node_ids: set[int],
         direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
         depth: int,
         since: datetime | None = None,
         until: datetime | None = None,
         *,
         infer_from_lineage: bool = False,
+        level: int = 0,
     ) -> JobHierarchyResult:
         logger.info(
-            "Get jobs hierarchy with start at job with id %s, direction %s, depth %s",
-            start_node_id,
+            "Get jobs hierarchy with start at job with ids %s, direction %s, depth %s",
+            start_node_ids,
             direction,
             depth,
         )
-        job_ids = {start_node_id}
 
-        ancestor_relations = await self._uow.job.list_ancestor_relations([start_node_id])
-        descendant_relations = await self._uow.job.list_descendant_relations([start_node_id])
+        if not start_node_ids:
+            return JobHierarchyResult()
+
+        # Add ancestors and descendants for current level
+        ancestor_relations = await self._uow.job.list_ancestor_relations(start_node_ids)
+        descendant_relations = await self._uow.job.list_descendant_relations(start_node_ids)
         job_ids = (
-            {start_node_id}
-            | {p.parent_job_id for p in ancestor_relations}
-            | {p.child_job_id for p in descendant_relations}
+            start_node_ids
+            | {r.parent_job_id for r in ancestor_relations}
+            | {r.child_job_id for r in descendant_relations}
+        )
+        result = JobHierarchyResult()
+        result.parents.update(ancestor_relations)
+        result.parents.update(descendant_relations)
+
+        upstream_dependecies = set()
+        downstream_dependencies = set()
+        if direction in {"UPSTREAM", "BOTH"}:
+            upstream_dependecies.update(
+                await self._uow.job_dependency.get_dependencies(
+                    job_ids=list(job_ids),
+                    direction="UPSTREAM",
+                    depth=depth,
+                    infer_from_lineage=infer_from_lineage,
+                    since=since,
+                    until=until,
+                )
+            )
+
+        if direction in {"DOWNSTREAM", "BOTH"}:
+            downstream_dependencies.update(
+                await self._uow.job_dependency.get_dependencies(
+                    job_ids=list(job_ids),
+                    direction="DOWNSTREAM",
+                    depth=depth,
+                    infer_from_lineage=infer_from_lineage,
+                    since=since,
+                    until=until,
+                )
+            )
+        result.dependencies.update(
+            {(d.from_job_id, d.to_job_id, d.type) for d in upstream_dependecies}
+            | {(d.from_job_id, d.to_job_id, d.type) for d in downstream_dependencies}
         )
 
-        dependencies = await self._uow.job_dependency.get_dependencies(
-            job_ids=list(job_ids),
-            direction=direction,
-            depth=depth,
-            infer_from_lineage=infer_from_lineage,
-            since=since,
-            until=until,
-        )
-        dependency_job_ids = {d.from_job_id for d in dependencies} | {d.to_job_id for d in dependencies}
-        job_ids |= dependency_job_ids
-        # return ancestors for all found jobs in the graph
-        ancestor_relations += await self._uow.job.list_ancestor_relations(list(dependency_job_ids))
-        job_ids |= {p.parent_job_id for p in ancestor_relations}
-        jobs = await self._uow.job.list_by_ids(list(job_ids))
-        return JobHierarchyResult(
-            parents={(p.parent_job_id, p.child_job_id) for p in ancestor_relations + descendant_relations},
-            dependencies={
-                (d.from_job_id, d.to_job_id, d.type)
-                for d in sorted(dependencies, key=lambda x: (x.from_job_id, x.to_job_id, x.type))
-            },
-            jobs=[JobServiceResult.from_orm(job) for job in jobs],
-        )
+        if depth > 1:
+            result.merge(
+                await self.get_jobs_hierarchy(
+                    start_node_ids={d.from_job_id for d in upstream_dependecies},
+                    direction="UPSTREAM",
+                    depth=depth - 1,
+                    infer_from_lineage=infer_from_lineage,
+                    since=since,
+                    until=until,
+                    level=level + 1,
+                )
+            )
+            result.merge(
+                await self.get_jobs_hierarchy(
+                    start_node_ids={d.to_job_id for d in downstream_dependencies},
+                    direction="DOWNSTREAM",
+                    depth=depth - 1,
+                    infer_from_lineage=infer_from_lineage,
+                    since=since,
+                    until=until,
+                    level=level + 1,
+                )
+            )
+        else:
+            # Add parents for last dependencies
+            ids = {from_job_id for (from_job_id, _, _) in result.dependencies} | {
+                to_job_id for (_, to_job_id, _) in result.dependencies
+            }
+            result.parents.update(await self._uow.job.list_ancestor_relations(ids))
+            result.parents.update(await self._uow.job.list_descendant_relations(ids))
+
+        # Collect all job nodes once, after all recursive calls are merged.
+        if level == 0:
+            final_job_ids = (
+                start_node_ids
+                | {from_job_id for (from_job_id, _, _) in result.dependencies}
+                | {to_job_id for (_, to_job_id, _) in result.dependencies}
+                | {from_job_id for (from_job_id, _) in result.parents}
+                | {to_job_id for (_, to_job_id) in result.parents}
+            )
+            result.jobs = [
+                JobServiceResult.from_orm(job) for job in await self._uow.job.list_by_ids(list(final_job_ids))
+            ]
+
+        return result
