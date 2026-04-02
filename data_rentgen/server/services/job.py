@@ -123,6 +123,7 @@ class JobService:
         until: datetime | None = None,
         *,
         infer_from_lineage: bool = False,
+        level: int = 0,
     ) -> JobHierarchyResult:
         logger.info(
             "Get jobs hierarchy with start at job with ids %s, direction %s, depth %s",
@@ -185,6 +186,7 @@ class JobService:
                     infer_from_lineage=infer_from_lineage,
                     since=since,
                     until=until,
+                    level=level + 1,
                 )
             )
             result.merge(
@@ -195,23 +197,28 @@ class JobService:
                     infer_from_lineage=infer_from_lineage,
                     since=since,
                     until=until,
+                    level=level + 1,
                 )
             )
         else:
+            # Add parents for last dependencies
             ids = {from_job_id for (from_job_id, _, _) in result.dependencies} | {
                 to_job_id for (_, to_job_id, _) in result.dependencies
             }
             result.parents.update(await self._uow.job.list_ancestor_relations(ids))
             result.parents.update(await self._uow.job.list_descendant_relations(ids))
 
-        # Collect all job nodes for the response
-        final_job_ids = (
-            start_node_ids
-            | {from_job_id for (from_job_id, _, _) in result.dependencies}
-            | {to_job_id for (_, to_job_id, _) in result.dependencies}
-            | {from_job_id for (from_job_id, _) in result.parents}
-            | {to_job_id for (_, to_job_id) in result.parents}
-        )
-        result.jobs = [JobServiceResult.from_orm(job) for job in await self._uow.job.list_by_ids(list(final_job_ids))]
+        # Collect all job nodes once, after all recursive calls are merged.
+        if level == 0:
+            final_job_ids = (
+                start_node_ids
+                | {from_job_id for (from_job_id, _, _) in result.dependencies}
+                | {to_job_id for (_, to_job_id, _) in result.dependencies}
+                | {from_job_id for (from_job_id, _) in result.parents}
+                | {to_job_id for (_, to_job_id) in result.parents}
+            )
+            result.jobs = [
+                JobServiceResult.from_orm(job) for job in await self._uow.job.list_by_ids(list(final_job_ids))
+            ]
 
         return result

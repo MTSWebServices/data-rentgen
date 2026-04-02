@@ -411,12 +411,12 @@ async def test_get_job_hierarchy_with_inferred_dependencies_with_since_and_until
     start_node = tasks[2]
 
     # Cover both inferred links connected to spark0 and spark4.
-    edge_task_ids = [sparks[0].id, sparks[4].id]
+    edge_spark_ids = [sparks[0].id, sparks[4].id]
     min_input_created_at = await async_session.scalar(
-        select(func.min(Input.created_at)).where(Input.job_id.in_(edge_task_ids)),
+        select(func.min(Input.created_at)).where(Input.job_id.in_(edge_spark_ids)),
     ) - timedelta(seconds=2)
     max_output_created_at = await async_session.scalar(
-        select(func.max(Output.created_at)).where(Output.job_id.in_(edge_task_ids)),
+        select(func.max(Output.created_at)).where(Output.job_id.in_(edge_spark_ids)),
     ) + timedelta(seconds=2)
 
     expected_nodes = await enrich_jobs([*dags[1:4], *tasks[1:4], *sparks[1:4]], async_session)
