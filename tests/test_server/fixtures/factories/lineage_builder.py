@@ -43,8 +43,9 @@ from tests.test_server.fixtures.factories.user import create_user as create_user
 from tests.test_server.utils.lineage_result import LineageResult
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from sqlalchemy.ext.asyncio import AsyncSession
-    from uuid6 import UUID
 
     from data_rentgen.db.models.personal_token import PersonalToken
     from data_rentgen.db.models.sql_query import SQLQuery
