@@ -21,6 +21,7 @@ from sqlalchemy import (
     tuple_,
 )
 
+from data_rentgen.db.models.dataset_symlink import DatasetSymlink
 from data_rentgen.db.models.input import Input
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.models.output import Output
@@ -133,6 +134,22 @@ class JobDependencyRepository(Repository[JobDependency]):
             JobDependency.type,
         )
         if include_indirect:
+            datasets_connected_via_symlink = (
+                select(literal(1))
+                .where(
+                    or_(
+                        and_(
+                            DatasetSymlink.from_dataset_id == Output.dataset_id,
+                            DatasetSymlink.to_dataset_id == Input.dataset_id,
+                        ),
+                        and_(
+                            DatasetSymlink.to_dataset_id == Output.dataset_id,
+                            DatasetSymlink.from_dataset_id == Input.dataset_id,
+                        ),
+                    ),
+                )
+                .exists()
+            )
             query = query.union(
                 select(
                     Output.job_id.label("from_job_id"),
@@ -142,7 +159,10 @@ class JobDependencyRepository(Repository[JobDependency]):
                 .distinct()
                 .join(
                     Input,
-                    Output.dataset_id == Input.dataset_id,
+                    or_(
+                        Output.dataset_id == Input.dataset_id,
+                        datasets_connected_via_symlink,
+                    ),
                 )
                 .where(
                     Input.created_at >= bindparam("since"),

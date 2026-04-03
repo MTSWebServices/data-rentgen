@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 import pytest_asyncio
 
 from data_rentgen.db.models import Job, JobDependency, TagValue
+from data_rentgen.db.models.dataset_symlink import DatasetSymlinkType
 from data_rentgen.utils.uuid import generate_new_uuid
 from tests.test_server.fixtures.factories.base import random_string
-from tests.test_server.fixtures.factories.dataset import create_dataset
+from tests.test_server.fixtures.factories.dataset import create_dataset, make_symlink
 from tests.test_server.fixtures.factories.input import create_input
 from tests.test_server.fixtures.factories.job_type import create_job_type
 from tests.test_server.fixtures.factories.location import create_location
@@ -594,6 +595,119 @@ async def job_dependency_chain_with_lineage(
         (left_task, task1, task2, task3, right_task),
         (left_spark, spark1, spark2, spark3, right_spark),
     )
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
+
+
+@pytest_asyncio.fixture
+async def job_dependency_chain_with_lineage_and_symlinks(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+) -> AsyncGenerator[tuple[Job, ...], None]:
+    """ "
+    Jobs are connected via IO relations with symlinks:
+    - left_spark --Out--Symlink--In->spark  (inferred via input/output relation)
+    - spark--Out--Symlink--In->right_spark (inferred via input/output relation)
+    """
+
+    async with async_session_maker() as async_session:
+        location = await create_location(async_session)
+        job_type_spark = await create_job_type(async_session, {"type": "SPARK_APPLICATION"})
+        left_spark = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "left_spark"},
+        )
+        spark = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "spark"},
+        )
+        right_spark = await create_job(
+            async_session,
+            location_id=location.id,
+            job_type_id=job_type_spark.id,
+            job_kwargs={"name": "right_spark"},
+        )
+
+        # Create datasets connected via symlinks.
+        left_dataset_location = await create_location(async_session)
+        left_output_dataset = await create_dataset(async_session, location_id=left_dataset_location.id)
+        left_input_dataset = await create_dataset(async_session, location_id=left_dataset_location.id)
+        await make_symlink(
+            async_session=async_session,
+            from_dataset=left_output_dataset,
+            to_dataset=left_input_dataset,
+            type=DatasetSymlinkType.METASTORE,
+        )
+
+        right_dataset_location = await create_location(async_session)
+        right_output_dataset = await create_dataset(async_session, location_id=right_dataset_location.id)
+        right_input_dataset = await create_dataset(async_session, location_id=right_dataset_location.id)
+        await make_symlink(
+            async_session=async_session,
+            from_dataset=right_input_dataset,
+            to_dataset=right_output_dataset,
+            type=DatasetSymlinkType.WAREHOUSE,
+        )
+
+        # Connect left chain to central chain: left_spark -> spark
+        left_output_created_at = datetime.now(tz=UTC)
+        left_input_created_at = left_output_created_at - timedelta(seconds=1)
+        await create_output(
+            async_session,
+            output_kwargs={
+                "created_at": left_output_created_at,
+                "operation_id": generate_new_uuid(left_output_created_at),
+                "run_id": generate_new_uuid(left_output_created_at),
+                "job_id": left_spark.id,
+                "dataset_id": left_output_dataset.id,
+                "schema_id": None,
+            },
+        )
+        await create_input(
+            async_session,
+            input_kwargs={
+                "created_at": left_input_created_at,
+                "operation_id": generate_new_uuid(left_input_created_at),
+                "run_id": generate_new_uuid(left_input_created_at),
+                "job_id": spark.id,
+                "dataset_id": left_input_dataset.id,
+                "schema_id": None,
+            },
+        )
+
+        # Connect central chain to right chain: spark3 -> right_spark
+        right_output_created_at = datetime.now(tz=UTC) + timedelta(seconds=10)
+        right_input_created_at = right_output_created_at - timedelta(seconds=1)
+        await create_output(
+            async_session,
+            output_kwargs={
+                "created_at": right_output_created_at,
+                "operation_id": generate_new_uuid(right_output_created_at),
+                "run_id": generate_new_uuid(right_output_created_at),
+                "job_id": spark.id,
+                "dataset_id": right_output_dataset.id,
+                "schema_id": None,
+            },
+        )
+        await create_input(
+            async_session,
+            input_kwargs={
+                "created_at": right_input_created_at,
+                "operation_id": generate_new_uuid(right_input_created_at),
+                "run_id": generate_new_uuid(right_input_created_at),
+                "job_id": right_spark.id,
+                "dataset_id": right_input_dataset.id,
+                "schema_id": None,
+            },
+        )
+
+        async_session.expunge_all()
+
+    yield (left_spark, spark, right_spark)
 
     async with async_session_maker() as async_session:
         await clean_db(async_session)

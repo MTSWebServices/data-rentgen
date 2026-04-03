@@ -454,6 +454,49 @@ async def test_get_job_hierarchy_with_inferred_dependencies_with_since_and_until
     }
 
 
+async def test_get_job_hierarchy_with_inferred_dependencies_with_symlinks(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    job_dependency_chain_with_lineage_and_symlinks: tuple[Job, ...],
+    mocked_user: MockedUser,
+):
+    left_spark, spark, right_spark = job_dependency_chain_with_lineage_and_symlinks
+    start_node = spark
+
+    expected_nodes = await enrich_jobs([left_spark, spark, right_spark], async_session)
+    expected_deps = [
+        (left_spark.id, spark.id, "INFERRED_FROM_LINEAGE"),
+        (spark.id, right_spark.id, "INFERRED_FROM_LINEAGE"),
+    ]
+
+    response = await test_client.get(
+        "v1/jobs/hierarchy",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "start_node_id": start_node.id,
+            "direction": "BOTH",
+            "depth": 2,
+            "infer_from_lineage": True,
+            "since": datetime.min.replace(tzinfo=UTC).isoformat(),
+        },
+    )
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": jobs_ancestors_to_json(expected_nodes),
+            "dependencies": [
+                {
+                    "from": {"kind": "JOB", "id": str(from_id)},
+                    "to": {"kind": "JOB", "id": str(to_id)},
+                    "type": dep_type,
+                }
+                for from_id, to_id, dep_type in expected_deps
+            ],
+        },
+        "nodes": {"jobs": jobs_to_json(expected_nodes)},
+    }
+
+
 async def test_get_job_hierarchy_with_inferred_dependencies_without_since(
     test_client: AsyncClient,
     job_dependency_chain_with_lineage: tuple[tuple[Job, Job, Job, Job, Job], ...],
