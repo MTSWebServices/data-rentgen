@@ -134,22 +134,6 @@ class JobDependencyRepository(Repository[JobDependency]):
             JobDependency.type,
         )
         if include_indirect:
-            datasets_connected_via_symlink = (
-                select(literal(1))
-                .where(
-                    or_(
-                        and_(
-                            DatasetSymlink.from_dataset_id == Output.dataset_id,
-                            DatasetSymlink.to_dataset_id == Input.dataset_id,
-                        ),
-                        and_(
-                            DatasetSymlink.to_dataset_id == Output.dataset_id,
-                            DatasetSymlink.from_dataset_id == Input.dataset_id,
-                        ),
-                    ),
-                )
-                .exists()
-            )
             where_clauses = [
                 Input.created_at >= bindparam("since"),
                 Output.created_at >= bindparam("since"),
@@ -163,6 +147,7 @@ class JobDependencyRepository(Repository[JobDependency]):
                     ),
                 ),
             ]
+            # IO connections via same dataset
             direct_connection = (
                 select(
                     Output.job_id.label("from_job_id"),
@@ -176,20 +161,37 @@ class JobDependencyRepository(Repository[JobDependency]):
                 )
                 .where(*where_clauses)
             )
-            via_symlinks = (
+            # IO connections Output.d_id == Symlink.to_d_id Symlink.from_d_id == Input.d_id
+            via_symlinks_from_output = (
                 select(
                     Output.job_id.label("from_job_id"),
                     Input.job_id.label("to_job_id"),
                     literal("INFERRED_FROM_LINEAGE").label("type"),
                 )
                 .distinct()
+                .join(DatasetSymlink, Output.dataset_id == DatasetSymlink.to_dataset_id)
                 .join(
                     Input,
-                    datasets_connected_via_symlink,
+                    DatasetSymlink.from_dataset_id == Input.dataset_id,
+                )
+                .where(*where_clauses)
+            )
+            # IO connections Input.d_id == Symlink.to_d_id Symlink.from_d_id == Output.d_id
+            via_symlinks_from_input = (
+                select(
+                    Output.job_id.label("from_job_id"),
+                    Input.job_id.label("to_job_id"),
+                    literal("INFERRED_FROM_LINEAGE").label("type"),
+                )
+                .distinct()
+                .join(DatasetSymlink, Input.dataset_id == DatasetSymlink.to_dataset_id)
+                .join(
+                    Output,
+                    DatasetSymlink.from_dataset_id == Output.dataset_id,
                 )
                 .where(*where_clauses)
             )
 
-            query = query.union(direct_connection, via_symlinks)
+            query = query.union(direct_connection, via_symlinks_from_input, via_symlinks_from_output)
 
         return query.cte("jobs_hierarchy_core_query").prefix_with("NOT MATERIALIZED", dialect="postgresql")
