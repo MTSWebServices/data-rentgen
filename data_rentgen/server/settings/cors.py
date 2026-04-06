@@ -50,10 +50,10 @@ class CORSSettings(BaseModel):
         default=False,
         description="If ``True``, cookies should be supported for cross-origin request",
     )
-    allow_methods: list[str] = Field(default=["GET"], description="HTTP Methods allowed for CORS")
+    allow_methods: list[str] = Field(default=["GET", "POST"], description="HTTP Methods allowed for CORS")
     # https://github.com/snok/asgi-correlation-id#cors
     allow_headers: list[str] = Field(
-        default=["X-Request-ID", "X-Request-With"],
+        default=["X-Request-ID", "X-Request-With", "Access-Control-Allow-Origin"],
         description="HTTP headers allowed for CORS",
     )
     expose_headers: list[str] = Field(default=["X-Request-ID"], description="HTTP headers exposed from backend")

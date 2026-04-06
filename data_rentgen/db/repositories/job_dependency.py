@@ -5,7 +5,6 @@ from typing import Literal
 
 from sqlalchemy import (
     ARRAY,
-    CTE,
     CompoundSelect,
     DateTime,
     Integer,
@@ -21,6 +20,7 @@ from sqlalchemy import (
     tuple_,
 )
 
+from data_rentgen.db.models.dataset_symlink import DatasetSymlink
 from data_rentgen.db.models.input import Input
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.models.output import Output
@@ -104,13 +104,14 @@ class JobDependencyRepository(Repository[JobDependency]):
         infer_from_lineage: bool = False,
     ) -> list[JobDependency]:
         core_query = self._get_core_hierarchy_query(include_indirect=infer_from_lineage)
+        core_subquery = core_query.subquery()
 
-        query: Select | CompoundSelect
+        query: Select
         match direction:
             case "UPSTREAM":
-                query = select(core_query).where(core_query.c.to_job_id == any_(bindparam("job_ids")))
+                query = select(core_subquery).where(core_subquery.c.to_job_id == any_(bindparam("job_ids")))
             case "DOWNSTREAM":
-                query = select(core_query).where(core_query.c.from_job_id == any_(bindparam("job_ids")))
+                query = select(core_subquery).where(core_subquery.c.from_job_id == any_(bindparam("job_ids")))
 
         result = await self._session.execute(
             query,
@@ -125,7 +126,7 @@ class JobDependencyRepository(Repository[JobDependency]):
         self,
         *,
         include_indirect: bool = False,
-    ) -> CTE:
+    ) -> Select | CompoundSelect:
         query: Select | CompoundSelect
         query = select(
             JobDependency.from_job_id,
@@ -133,29 +134,50 @@ class JobDependencyRepository(Repository[JobDependency]):
             JobDependency.type,
         )
         if include_indirect:
-            query = query.union(
-                select(
-                    Output.job_id.label("from_job_id"),
-                    Input.job_id.label("to_job_id"),
-                    literal("INFERRED_FROM_LINEAGE").label("type"),
-                )
-                .distinct()
+            # Where clause and columns are common part for all unions
+            where_clauses = [
+                Input.created_at >= bindparam("since"),
+                Output.created_at >= bindparam("since"),
+                Output.created_at >= Input.created_at,
+                Output.job_id != Input.job_id,
+                or_(
+                    bindparam("until", type_=DateTime(timezone=True)).is_(None),
+                    and_(
+                        Input.created_at <= bindparam("until"),
+                        Output.created_at <= bindparam("until"),
+                    ),
+                ),
+            ]
+            inferred_columns = select(
+                Output.job_id.label("from_job_id"),
+                Input.job_id.label("to_job_id"),
+                literal("INFERRED_FROM_LINEAGE").label("type"),
+            ).distinct()
+
+            # IO connections via same dataset
+            direct_connection = inferred_columns.join(
+                Input,
+                Output.dataset_id == Input.dataset_id,
+            ).where(*where_clauses)
+            # IO connections Output.d_id == Symlink.to_d_id Symlink.from_d_id == Input.d_id
+            via_symlinks_from_output = (
+                inferred_columns.join(DatasetSymlink, Output.dataset_id == DatasetSymlink.to_dataset_id)
                 .join(
                     Input,
-                    Output.dataset_id == Input.dataset_id,
+                    DatasetSymlink.from_dataset_id == Input.dataset_id,
                 )
-                .where(
-                    Input.created_at >= bindparam("since"),
-                    Output.created_at >= bindparam("since"),
-                    Output.created_at >= Input.created_at,
-                    Output.job_id != Input.job_id,
-                    or_(
-                        bindparam("until", type_=DateTime(timezone=True)).is_(None),
-                        and_(
-                            Input.created_at <= bindparam("until"),
-                            Output.created_at <= bindparam("until"),
-                        ),
-                    ),
-                )
+                .where(*where_clauses)
             )
-        return query.cte("jobs_hierarchy_core_query").prefix_with("NOT MATERIALIZED", dialect="postgresql")
+            # IO connections Input.d_id == Symlink.to_d_id Symlink.from_d_id == Output.d_id
+            via_symlinks_from_input = (
+                inferred_columns.join(DatasetSymlink, Input.dataset_id == DatasetSymlink.to_dataset_id)
+                .join(
+                    Output,
+                    DatasetSymlink.from_dataset_id == Output.dataset_id,
+                )
+                .where(*where_clauses)
+            )
+
+            query = query.union(direct_connection, via_symlinks_from_input, via_symlinks_from_output)
+
+        return query
