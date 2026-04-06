@@ -180,4 +180,4 @@ class JobDependencyRepository(Repository[JobDependency]):
 
             query = query.union(direct_connection, via_symlinks_from_input, via_symlinks_from_output)
 
-        return query.cte("jobs_hierarchy_core_query").prefix_with("NOT MATERIALIZED", dialect="postgresql")
+        return query.cte("jobs_hierarchy_core_query")

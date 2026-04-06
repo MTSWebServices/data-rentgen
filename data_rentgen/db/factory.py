@@ -12,7 +12,7 @@ from data_rentgen.db.settings import DatabaseSettings
 
 
 def create_session_factory(settings: DatabaseSettings) -> async_sessionmaker[AsyncSession]:
-    engine = async_engine_from_config(settings.model_dump(), prefix="")
+    engine = async_engine_from_config(settings.model_dump(), prefix="", echo=True)
     return async_sessionmaker(
         bind=engine,
         class_=AsyncSession,
