@@ -5,7 +5,6 @@ from typing import Literal
 
 from sqlalchemy import (
     ARRAY,
-    CTE,
     CompoundSelect,
     DateTime,
     Integer,
@@ -105,13 +104,14 @@ class JobDependencyRepository(Repository[JobDependency]):
         infer_from_lineage: bool = False,
     ) -> list[JobDependency]:
         core_query = self._get_core_hierarchy_query(include_indirect=infer_from_lineage)
+        core_subquery = core_query.subquery()
 
-        query: Select | CompoundSelect
+        query: Select
         match direction:
             case "UPSTREAM":
-                query = select(core_query).where(core_query.c.to_job_id == any_(bindparam("job_ids")))
+                query = select(core_subquery).where(core_subquery.c.to_job_id == any_(bindparam("job_ids")))
             case "DOWNSTREAM":
-                query = select(core_query).where(core_query.c.from_job_id == any_(bindparam("job_ids")))
+                query = select(core_subquery).where(core_subquery.c.from_job_id == any_(bindparam("job_ids")))
 
         result = await self._session.execute(
             query,
@@ -126,7 +126,7 @@ class JobDependencyRepository(Repository[JobDependency]):
         self,
         *,
         include_indirect: bool = False,
-    ) -> CTE:
+    ) -> Select | CompoundSelect:
         query: Select | CompoundSelect
         query = select(
             JobDependency.from_job_id,
@@ -180,4 +180,4 @@ class JobDependencyRepository(Repository[JobDependency]):
 
             query = query.union(direct_connection, via_symlinks_from_input, via_symlinks_from_output)
 
-        return query.cte("jobs_hierarchy_core_query")
+        return query
