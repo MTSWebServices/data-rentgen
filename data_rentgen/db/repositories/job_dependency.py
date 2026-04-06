@@ -150,7 +150,20 @@ class JobDependencyRepository(Repository[JobDependency]):
                 )
                 .exists()
             )
-            query = query.union(
+            where_clauses = [
+                Input.created_at >= bindparam("since"),
+                Output.created_at >= bindparam("since"),
+                Output.created_at >= Input.created_at,
+                Output.job_id != Input.job_id,
+                or_(
+                    bindparam("until", type_=DateTime(timezone=True)).is_(None),
+                    and_(
+                        Input.created_at <= bindparam("until"),
+                        Output.created_at <= bindparam("until"),
+                    ),
+                ),
+            ]
+            direct_connection = (
                 select(
                     Output.job_id.label("from_job_id"),
                     Input.job_id.label("to_job_id"),
@@ -159,23 +172,24 @@ class JobDependencyRepository(Repository[JobDependency]):
                 .distinct()
                 .join(
                     Input,
-                    or_(
-                        Output.dataset_id == Input.dataset_id,
-                        datasets_connected_via_symlink,
-                    ),
+                    Output.dataset_id == Input.dataset_id,
                 )
-                .where(
-                    Input.created_at >= bindparam("since"),
-                    Output.created_at >= bindparam("since"),
-                    Output.created_at >= Input.created_at,
-                    Output.job_id != Input.job_id,
-                    or_(
-                        bindparam("until", type_=DateTime(timezone=True)).is_(None),
-                        and_(
-                            Input.created_at <= bindparam("until"),
-                            Output.created_at <= bindparam("until"),
-                        ),
-                    ),
-                )
+                .where(*where_clauses)
             )
+            via_symlinks = (
+                select(
+                    Output.job_id.label("from_job_id"),
+                    Input.job_id.label("to_job_id"),
+                    literal("INFERRED_FROM_LINEAGE").label("type"),
+                )
+                .distinct()
+                .join(
+                    Input,
+                    datasets_connected_via_symlink,
+                )
+                .where(*where_clauses)
+            )
+
+            query = query.union(direct_connection, via_symlinks)
+
         return query.cte("jobs_hierarchy_core_query").prefix_with("NOT MATERIALIZED", dialect="postgresql")
