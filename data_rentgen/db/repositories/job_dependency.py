@@ -134,6 +134,7 @@ class JobDependencyRepository(Repository[JobDependency]):
             JobDependency.type,
         )
         if include_indirect:
+            # Where clause and columns are common part for all unions
             where_clauses = [
                 Input.created_at >= bindparam("since"),
                 Output.created_at >= bindparam("since"),
@@ -147,29 +148,20 @@ class JobDependencyRepository(Repository[JobDependency]):
                     ),
                 ),
             ]
+            inferred_columns = select(
+                Output.job_id.label("from_job_id"),
+                Input.job_id.label("to_job_id"),
+                literal("INFERRED_FROM_LINEAGE").label("type"),
+            ).distinct()
+
             # IO connections via same dataset
-            direct_connection = (
-                select(
-                    Output.job_id.label("from_job_id"),
-                    Input.job_id.label("to_job_id"),
-                    literal("INFERRED_FROM_LINEAGE").label("type"),
-                )
-                .distinct()
-                .join(
-                    Input,
-                    Output.dataset_id == Input.dataset_id,
-                )
-                .where(*where_clauses)
-            )
+            direct_connection = inferred_columns.join(
+                Input,
+                Output.dataset_id == Input.dataset_id,
+            ).where(*where_clauses)
             # IO connections Output.d_id == Symlink.to_d_id Symlink.from_d_id == Input.d_id
             via_symlinks_from_output = (
-                select(
-                    Output.job_id.label("from_job_id"),
-                    Input.job_id.label("to_job_id"),
-                    literal("INFERRED_FROM_LINEAGE").label("type"),
-                )
-                .distinct()
-                .join(DatasetSymlink, Output.dataset_id == DatasetSymlink.to_dataset_id)
+                inferred_columns.join(DatasetSymlink, Output.dataset_id == DatasetSymlink.to_dataset_id)
                 .join(
                     Input,
                     DatasetSymlink.from_dataset_id == Input.dataset_id,
@@ -178,13 +170,7 @@ class JobDependencyRepository(Repository[JobDependency]):
             )
             # IO connections Input.d_id == Symlink.to_d_id Symlink.from_d_id == Output.d_id
             via_symlinks_from_input = (
-                select(
-                    Output.job_id.label("from_job_id"),
-                    Input.job_id.label("to_job_id"),
-                    literal("INFERRED_FROM_LINEAGE").label("type"),
-                )
-                .distinct()
-                .join(DatasetSymlink, Input.dataset_id == DatasetSymlink.to_dataset_id)
+                inferred_columns.join(DatasetSymlink, Input.dataset_id == DatasetSymlink.to_dataset_id)
                 .join(
                     Output,
                     DatasetSymlink.from_dataset_id == Output.dataset_id,
