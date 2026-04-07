@@ -1,0 +1,1 @@
+Added optional ``external_id`` and ``external_url`` fields on datasets (database, API responses) for linking datasets to external systems.
