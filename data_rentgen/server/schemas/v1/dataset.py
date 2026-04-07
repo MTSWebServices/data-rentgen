@@ -30,11 +30,6 @@ class DatasetSchemaV1(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ExternalUrlResponseV1(BaseModel):
-    url: str
-    model_config = ConfigDict(from_attributes=True, extra="ignore")
-
-
 class DatasetResponseV1(BaseModel):
     id: str = Field(description="Dataset id", coerce_numbers_to_str=True)
     location: LocationResponseV1 = Field(description="Corresponding Location")
