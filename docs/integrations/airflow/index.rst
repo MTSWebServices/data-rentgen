@@ -197,8 +197,8 @@ Job level lineage
 
 .. image:: ./job_lineage.png
 
-Job dependencies
-~~~~~~~~~~~~~~~~
+Job hierarchy
+~~~~~~~~~~~~~
 
 .. image:: ./job_hierarchy.png
 

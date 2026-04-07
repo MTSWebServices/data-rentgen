@@ -191,7 +191,7 @@ Browse frontend page [Jobs](http://localhost:3000/jobs) to see what information 
 
 ![job_lineage](job_lineage.png)
 
-### Job dependencies
+### Job hierarchy
 
 ![job_hierarchy](job_hierarchy.png)
 

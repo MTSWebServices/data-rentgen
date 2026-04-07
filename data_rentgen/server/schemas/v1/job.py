@@ -58,7 +58,7 @@ class JobHierarchyRelationsV1(BaseModel):
 
 
 class JobHierarchyResponseV1(BaseModel):
-    "Job dependencies"
+    "Job hierarchy"
 
     relations: JobHierarchyRelationsV1 = Field(
         description="Job parents and dependencies relations",
