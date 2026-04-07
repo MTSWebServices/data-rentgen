@@ -29,6 +29,7 @@ pytest_plugins = [
     "tests.test_server.fixtures.keycloak",
     "tests.test_server.fixtures.factories.address",
     "tests.test_server.fixtures.factories.dataset",
+    "tests.test_server.fixtures.factories.job_dependencies",
     "tests.test_server.fixtures.factories.job_type",
     "tests.test_server.fixtures.factories.job",
     "tests.test_server.fixtures.factories.lineage",
