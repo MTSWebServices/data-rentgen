@@ -30,10 +30,17 @@ class DatasetSchemaV1(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ExternalUrlResponseV1(BaseModel):
+    url: str
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+
 class DatasetResponseV1(BaseModel):
     id: str = Field(description="Dataset id", coerce_numbers_to_str=True)
     location: LocationResponseV1 = Field(description="Corresponding Location")
     name: str = Field(description="Dataset name")
+    external_id: str | None = Field(description="External ID for integration with other systems")
+    external_url: str | None = Field(description="Link to dataset in a external system")
     schema: DatasetSchemaV1 | None = Field(  # type: ignore[assignment]
         description="Schema",
         default=None,

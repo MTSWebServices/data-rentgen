@@ -268,6 +268,8 @@ def _get_datasets(
             id=str(dataset.id),
             location=LocationResponseV1.model_validate(dataset.location),
             name=dataset.name,
+            external_id=dataset.external_id,
+            external_url=dataset.external_url,
             schema=schema,
         )
     return datasets
@@ -330,6 +332,8 @@ def _get_datasets_with_dataset_granularity(
             id=str(dataset.id),
             location=LocationResponseV1.model_validate(dataset.location),
             name=dataset.name,
+            external_id=dataset.external_id,
+            external_url=dataset.external_url,
             schema=schema,
         )
     return datasets

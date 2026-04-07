@@ -24,6 +24,8 @@ def dataset_factory(**kwargs):
         "id": randint(0, 10000000),
         "location_id": randint(0, 10000000),
         "name": random_string(32),
+        "external_id": random_string(),
+        "external_url": None,
     }
 
     data.update(kwargs)

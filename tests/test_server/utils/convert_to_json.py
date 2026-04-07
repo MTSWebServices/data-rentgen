@@ -232,6 +232,8 @@ def dataset_to_json(
         "name": dataset.name,
         "location": location_to_json(dataset.location),
         "schema": schema,
+        "external_id": dataset.external_id or None,
+        "external_url": dataset.external_url or None,
     }
 
 
