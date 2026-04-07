@@ -113,6 +113,8 @@ That's why the information about datasets is very limited:
 - ``location: Location`` - Location where data is actually stored in, like RDMBS instance or cluster.
 - ``name: str`` - qualified name of Dataset, like ``mydb.myschema.mytable`` or ``/app/warehouse/hive/managed/myschema.df/mytable``
 - ``schema: Schema | None`` - schema of dataset.
+- ``external_id: string | None`` - identifier of dataset in some third-party system.
+- ``external_url: string | None`` - URL of dataset in some third-party system.
 - ``tags: list[Tag]`` - tags of dataset.
 
 .. image:: dataset_list.png
@@ -331,7 +333,7 @@ It contains following fields:
 
 - ``from: Job | Run`` - entity which should be waited before current job/run will be started.
 - ``to: Job | Run`` - entity which waits.
-- ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INDIRECT_DEPENDENCY``.
+- ``type: str`` - type of dependency, any arbitrary string provided by integration, usually something like ``DIRECT_DEPENDENCY``, ``INFERRED_FROM_LINEAGE``.
 
 .. image:: dependency_relation.png
 

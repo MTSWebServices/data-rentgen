@@ -92,9 +92,12 @@ async def get_job_hierarchy(
     current_user: Annotated[User, Depends(get_user())],
 ) -> JobHierarchyResponseV1:
     job_hierarchy = await job_service.get_jobs_hierarchy(
-        start_node_id=query_args.start_node_id,
+        start_node_ids={query_args.start_node_id},
         direction=query_args.direction,
         depth=query_args.depth,
+        infer_from_lineage=query_args.infer_from_lineage,
+        since=query_args.since,
+        until=query_args.until,
     )
     return JobHierarchyResponseV1(
         relations=JobHierarchyRelationsV1(

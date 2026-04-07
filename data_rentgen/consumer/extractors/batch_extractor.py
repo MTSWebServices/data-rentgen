@@ -12,6 +12,7 @@ from data_rentgen.consumer.extractors.impl import (
     SparkExtractor,
     UnknownExtractor,
 )
+from data_rentgen.consumer.extractors.impl.starrocks import StarRocksExtractor
 from data_rentgen.openlineage.run_event import OpenLineageRunEvent
 
 
@@ -31,6 +32,7 @@ class BatchExtractor:
             HiveExtractor(),
             FlinkExtractor(),
             DbtExtractor(),
+            StarRocksExtractor(),
         ]
         self.unknown_extractor = UnknownExtractor()
 

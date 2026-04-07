@@ -50,6 +50,16 @@ class Dataset(Base):
         lazy="noload",
         doc="Dataset tag values",
     )
+    external_id: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        doc="External ID for integration with other systems",
+    )
+    external_url: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        doc="External link to other systems",
+    )
 
     search_vector: Mapped[str] = mapped_column(
         TSVECTOR,

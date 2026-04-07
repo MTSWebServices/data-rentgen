@@ -6,7 +6,6 @@ import secrets
 import time
 from datetime import datetime, timezone
 from hashlib import sha1
-from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 from uuid import UUID as BaseUUID  # noqa: N811
 
@@ -111,13 +110,3 @@ def extract_timestamp_from_uuid(uuid: BaseUUID) -> datetime:
         msg = "Only UUIDv6+ are supported"
         raise ValueError(msg)
     return datetime.fromtimestamp(uuid.time / 1000, tz=timezone.utc)
-
-
-def uuid_version_validator(run_id: Any) -> NewUUID:
-    if isinstance(run_id, str):
-        run_id = NewUUID(run_id)
-        if not run_id.version or run_id.version < 6:  # noqa: PLR2004
-            err_msg = f"Run ID: {run_id} is not valid uuid. Only UUIDv6+ are supported"
-            raise ValueError(err_msg)
-        return run_id
-    return run_id

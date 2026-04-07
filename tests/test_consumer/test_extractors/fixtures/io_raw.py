@@ -315,3 +315,19 @@ def kafka_output_with_stats(
             ),
         },
     )
+
+
+@pytest.fixture
+def iceberg_input() -> OpenLineageInputDataset:
+    return OpenLineageInputDataset(
+        namespace="http://test-iceberg:8181",
+        name="test_db.test_table",
+    )
+
+
+@pytest.fixture
+def iceberg_output() -> OpenLineageOutputDataset:
+    return OpenLineageOutputDataset(
+        namespace="http://test-iceberg:8181",
+        name="test_db.users_backup",
+    )

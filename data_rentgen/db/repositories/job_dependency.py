@@ -1,11 +1,29 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
+from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import ARRAY, Integer, any_, bindparam, cast, func, literal, select, tuple_
-from sqlalchemy.orm import aliased
+from sqlalchemy import (
+    ARRAY,
+    CompoundSelect,
+    DateTime,
+    Integer,
+    Select,
+    and_,
+    any_,
+    bindparam,
+    cast,
+    func,
+    literal,
+    or_,
+    select,
+    tuple_,
+)
 
+from data_rentgen.db.models.dataset_symlink import DatasetSymlink
+from data_rentgen.db.models.input import Input
 from data_rentgen.db.models.job_dependency import JobDependency
+from data_rentgen.db.models.output import Output
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import JobDependencyDTO
 
@@ -26,59 +44,6 @@ get_one_query = select(JobDependency).where(
     JobDependency.from_job_id == bindparam("from_job_id"),
     JobDependency.to_job_id == bindparam("to_job_id"),
 )
-
-upstream_jobs_query_base_part = (
-    select(
-        JobDependency,
-        literal(1).label("depth"),
-    )
-    .select_from(JobDependency)
-    .where(JobDependency.to_job_id == any_(bindparam("job_ids")))
-)
-upstream_jobs_query_cte = upstream_jobs_query_base_part.cte(name="upstream_jobs_query", recursive=True)
-
-upstream_jobs_query_recursive_part = (
-    select(
-        JobDependency,
-        (upstream_jobs_query_cte.c.depth + 1).label("depth"),
-    )
-    .select_from(JobDependency)
-    .where(
-        upstream_jobs_query_cte.c.depth < bindparam("depth"),
-        JobDependency.to_job_id == upstream_jobs_query_cte.c.from_job_id,
-    )
-)
-
-
-upstream_jobs_query_cte = upstream_jobs_query_cte.union(upstream_jobs_query_recursive_part)
-upstream_entities_query = select(aliased(JobDependency, upstream_jobs_query_cte))
-
-downstream_jobs_query_base_part = (
-    select(
-        JobDependency,
-        literal(1).label("depth"),
-    )
-    .select_from(JobDependency)
-    .where(JobDependency.from_job_id == any_(bindparam("job_ids")))
-)
-downstream_jobs_query_cte = downstream_jobs_query_base_part.cte(name="downstream_jobs_query", recursive=True)
-
-downstream_jobs_query_recursive_part = (
-    select(
-        JobDependency,
-        (downstream_jobs_query_cte.c.depth + 1).label("depth"),
-    )
-    .select_from(JobDependency)
-    .where(
-        downstream_jobs_query_cte.c.depth < bindparam("depth"),
-        JobDependency.from_job_id == downstream_jobs_query_cte.c.to_job_id,
-    )
-)
-
-downstream_jobs_query_cte = downstream_jobs_query_cte.union(downstream_jobs_query_recursive_part)
-downstream_entities_query = select(aliased(JobDependency, downstream_jobs_query_cte))
-
-both_entities_query = select(aliased(JobDependency, (upstream_entities_query.union(downstream_entities_query)).cte()))
 
 
 class JobDependencyRepository(Repository[JobDependency]):
@@ -110,24 +75,6 @@ class JobDependencyRepository(Repository[JobDependency]):
         await self._lock(job_dependency.from_job.id, job_dependency.to_job.id)
         return await self._get(job_dependency) or await self._create(job_dependency)
 
-    async def get_dependencies(
-        self,
-        job_ids: list[int],
-        direction: Literal["UPSTREAM", "DOWNSTREAM", "BOTH"],
-        depth: int,
-    ) -> list[JobDependency]:
-
-        match direction:
-            case "UPSTREAM":
-                query = upstream_entities_query
-            case "DOWNSTREAM":
-                query = downstream_entities_query
-            case "BOTH":
-                query = both_entities_query
-
-        result = await self._session.scalars(query, {"job_ids": job_ids, "depth": depth})
-        return list(result.all())
-
     async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
         return await self._session.scalar(
             get_one_query,
@@ -146,3 +93,91 @@ class JobDependencyRepository(Repository[JobDependency]):
         self._session.add(result)
         await self._session.flush([result])
         return result
+
+    async def get_dependencies(
+        self,
+        job_ids: list[int],
+        direction: Literal["UPSTREAM", "DOWNSTREAM"],
+        since: datetime | None = None,
+        until: datetime | None = None,
+        *,
+        infer_from_lineage: bool = False,
+    ) -> list[JobDependency]:
+        core_query = self._get_core_hierarchy_query(include_indirect=infer_from_lineage)
+        core_subquery = core_query.subquery()
+
+        query: Select
+        match direction:
+            case "UPSTREAM":
+                query = select(core_subquery).where(core_subquery.c.to_job_id == any_(bindparam("job_ids")))
+            case "DOWNSTREAM":
+                query = select(core_subquery).where(core_subquery.c.from_job_id == any_(bindparam("job_ids")))
+
+        result = await self._session.execute(
+            query,
+            {"job_ids": job_ids, "since": since, "until": until},
+        )
+        return [
+            JobDependency(from_job_id=item.from_job_id, to_job_id=item.to_job_id, type=item.type)
+            for item in result.all()
+        ]
+
+    def _get_core_hierarchy_query(
+        self,
+        *,
+        include_indirect: bool = False,
+    ) -> Select | CompoundSelect:
+        query: Select | CompoundSelect
+        query = select(
+            JobDependency.from_job_id,
+            JobDependency.to_job_id,
+            JobDependency.type,
+        )
+        if include_indirect:
+            # Where clause and columns are common part for all unions
+            where_clauses = [
+                Input.created_at >= bindparam("since"),
+                Output.created_at >= bindparam("since"),
+                Output.created_at >= Input.created_at,
+                Output.job_id != Input.job_id,
+                or_(
+                    bindparam("until", type_=DateTime(timezone=True)).is_(None),
+                    and_(
+                        Input.created_at <= bindparam("until"),
+                        Output.created_at <= bindparam("until"),
+                    ),
+                ),
+            ]
+            inferred_columns = select(
+                Output.job_id.label("from_job_id"),
+                Input.job_id.label("to_job_id"),
+                literal("INFERRED_FROM_LINEAGE").label("type"),
+            ).distinct()
+
+            # IO connections via same dataset
+            direct_connection = inferred_columns.join(
+                Input,
+                Output.dataset_id == Input.dataset_id,
+            ).where(*where_clauses)
+            # IO connections Output.d_id == Symlink.to_d_id Symlink.from_d_id == Input.d_id
+            via_symlinks_from_output = (
+                inferred_columns.join(DatasetSymlink, Output.dataset_id == DatasetSymlink.to_dataset_id)
+                .join(
+                    Input,
+                    DatasetSymlink.from_dataset_id == Input.dataset_id,
+                )
+                .where(*where_clauses)
+            )
+            # IO connections Input.d_id == Symlink.to_d_id Symlink.from_d_id == Output.d_id
+            via_symlinks_from_input = (
+                inferred_columns.join(DatasetSymlink, Input.dataset_id == DatasetSymlink.to_dataset_id)
+                .join(
+                    Output,
+                    DatasetSymlink.from_dataset_id == Output.dataset_id,
+                )
+                .where(*where_clauses)
+            )
+
+            query = query.union(direct_connection, via_symlinks_from_input, via_symlinks_from_output)
+
+        return query

@@ -335,8 +335,8 @@ class JobRepository(Repository[Job]):
         if not job_ids:
             return []
         stmt = select(
-            ancestors_by_job_cte.c.parent_job_id,
-            ancestors_by_job_cte.c.child_job_id,
+            ancestors_by_job_cte.c.parent_job_id.cast(Integer),
+            ancestors_by_job_cte.c.child_job_id.cast(Integer),
         )
         result = await self._session.execute(
             stmt,
@@ -344,12 +344,12 @@ class JobRepository(Repository[Job]):
                 "job_ids": list(job_ids),
             },
         )
-        return list(result.fetchall())
+        return list(result.all())
 
     async def list_descendant_relations(self, job_ids: Collection[int]):
         stmt = select(
-            descendants_by_job_cte.c.parent_job_id,
-            descendants_by_job_cte.c.child_job_id,
+            descendants_by_job_cte.c.parent_job_id.cast(Integer),
+            descendants_by_job_cte.c.child_job_id.cast(Integer),
         )
         result = await self._session.execute(
             stmt,
@@ -357,4 +357,4 @@ class JobRepository(Repository[Job]):
                 "job_ids": list(job_ids),
             },
         )
-        return list(result.fetchall())
+        return list(result.all())

@@ -38,6 +38,8 @@ Database structure
         * location_id: bigint <<FK>>
         * name: varchar(256)
         search_vector: tsvector
+        external_id: text null
+        external_url: text null
     }
 
     entity dataset_symlink {
