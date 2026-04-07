@@ -30,6 +30,8 @@ erDiagram
         bigint location_id  UK, FK
         varchar(256) name UK
         tsvector search_vector
+        external_id text
+        external_url text
     }
 
     dataset_symlink {

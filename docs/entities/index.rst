@@ -113,6 +113,8 @@ That's why the information about datasets is very limited:
 - ``location: Location`` - Location where data is actually stored in, like RDMBS instance or cluster.
 - ``name: str`` - qualified name of Dataset, like ``mydb.myschema.mytable`` or ``/app/warehouse/hive/managed/myschema.df/mytable``
 - ``schema: Schema | None`` - schema of dataset.
+- ``external_id: string | None`` - identifier of dataset in some third-party system.
+- ``external_url: string | None`` - URL of dataset in some third-party system.
 - ``tags: list[Tag]`` - tags of dataset.
 
 .. image:: dataset_list.png
