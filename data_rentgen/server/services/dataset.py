@@ -18,6 +18,8 @@ class DatasetData:
     id: int
     name: str
     location: Location
+    external_id: str | None
+    external_url: str | None
 
 
 @dataclass
@@ -66,6 +68,8 @@ class DatasetService:
                         id=dataset.id,
                         name=dataset.name,
                         location=dataset.location,
+                        external_id=dataset.external_id,
+                        external_url=dataset.external_url,
                     ),
                     tags=[
                         TagData(
