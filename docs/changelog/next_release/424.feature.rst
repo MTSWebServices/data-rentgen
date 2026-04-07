@@ -1,1 +1,0 @@
-Add support for OpenLineage integration for StarRocks (proprietary, part of MWS Data Engine).

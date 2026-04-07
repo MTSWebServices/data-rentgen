@@ -1,2 +1,0 @@
-Added indirect job hierarchy dependencies inferred from lineage IO relations, with optional ``since``/``until`` bounds and ``infer_from_lineage`` request flag for ``/v1/jobs/hierarchy``.
-
