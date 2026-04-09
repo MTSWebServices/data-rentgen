@@ -9,6 +9,7 @@ from data_rentgen.db.models import DatasetColumnRelationType, DatasetSymlinkType
 from data_rentgen.db.models.output import OutputType
 from data_rentgen.utils.uuid import generate_static_uuid
 from tests.test_server.fixtures.factories.lineage_builder import LineageBuilder
+from tests.test_server.fixtures.factories.relations import create_column_lineage, create_column_relation
 from tests.test_server.utils.delete import clean_db
 from tests.test_server.utils.lineage_result import LineageResult
 
@@ -78,7 +79,7 @@ async def simple_lineage(
 
             schema = await builder.create_schema(key=f"run_{n}_schema")
 
-            inputs = [
+            [
                 await builder.create_input(
                     key=f"run_{n}_input_{i}",
                     operation=operation,
@@ -98,7 +99,7 @@ async def simple_lineage(
                 for i, operation in enumerate(operations)
             ]
 
-            outputs = [
+            [
                 await builder.create_output(
                     key=f"run_{n}_output_{i}",
                     operation=operation,
@@ -119,8 +120,6 @@ async def simple_lineage(
                 )
                 for i, operation in enumerate(operations)
             ]
-
-            _ = inputs, outputs
 
         lineage = builder.build()
         lineage.jobs = [job]
@@ -195,7 +194,7 @@ async def three_days_lineage(
 
             schema = await builder.create_schema(key=f"three_days_run_{day}_schema")
 
-            _inputs = [
+            [
                 await builder.create_input(
                     key=f"three_days_run_{day}_input_{i}",
                     operation=operation,
@@ -215,7 +214,7 @@ async def three_days_lineage(
                 for i, operation in enumerate(operations)
             ]
 
-            _outputs = [
+            [
                 await builder.create_output(
                     key=f"three_days_run_{day}_output_{i}",
                     operation=operation,
@@ -236,7 +235,6 @@ async def three_days_lineage(
                 )
                 for i, operation in enumerate(operations)
             ]
-            _ = _inputs, _outputs
 
         lineage = builder.build()
         lineage.jobs = [job]
@@ -264,7 +262,6 @@ async def lineage_with_depth(
     num_jobs = 4
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_locations = [
@@ -277,8 +274,6 @@ async def lineage_with_depth(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         schema = await builder.create_schema(key="lineage_with_depth_schema")
 
         # Create a job, run and operation with IO datasets.
@@ -290,8 +285,6 @@ async def lineage_with_depth(
                 location=job_location,
                 job_type=job_type,
             )
-            lineage.jobs.append(job)
-
             run = await builder.create_run(
                 key=f"lineage_with_depth_run_{i}",
                 job=job,
@@ -301,8 +294,6 @@ async def lineage_with_depth(
                     "created_at": created_at + timedelta(seconds=i),
                 },
             )
-            lineage.runs.append(run)
-
             operation = await builder.create_operation(
                 key=f"lineage_with_depth_operation_{i}",
                 run=run,
@@ -311,9 +302,7 @@ async def lineage_with_depth(
                     "created_at": run.created_at + timedelta(seconds=0.2),
                 },
             )
-            lineage.operations.append(operation)
-
-            input_ = await builder.create_input(
+            await builder.create_input(
                 key=f"lineage_with_depth_input_{i}",
                 operation=operation,
                 run=run,
@@ -329,9 +318,8 @@ async def lineage_with_depth(
                     "schema_id": schema.id,
                 },
             )
-            lineage.inputs.append(input_)
 
-            output = await builder.create_output(
+            await builder.create_output(
                 key=f"lineage_with_depth_output_{i}",
                 operation=operation,
                 run=run,
@@ -349,7 +337,8 @@ async def lineage_with_depth(
                     "schema_id": schema.id,
                 },
             )
-            lineage.outputs.append(output)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -372,7 +361,6 @@ async def cyclic_lineage(
     num_jobs = 2
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_locations = [
@@ -385,8 +373,6 @@ async def cyclic_lineage(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         schema = await builder.create_schema(key="cyclic_lineage_schema")
 
         # Create a job, run and operation with IO datasets.
@@ -400,8 +386,6 @@ async def cyclic_lineage(
                 location=job_location,
                 job_type=job_type,
             )
-            lineage.jobs.append(job)
-
             run = await builder.create_run(
                 key=f"cyclic_lineage_run_{i}",
                 job=job,
@@ -411,8 +395,6 @@ async def cyclic_lineage(
                     "created_at": created_at + timedelta(seconds=i),
                 },
             )
-            lineage.runs.append(run)
-
             operation = await builder.create_operation(
                 key=f"cyclic_lineage_operation_{i}",
                 run=run,
@@ -421,9 +403,7 @@ async def cyclic_lineage(
                     "created_at": run.created_at + timedelta(seconds=0.2),
                 },
             )
-            lineage.operations.append(operation)
-
-            input = await builder.create_input(
+            await builder.create_input(
                 key=f"cyclic_lineage_input_{i}",
                 operation=operation,
                 run=run,
@@ -439,9 +419,8 @@ async def cyclic_lineage(
                     "schema_id": schema.id,
                 },
             )
-            lineage.inputs.append(input)
 
-            output = await builder.create_output(
+            await builder.create_output(
                 key=f"cyclic_lineage_output_{i}",
                 operation=operation,
                 run=run,
@@ -459,7 +438,8 @@ async def cyclic_lineage(
                     "schema_id": schema.id,
                 },
             )
-            lineage.outputs.append(output)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -479,12 +459,10 @@ async def self_referencing_lineage(
 
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_location = await builder.create_location(key="self_ref_dataset_location")
         dataset = await builder.create_dataset(key="self_ref_dataset", location=dataset_location)
-        lineage.datasets.append(dataset)
 
         schema = await builder.create_schema(key="self_ref_schema")
 
@@ -495,8 +473,6 @@ async def self_referencing_lineage(
             location=job_location,
             job_type=job_type,
         )
-        lineage.jobs.append(job)
-
         run = await builder.create_run(
             key="self_ref_run",
             job=job,
@@ -506,8 +482,6 @@ async def self_referencing_lineage(
                 "created_at": created_at + timedelta(seconds=5),
             },
         )
-        lineage.runs.append(run)
-
         operation = await builder.create_operation(
             key="self_ref_operation",
             run=run,
@@ -516,9 +490,7 @@ async def self_referencing_lineage(
                 "created_at": run.created_at + timedelta(seconds=1),
             },
         )
-        lineage.operations.append(operation)
-
-        input = await builder.create_input(
+        await builder.create_input(
             key="self_ref_input",
             operation=operation,
             run=run,
@@ -534,9 +506,8 @@ async def self_referencing_lineage(
                 "schema_id": schema.id,
             },
         )
-        lineage.inputs.append(input)
 
-        output = await builder.create_output(
+        await builder.create_output(
             key="self_ref_output",
             operation=operation,
             run=run,
@@ -554,7 +525,8 @@ async def self_referencing_lineage(
                 "schema_id": schema.id,
             },
         )
-        lineage.outputs.append(output)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -576,7 +548,6 @@ async def lineage_with_non_connected_operations(
     num_datasets = 2
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_locations = [
@@ -589,8 +560,6 @@ async def lineage_with_non_connected_operations(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         schema = await builder.create_schema(key="non_connected_schema")
 
         job_location = await builder.create_location(key="non_connected_job_location")
@@ -600,8 +569,6 @@ async def lineage_with_non_connected_operations(
             location=job_location,
             job_type=job_type,
         )
-        lineage.jobs.append(job)
-
         run = await builder.create_run(
             key="non_connected_run",
             job=job,
@@ -611,8 +578,6 @@ async def lineage_with_non_connected_operations(
                 "created_at": created_at + timedelta(seconds=10),
             },
         )
-        lineage.runs.append(run)
-
         operation1 = await builder.create_operation(
             key="non_connected_operation_1",
             run=run,
@@ -621,9 +586,7 @@ async def lineage_with_non_connected_operations(
                 "created_at": run.created_at + timedelta(seconds=1),
             },
         )
-        lineage.operations.append(operation1)
-
-        input1 = await builder.create_input(
+        await builder.create_input(
             key="non_connected_input_1",
             operation=operation1,
             run=run,
@@ -639,7 +602,6 @@ async def lineage_with_non_connected_operations(
                 "schema_id": schema.id,
             },
         )
-        lineage.inputs.append(input1)
 
         operation2 = await builder.create_operation(
             key="non_connected_operation_2",
@@ -649,9 +611,7 @@ async def lineage_with_non_connected_operations(
                 "created_at": run.created_at + timedelta(seconds=2),
             },
         )
-        lineage.operations.append(operation2)
-
-        output2 = await builder.create_output(
+        await builder.create_output(
             key="non_connected_output_2",
             operation=operation2,
             run=run,
@@ -669,7 +629,8 @@ async def lineage_with_non_connected_operations(
                 "schema_id": schema.id,
             },
         )
-        lineage.outputs.append(output2)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -700,7 +661,6 @@ async def duplicated_lineage(
     operations_per_run = 2
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_locations = [
@@ -713,8 +673,6 @@ async def duplicated_lineage(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         schema = await builder.create_schema(key="duplicated_lineage_schema")
 
         # Create a job, run and operation with IO datasets.
@@ -726,8 +684,6 @@ async def duplicated_lineage(
                 location=job_location,
                 job_type=job_type,
             )
-            lineage.jobs.append(job)
-
             runs = [
                 await builder.create_run(
                     key=f"duplicated_lineage_job_{i}_run_{run_idx}",
@@ -740,8 +696,6 @@ async def duplicated_lineage(
                 )
                 for run_idx in range(runs_per_job)
             ]
-            lineage.runs.extend(runs)
-
             operations = [
                 await builder.create_operation(
                     key=f"duplicated_lineage_job_{i}_run_{run_idx}_operation_{operation_idx}",
@@ -754,9 +708,7 @@ async def duplicated_lineage(
                 for run_idx, run in enumerate(runs)
                 for operation_idx in range(operations_per_run)
             ]
-            lineage.operations.extend(operations)
-
-            inputs = [
+            [
                 await builder.create_input(
                     key=f"duplicated_lineage_job_{i}_input_{op_idx}",
                     operation=operation,
@@ -775,9 +727,8 @@ async def duplicated_lineage(
                 )
                 for op_idx, operation in enumerate(operations)
             ]
-            lineage.inputs.extend(inputs)
 
-            outputs = [
+            [
                 await builder.create_output(
                     key=f"duplicated_lineage_job_{i}_output_{op_idx}",
                     operation=operation,
@@ -798,7 +749,8 @@ async def duplicated_lineage(
                 )
                 for op_idx, operation in enumerate(operations)
             ]
-            lineage.outputs.extend(outputs)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -832,7 +784,6 @@ async def branchy_lineage(
     num_jobs = 3
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_locations = [
@@ -846,8 +797,6 @@ async def branchy_lineage(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         job_locations = [await builder.create_location(key=f"branchy_job_location_{i}") for i in range(num_jobs)]
         job_type = await builder.create_job_type(key="branchy_job_type")
         jobs = [
@@ -859,8 +808,6 @@ async def branchy_lineage(
             )
             for i, job_location in enumerate(job_locations)
         ]
-        lineage.jobs.extend(jobs)
-
         runs = [
             await builder.create_run(
                 key=f"branchy_run_{i}",
@@ -874,8 +821,6 @@ async def branchy_lineage(
             )
             for i, job in enumerate(jobs)
         ]
-        lineage.runs.extend(runs)
-
         operations = [
             await builder.create_operation(
                 key=f"branchy_operation_{i}",
@@ -888,11 +833,9 @@ async def branchy_lineage(
             )
             for i, run in enumerate(runs)
         ]
-        lineage.operations.extend(operations)
-
         schema = await builder.create_schema(key="branchy_schema")
 
-        inputs = [
+        [
             await builder.create_input(
                 key=f"branchy_input_{i}_0",
                 operation=operation,
@@ -929,9 +872,8 @@ async def branchy_lineage(
             )
             for i, (operation, run, job) in enumerate(zip(operations, runs, jobs, strict=False))
         ]
-        lineage.inputs.extend(inputs)
 
-        outputs = [
+        [
             await builder.create_output(
                 key=f"branchy_output_{i}_0",
                 operation=operation,
@@ -972,7 +914,8 @@ async def branchy_lineage(
             )
             for i, (operation, run, job) in enumerate(zip(operations, runs, jobs, strict=False))
         ]
-        lineage.outputs.extend(outputs)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -994,7 +937,6 @@ async def lineage_with_symlinks(
     TODO: This fixture creates a different structure. (D1 -> O1 -> D1S). It must be fixed.
     """
 
-    lineage = LineageResult()
     created_at = datetime.now(tz=UTC)
     num_datasets = 4
     num_jobs = 3
@@ -1015,8 +957,6 @@ async def lineage_with_symlinks(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         symlink_locations = [
             await builder.create_location(
                 key=f"lineage_with_symlinks_symlink_location_{i}",
@@ -1031,29 +971,21 @@ async def lineage_with_symlinks(
             )
             for i, location in enumerate(symlink_locations)
         ]
-        lineage.datasets.extend(symlink_datasets)
-
         # Make symlinks
         for i, (dataset, symlink_dataset) in enumerate(zip(datasets, symlink_datasets, strict=False)):
-            metastore = [
-                await builder.create_dataset_symlink(
-                    key=f"lineage_with_symlinks_metastore_{i}",
-                    from_dataset=dataset,
-                    to_dataset=symlink_dataset,
-                    type=DatasetSymlinkType.METASTORE,
-                ),
-            ]
-            lineage.dataset_symlinks.extend(metastore)
+            await builder.create_dataset_symlink(
+                key=f"lineage_with_symlinks_metastore_{i}",
+                from_dataset=dataset,
+                to_dataset=symlink_dataset,
+                type=DatasetSymlinkType.METASTORE,
+            )
 
-            warehouse = [
-                await builder.create_dataset_symlink(
-                    key=f"lineage_with_symlinks_warehouse_{i}",
-                    from_dataset=symlink_dataset,
-                    to_dataset=dataset,
-                    type=DatasetSymlinkType.WAREHOUSE,
-                ),
-            ]
-            lineage.dataset_symlinks.extend(warehouse)
+            await builder.create_dataset_symlink(
+                key=f"lineage_with_symlinks_warehouse_{i}",
+                from_dataset=symlink_dataset,
+                to_dataset=dataset,
+                type=DatasetSymlinkType.WAREHOUSE,
+            )
 
         schema = await builder.create_schema(key="lineage_with_symlinks_schema")
 
@@ -1066,8 +998,6 @@ async def lineage_with_symlinks(
                 location=job_location,
                 job_type=job_type,
             )
-            lineage.jobs.append(job)
-
             run = await builder.create_run(
                 key=f"lineage_with_symlinks_run_{i}",
                 job=job,
@@ -1077,8 +1007,6 @@ async def lineage_with_symlinks(
                     "created_at": created_at + timedelta(seconds=i),
                 },
             )
-            lineage.runs.append(run)
-
             operation = await builder.create_operation(
                 key=f"lineage_with_symlinks_operation_{i}",
                 run=run,
@@ -1087,9 +1015,7 @@ async def lineage_with_symlinks(
                     "run_id": run.id,
                 },
             )
-            lineage.operations.append(operation)
-
-            input = await builder.create_input(
+            await builder.create_input(
                 key=f"lineage_with_symlinks_input_{i}",
                 operation=operation,
                 run=run,
@@ -1105,8 +1031,7 @@ async def lineage_with_symlinks(
                     "schema_id": schema.id,
                 },
             )
-            lineage.inputs.append(input)
-            output = await builder.create_output(
+            await builder.create_output(
                 key=f"lineage_with_symlinks_output_{i}",
                 operation=operation,
                 run=run,
@@ -1124,7 +1049,8 @@ async def lineage_with_symlinks(
                     "schema_id": schema.id,
                 },
             )
-            lineage.outputs.append(output)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -1144,7 +1070,6 @@ async def lineage_with_symlinks_dataset_granularity(
     J3 -> R3 -> O3, D3 -> O2 -> D4S
     """
 
-    lineage = LineageResult()
     created_at = datetime.now(tz=UTC)
     num_datasets = 4
     num_jobs = 3
@@ -1165,8 +1090,6 @@ async def lineage_with_symlinks_dataset_granularity(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
-
         symlink_locations = [
             await builder.create_location(
                 key=f"lineage_with_symlinks_granularity_symlink_location_{i}",
@@ -1181,29 +1104,21 @@ async def lineage_with_symlinks_dataset_granularity(
             )
             for i, location in enumerate(symlink_locations)
         ]
-        lineage.datasets.extend(symlink_datasets)
-
         # Make symlinks
         for i, (dataset, symlink_dataset) in enumerate(zip(datasets, symlink_datasets, strict=False)):
-            metastore = [
-                await builder.create_dataset_symlink(
-                    key=f"lineage_with_symlinks_granularity_metastore_{i}",
-                    from_dataset=dataset,
-                    to_dataset=symlink_dataset,
-                    type=DatasetSymlinkType.METASTORE,
-                ),
-            ]
-            lineage.dataset_symlinks.extend(metastore)
+            await builder.create_dataset_symlink(
+                key=f"lineage_with_symlinks_granularity_metastore_{i}",
+                from_dataset=dataset,
+                to_dataset=symlink_dataset,
+                type=DatasetSymlinkType.METASTORE,
+            )
 
-            warehouse = [
-                await builder.create_dataset_symlink(
-                    key=f"lineage_with_symlinks_granularity_warehouse_{i}",
-                    from_dataset=symlink_dataset,
-                    to_dataset=dataset,
-                    type=DatasetSymlinkType.WAREHOUSE,
-                ),
-            ]
-            lineage.dataset_symlinks.extend(warehouse)
+            await builder.create_dataset_symlink(
+                key=f"lineage_with_symlinks_granularity_warehouse_{i}",
+                from_dataset=symlink_dataset,
+                to_dataset=dataset,
+                type=DatasetSymlinkType.WAREHOUSE,
+            )
 
         schema = await builder.create_schema(key="lineage_with_symlinks_granularity_schema")
 
@@ -1216,8 +1131,6 @@ async def lineage_with_symlinks_dataset_granularity(
                 location=job_location,
                 job_type=job_type,
             )
-            lineage.jobs.append(job)
-
             run = await builder.create_run(
                 key=f"lineage_with_symlinks_granularity_run_{i}",
                 job=job,
@@ -1227,8 +1140,6 @@ async def lineage_with_symlinks_dataset_granularity(
                     "created_at": created_at + timedelta(seconds=i),
                 },
             )
-            lineage.runs.append(run)
-
             operation = await builder.create_operation(
                 key=f"lineage_with_symlinks_granularity_operation_{i}",
                 run=run,
@@ -1237,9 +1148,7 @@ async def lineage_with_symlinks_dataset_granularity(
                     "run_id": run.id,
                 },
             )
-            lineage.operations.append(operation)
-
-            input = await builder.create_input(
+            await builder.create_input(
                 key=f"lineage_with_symlinks_granularity_input_{i}",
                 operation=operation,
                 run=run,
@@ -1255,8 +1164,7 @@ async def lineage_with_symlinks_dataset_granularity(
                     "schema_id": schema.id,
                 },
             )
-            lineage.inputs.append(input)
-            output = await builder.create_output(
+            await builder.create_output(
                 key=f"lineage_with_symlinks_granularity_output_{i}",
                 operation=operation,
                 run=run,
@@ -1274,7 +1182,8 @@ async def lineage_with_symlinks_dataset_granularity(
                     "schema_id": schema.id,
                 },
             )
-            lineage.outputs.append(output)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -1303,27 +1212,24 @@ async def lineage_with_unconnected_symlinks(
                 key=f"unconnected_symlink_dataset_{i}",
                 location=another_location,
             )
-            lineage.datasets.append(another_dataset)
 
-            metastore = [
-                await builder.create_dataset_symlink(
-                    key=f"unconnected_symlink_metastore_{i}",
-                    from_dataset=another_dataset,
-                    to_dataset=dataset,
-                    type=DatasetSymlinkType.METASTORE,
-                ),
-            ]
-            lineage.dataset_symlinks.extend(metastore)
+            await builder.create_dataset_symlink(
+                key=f"unconnected_symlink_metastore_{i}",
+                from_dataset=another_dataset,
+                to_dataset=dataset,
+                type=DatasetSymlinkType.METASTORE,
+            )
 
-            warehouse = [
-                await builder.create_dataset_symlink(
-                    key=f"unconnected_symlink_warehouse_{i}",
-                    from_dataset=dataset,
-                    to_dataset=another_dataset,
-                    type=DatasetSymlinkType.WAREHOUSE,
-                ),
-            ]
-            lineage.dataset_symlinks.extend(warehouse)
+            await builder.create_dataset_symlink(
+                key=f"unconnected_symlink_warehouse_{i}",
+                from_dataset=dataset,
+                to_dataset=another_dataset,
+                type=DatasetSymlinkType.WAREHOUSE,
+            )
+
+        lineage_build = builder.build()
+        lineage.datasets.extend(lineage_build.datasets)
+        lineage.dataset_symlinks.extend(lineage_build.dataset_symlinks)
 
     yield lineage
 
@@ -1361,12 +1267,11 @@ async def duplicated_lineage_with_column_lineage(
 
     lineage = duplicated_lineage
     async with async_session_maker() as async_session:
-        builder = LineageBuilder(async_session)
-        for i, (operation, run, direct_type, indirect_type) in enumerate(operation_relations_matrix):
+        for operation, run, direct_type, indirect_type in operation_relations_matrix:
             fingerprint = generate_static_uuid(direct_type.name + indirect_type.name)
             # Direct
-            await builder.create_column_relation(
-                key=f"duplicated_column_lineage_direct_{i}",
+            await create_column_relation(
+                async_session,
                 fingerprint=fingerprint,
                 column_relation_kwargs={
                     "type": direct_type.value,
@@ -1375,8 +1280,8 @@ async def duplicated_lineage_with_column_lineage(
                 },
             )
             # Indirect
-            await builder.create_column_relation(
-                key=f"duplicated_column_lineage_indirect_{i}",
+            await create_column_relation(
+                async_session,
                 fingerprint=fingerprint,
                 column_relation_kwargs={
                     "type": indirect_type.value,
@@ -1384,16 +1289,16 @@ async def duplicated_lineage_with_column_lineage(
                     "target_column": None,
                 },
             )
-            await builder.create_column_lineage(
-                key=f"duplicated_column_lineage_{i}",
-                operation=lineage.operations[operation],
-                run=lineage.runs[run],
-                job=lineage.jobs[0],
-                source_dataset=lineage.datasets[0],
-                target_dataset=lineage.datasets[1],
-                fingerprint=fingerprint,
+            await create_column_lineage(
+                async_session,
                 column_lineage_kwargs={
                     "created_at": lineage.operations[operation].created_at,
+                    "operation": lineage.operations[operation],
+                    "run": lineage.runs[run],
+                    "job": lineage.jobs[0],
+                    "source_dataset": lineage.datasets[0],
+                    "target_dataset": lineage.datasets[1],
+                    "fingerprint": fingerprint,
                 },
             )
 
@@ -1420,11 +1325,10 @@ async def lineage_with_depth_and_with_column_lineage(
 
     lineage = lineage_with_depth
     async with async_session_maker() as async_session:
-        builder = LineageBuilder(async_session)
         for i in range(len(lineage.jobs)):
             # Direct
-            await builder.create_column_relation(
-                key=f"lineage_with_depth_direct_{i}",
+            await create_column_relation(
+                async_session,
                 fingerprint=generate_static_uuid(f"job_{i}"),
                 column_relation_kwargs={
                     "type": DatasetColumnRelationType.AGGREGATION.value,
@@ -1433,8 +1337,8 @@ async def lineage_with_depth_and_with_column_lineage(
                 },
             )
             # Indirect
-            await builder.create_column_relation(
-                key=f"lineage_with_depth_indirect_{i}",
+            await create_column_relation(
+                async_session,
                 fingerprint=generate_static_uuid(f"job_{i}"),
                 column_relation_kwargs={
                     "type": DatasetColumnRelationType.JOIN.value,
@@ -1443,16 +1347,16 @@ async def lineage_with_depth_and_with_column_lineage(
                 },
             )
 
-            await builder.create_column_lineage(
-                key=f"lineage_with_depth_column_lineage_{i}",
-                operation=lineage.operations[i],
-                run=lineage.runs[i],
-                job=lineage.jobs[i],
-                source_dataset=lineage.datasets[i],
-                target_dataset=lineage.datasets[i + 1],
-                fingerprint=generate_static_uuid(f"job_{i}"),
+            await create_column_lineage(
+                async_session,
                 column_lineage_kwargs={
                     "created_at": lineage.operations[i].created_at,
+                    "operation": lineage.operations[i],
+                    "run": lineage.runs[i],
+                    "job": lineage.jobs[i],
+                    "source_dataset": lineage.datasets[i],
+                    "target_dataset": lineage.datasets[i + 1],
+                    "fingerprint": generate_static_uuid(f"job_{i}"),
                 },
             )
 
@@ -1478,12 +1382,10 @@ async def lineage_with_different_dataset_interactions(
     operations_per_run = 3
     created_at = datetime.now(tz=UTC)
 
-    lineage = LineageResult()
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_location = await builder.create_location(key="different_dataset_interactions_dataset_location")
         dataset = await builder.create_dataset(key="different_dataset_interactions_dataset", location=dataset_location)
-        lineage.datasets.append(dataset)
 
         schema = await builder.create_schema(key="different_dataset_interactions_schema")
 
@@ -1495,7 +1397,6 @@ async def lineage_with_different_dataset_interactions(
             location=job_location,
             job_type=job_type,
         )
-        lineage.jobs.append(job)
 
         run = await builder.create_run(
             key="different_dataset_interactions_run",
@@ -1506,7 +1407,6 @@ async def lineage_with_different_dataset_interactions(
                 "created_at": created_at + timedelta(seconds=1),
             },
         )
-        lineage.runs.append(run)
 
         operations = [
             await builder.create_operation(
@@ -1519,9 +1419,8 @@ async def lineage_with_different_dataset_interactions(
             )
             for i in range(operations_per_run)
         ]
-        lineage.operations.extend(operations)
 
-        outputs = [
+        [
             await builder.create_output(
                 key=f"different_dataset_interactions_output_{i}",
                 operation=operation,
@@ -1548,7 +1447,8 @@ async def lineage_with_different_dataset_interactions(
                 )
             )
         ]
-        lineage.outputs.extend(outputs)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -1569,7 +1469,6 @@ async def lineage_for_long_running_operations(
     J3 -> R3 -> O3, D3 -> O2 -> D4
     """
 
-    lineage = LineageResult()
     created_at = datetime.now(tz=UTC)
     num_datasets = 4
     num_jobs = 3
@@ -1591,7 +1490,6 @@ async def lineage_for_long_running_operations(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        lineage.datasets.extend(datasets)
 
         schema = await builder.create_schema(key="long_running_schema")
 
@@ -1604,7 +1502,6 @@ async def lineage_for_long_running_operations(
                 location=job_location,
                 job_type=job_type,
             )
-            lineage.jobs.append(job)
 
             run = await builder.create_run(
                 key=f"long_running_run_{i}",
@@ -1615,7 +1512,6 @@ async def lineage_for_long_running_operations(
                     "created_at": created_at + timedelta(seconds=i),
                 },
             )
-            lineage.runs.append(run)
 
             operation = await builder.create_operation(
                 key=f"long_running_operation_{i}",
@@ -1625,10 +1521,9 @@ async def lineage_for_long_running_operations(
                     "run_id": run.id,
                 },
             )
-            lineage.operations.append(operation)
 
             for io in range(num_io):
-                input_ = await builder.create_input(
+                await builder.create_input(
                     key=f"long_running_input_{i}_{io}",
                     operation=operation,
                     run=run,
@@ -1647,9 +1542,8 @@ async def lineage_for_long_running_operations(
                         "num_bytes": io,
                     },
                 )
-                lineage.inputs.append(input_)
 
-                output = await builder.create_output(
+                await builder.create_output(
                     key=f"long_running_output_{i}_{io}",
                     operation=operation,
                     run=run,
@@ -1670,7 +1564,8 @@ async def lineage_for_long_running_operations(
                         "num_bytes": io,
                     },
                 )
-                lineage.outputs.append(output)
+
+        lineage = builder.build()
 
     yield lineage
 
@@ -1740,7 +1635,6 @@ async def lineage_with_parent_run_relations(
     Lineage with chain of runs: Airflow Task -> Airflow Job -> Spark Job
     R0 -> R1 -> R2
     """
-    lineage = LineageResult()
     created_at = datetime.now(tz=UTC)
 
     async with async_session_maker() as async_session:
@@ -1753,7 +1647,6 @@ async def lineage_with_parent_run_relations(
             key="parent_run_relations_dataset",
             location=dataset_location,
         )
-        lineage.datasets.extend([dataset])
 
         spark_location = await builder.create_location(key="parent_run_relations_spark_location")
         airflow_location = await builder.create_location(key="parent_run_relations_airflow_location")
@@ -1789,7 +1682,6 @@ async def lineage_with_parent_run_relations(
             job_type=spark_application_job_type,
             job_kwargs={"name": "spark_application_name", "parent_job_id": airflow_task.id},
         )
-        lineage.jobs = [airflow_dag, airflow_task, spark_application]
 
         airflow_dag_run = await builder.create_run(
             key="parent_run_relations_airflow_dag_run",
@@ -1817,7 +1709,7 @@ async def lineage_with_parent_run_relations(
                 "ended_at": created_at + timedelta(seconds=240),
             },
         )
-        spark_app_run1 = await builder.create_run(
+        await builder.create_run(
             key="parent_run_relations_spark_run_1",
             job=spark_application,
             run_kwargs={
@@ -1843,7 +1735,6 @@ async def lineage_with_parent_run_relations(
                 "ended_at": created_at + timedelta(seconds=120),
             },
         )
-        lineage.runs = [airflow_dag_run, airflow_task_run, spark_app_run1, spark_app_run2]
 
         operation = await builder.create_operation(
             key="parent_run_relations_operation",
@@ -1853,9 +1744,8 @@ async def lineage_with_parent_run_relations(
                 "run_id": spark_app_run2.id,
             },
         )
-        lineage.operations.append(operation)
 
-        input_ = await builder.create_input(
+        await builder.create_input(
             key="parent_run_relations_input",
             operation=operation,
             run=spark_app_run2,
@@ -1869,7 +1759,8 @@ async def lineage_with_parent_run_relations(
                 "dataset_id": dataset.id,
             },
         )
-        lineage.inputs.append(input_)
+
+        lineage = builder.build()
 
     yield lineage
 
