@@ -31,7 +31,7 @@ classifiers = [
 keywords = ["Lineage", "FastAPI", "REST", "FastStream"]
 requires-python = ">=3.12"
 dependencies = [
-  "pydantic~=2.12.5",
+  "pydantic>=2.12.5,<2.14.0",
   "pydantic-settings~=2.13.1",
   "typing-extensions~=4.15.0",
   "alembic~=1.18.3",
@@ -65,7 +65,7 @@ exclude = ["docs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  "fastapi~=0.135.2",
+  "fastapi>=0.135.2,<0.137.0",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
   "uvicorn>=0.42,<0.45",
@@ -81,7 +81,7 @@ consumer = [
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  "fastapi~=0.135.2",
+  "fastapi>=0.135.2,<0.137.0",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
   "uvicorn>=0.42,<0.45",
