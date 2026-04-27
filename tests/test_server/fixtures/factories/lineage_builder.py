@@ -80,9 +80,6 @@ class LineageBuilder:
         self.column_lineage: dict[str, ColumnLineage] = {}
         self.column_relations: dict[str, DatasetColumnRelation] = {}
 
-        # Optional reverse index useful for debugging and ad-hoc assertions.
-        self.by_id: dict[str, object] = {}
-
     async def create_location(
         self,
         key: str,
@@ -98,7 +95,6 @@ class LineageBuilder:
             address_kwargs=address_kwargs,
         )
         self.locations[key] = location
-        self.by_id[str(location.id)] = location
         return location
 
     async def create_address(
@@ -117,7 +113,6 @@ class LineageBuilder:
             address_kwargs=payload,
         )
         self.addresses[key] = address
-        self.by_id[str(address.id)] = address
         return address
 
     async def create_schema(
@@ -134,7 +129,6 @@ class LineageBuilder:
             schema_kwargs=payload,
         )
         self.schemas[key] = schema
-        self.by_id[str(schema.id)] = schema
         return schema
 
     async def create_tag(
@@ -151,7 +145,6 @@ class LineageBuilder:
             tag_kwargs=payload,
         )
         self.tags[key] = tag
-        self.by_id[str(tag.id)] = tag
         return tag
 
     async def create_tag_value(
@@ -170,7 +163,6 @@ class LineageBuilder:
             tag_value_kwargs=payload,
         )
         self.tag_values[key] = tag_value
-        self.by_id[str(tag_value.id)] = tag_value
         return tag_value
 
     async def create_dataset(
@@ -191,7 +183,6 @@ class LineageBuilder:
             tag_values=tag_values,
         )
         self.datasets[key] = dataset
-        self.by_id[str(dataset.id)] = dataset
         return dataset
 
     async def create_dataset_symlink(
@@ -211,7 +202,6 @@ class LineageBuilder:
             type=type,
         )
         self.dataset_symlinks[key] = symlink
-        self.by_id[str(symlink.id)] = symlink
         return symlink
 
     async def create_job_type(
@@ -228,17 +218,23 @@ class LineageBuilder:
             job_type_kwargs=payload,
         )
         self.job_types[key] = job_type
-        self.by_id[str(job_type.id)] = job_type
         return job_type
 
     async def create_job(
         self,
         key: str,
-        location: Location,
+        location_key: str,
         job_type: JobType,
         job_kwargs: dict | None = None,
         tag_values: set[TagValue] | None = None,
+        location_kwargs: dict | None = None,
+        address_kwargs: dict | None = None,
     ) -> Job:
+        location = await self.create_location(
+            key=location_key,
+            location_kwargs=location_kwargs,
+            address_kwargs=address_kwargs,
+        )
         if key in self.jobs:
             return self.jobs[key]
 
@@ -251,7 +247,6 @@ class LineageBuilder:
             tag_values=tag_values,
         )
         self.jobs[key] = job
-        self.by_id[str(job.id)] = job
         return job
 
     async def create_job_dependency(
@@ -274,8 +269,6 @@ class LineageBuilder:
         await self.async_session.refresh(dependency)
 
         self.job_dependencies[key] = dependency
-        # JobDependency doesn't expose a stable single-column id in this model.
-        self.by_id[key] = dependency
         return dependency
 
     async def create_user(
@@ -292,7 +285,6 @@ class LineageBuilder:
             user_kwargs=payload,
         )
         self.users[key] = user
-        self.by_id[str(user.id)] = user
         return user
 
     async def create_run(
@@ -311,7 +303,6 @@ class LineageBuilder:
             run_kwargs=payload,
         )
         self.runs[key] = run
-        self.by_id[str(run.id)] = run
         return run
 
     async def create_sql_query(
@@ -328,7 +319,6 @@ class LineageBuilder:
             sql_query_kwargs=payload,
         )
         self.sql_queries[key] = sql_query
-        self.by_id[str(sql_query.id)] = sql_query
         return sql_query
 
     async def create_operation(
@@ -351,7 +341,6 @@ class LineageBuilder:
             operation_kwargs=payload,
         )
         self.operations[key] = operation
-        self.by_id[str(operation.id)] = operation
         return operation
 
     async def create_input(
@@ -382,7 +371,6 @@ class LineageBuilder:
             input_kwargs=payload,
         )
         self.inputs[key] = input_row
-        self.by_id[str(input_row.id)] = input_row
         return input_row
 
     async def create_output(
@@ -417,7 +405,6 @@ class LineageBuilder:
             output_kwargs=payload,
         )
         self.outputs[key] = output
-        self.by_id[str(output.id)] = output
         return output
 
     async def create_column_lineage(
@@ -452,7 +439,6 @@ class LineageBuilder:
             column_lineage_kwargs=payload,
         )
         self.column_lineage[key] = column_lineage
-        self.by_id[str(column_lineage.id)] = column_lineage
         return column_lineage
 
     async def create_column_relation(
@@ -471,7 +457,6 @@ class LineageBuilder:
             column_relation_kwargs=payload,
         )
         self.column_relations[key] = column_relation
-        self.by_id[str(column_relation.id)] = column_relation
         return column_relation
 
     async def create_personal_token(
@@ -490,7 +475,6 @@ class LineageBuilder:
             token_kwargs=payload,
         )
         self.personal_tokens[key] = token
-        self.by_id[str(token.id)] = token
         return token
 
     def register_direct_column_relation(

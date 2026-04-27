@@ -33,11 +33,10 @@ async def simple_lineage(
 
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
-        job_location = await builder.create_location(key="simple_lineage_job_location")
         job_type = await builder.create_job_type(key="simple_lineage_job_type")
         job = await builder.create_job(
             key="simple_lineage_job",
-            location=job_location,
+            location_key="simple_lineage_job_location",
             job_type=job_type,
         )
         created_at = datetime.now(tz=UTC)
@@ -150,11 +149,10 @@ async def three_days_lineage(
 
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
-        job_location = await builder.create_location(key="three_days_lineage_job_location")
         job_type = await builder.create_job_type(key="three_days_lineage_job_type")
         job = await builder.create_job(
             key="three_days_lineage_job",
-            location=job_location,
+            location_key="three_days_lineage_job_location",
             job_type=job_type,
         )
 
@@ -278,11 +276,10 @@ async def lineage_with_depth(
 
         # Create a job, run and operation with IO datasets.
         for i in range(num_jobs):
-            job_location = await builder.create_location(key=f"lineage_with_depth_job_location_{i}")
             job_type = await builder.create_job_type(key=f"lineage_with_depth_job_type_{i}")
             job = await builder.create_job(
                 key=f"lineage_with_depth_job_{i}",
-                location=job_location,
+                location_key=f"lineage_with_depth_job_location_{i}",
                 job_type=job_type,
             )
             run = await builder.create_run(
@@ -379,11 +376,10 @@ async def cyclic_lineage(
         for i in range(num_jobs):
             from_dataset, to_dataset = (datasets[0], datasets[1]) if i == 0 else (datasets[1], datasets[0])
 
-            job_location = await builder.create_location(key=f"cyclic_lineage_job_location_{i}")
             job_type = await builder.create_job_type(key=f"cyclic_lineage_job_type_{i}")
             job = await builder.create_job(
                 key=f"cyclic_lineage_job_{i}",
-                location=job_location,
+                location_key=f"cyclic_lineage_job_location_{i}",
                 job_type=job_type,
             )
             run = await builder.create_run(
@@ -466,11 +462,10 @@ async def self_referencing_lineage(
 
         schema = await builder.create_schema(key="self_ref_schema")
 
-        job_location = await builder.create_location(key="self_ref_job_location")
         job_type = await builder.create_job_type(key="self_ref_job_type")
         job = await builder.create_job(
             key="self_ref_job",
-            location=job_location,
+            location_key="self_ref_job_location",
             job_type=job_type,
         )
         run = await builder.create_run(
@@ -562,11 +557,10 @@ async def lineage_with_non_connected_operations(
         ]
         schema = await builder.create_schema(key="non_connected_schema")
 
-        job_location = await builder.create_location(key="non_connected_job_location")
         job_type = await builder.create_job_type(key="non_connected_job_type")
         job = await builder.create_job(
             key="non_connected_job",
-            location=job_location,
+            location_key="non_connected_job_location",
             job_type=job_type,
         )
         run = await builder.create_run(
@@ -677,11 +671,10 @@ async def duplicated_lineage(
 
         # Create a job, run and operation with IO datasets.
         for i in range(num_jobs):
-            job_location = await builder.create_location(key=f"duplicated_lineage_job_location_{i}")
             job_type = await builder.create_job_type(key=f"duplicated_lineage_job_type_{i}")
             job = await builder.create_job(
                 key=f"duplicated_lineage_job_{i}",
-                location=job_location,
+                location_key=f"duplicated_lineage_job_location_{i}",
                 job_type=job_type,
             )
             runs = [
@@ -797,16 +790,15 @@ async def branchy_lineage(
             )
             for i, location in enumerate(dataset_locations)
         ]
-        job_locations = [await builder.create_location(key=f"branchy_job_location_{i}") for i in range(num_jobs)]
         job_type = await builder.create_job_type(key="branchy_job_type")
         jobs = [
             await builder.create_job(
                 key=f"branchy_job_{i}",
-                location=job_location,
+                location_key=f"branchy_job_location_{i}",
                 job_type=job_type,
                 job_kwargs={"name": f"job_{i}"},
             )
-            for i, job_location in enumerate(job_locations)
+            for i in range(num_jobs)
         ]
         runs = [
             await builder.create_run(
@@ -991,11 +983,10 @@ async def lineage_with_symlinks(
 
         # Make graphs
         for i in range(num_jobs):
-            job_location = await builder.create_location(key=f"lineage_with_symlinks_job_location_{i}")
             job_type = await builder.create_job_type(key=f"lineage_with_symlinks_job_type_{i}")
             job = await builder.create_job(
                 key=f"lineage_with_symlinks_job_{i}",
-                location=job_location,
+                location_key=f"lineage_with_symlinks_job_location_{i}",
                 job_type=job_type,
             )
             run = await builder.create_run(
@@ -1124,11 +1115,10 @@ async def lineage_with_symlinks_dataset_granularity(
 
         # Make graphs
         for i in range(num_jobs):
-            job_location = await builder.create_location(key=f"lineage_with_symlinks_granularity_job_location_{i}")
             job_type = await builder.create_job_type(key=f"lineage_with_symlinks_granularity_job_type_{i}")
             job = await builder.create_job(
                 key=f"lineage_with_symlinks_granularity_job_{i}",
-                location=job_location,
+                location_key=f"lineage_with_symlinks_granularity_job_location_{i}",
                 job_type=job_type,
             )
             run = await builder.create_run(
@@ -1390,11 +1380,10 @@ async def lineage_with_different_dataset_interactions(
         schema = await builder.create_schema(key="different_dataset_interactions_schema")
 
         # Create a job, run and operation with IO datasets.
-        job_location = await builder.create_location(key="different_dataset_interactions_job_location")
         job_type = await builder.create_job_type(key="different_dataset_interactions_job_type")
         job = await builder.create_job(
             key="different_dataset_interactions_job",
-            location=job_location,
+            location_key="different_dataset_interactions_job_location",
             job_type=job_type,
         )
 
@@ -1495,11 +1484,10 @@ async def lineage_for_long_running_operations(
 
         # Make graphs
         for i in range(num_jobs):
-            job_location = await builder.create_location(key=f"long_running_job_location_{i}")
             job_type = await builder.create_job_type(key=f"long_running_job_type_{i}")
             job = await builder.create_job(
                 key=f"long_running_job_{i}",
-                location=job_location,
+                location_key=f"long_running_job_location_{i}",
                 job_type=job_type,
             )
 
@@ -1648,9 +1636,6 @@ async def lineage_with_parent_run_relations(
             location=dataset_location,
         )
 
-        spark_location = await builder.create_location(key="parent_run_relations_spark_location")
-        airflow_location = await builder.create_location(key="parent_run_relations_airflow_location")
-
         spark_application_job_type = await builder.create_job_type(
             key="parent_run_relations_spark_job_type",
             job_type_kwargs={"type": "SPARK_APPLICATION"},
@@ -1666,19 +1651,19 @@ async def lineage_with_parent_run_relations(
 
         airflow_dag = await builder.create_job(
             key="parent_run_relations_airflow_dag",
-            location=airflow_location,
+            location_key="parent_run_relations_airflow_location",
             job_type=airflow_dag_job_type,
             job_kwargs={"name": "airflow_dag_name"},
         )
         airflow_task = await builder.create_job(
             key="parent_run_relations_airflow_task",
-            location=airflow_location,
+            location_key="parent_run_relations_airflow_location",
             job_type=airflow_task_job_type,
             job_kwargs={"name": "airflow_task_name", "parent_job_id": airflow_dag.id},
         )
         spark_application = await builder.create_job(
             key="parent_run_relations_spark_application",
-            location=spark_location,
+            location_key="parent_run_relations_spark_location",
             job_type=spark_application_job_type,
             job_kwargs={"name": "spark_application_name", "parent_job_id": airflow_task.id},
         )
