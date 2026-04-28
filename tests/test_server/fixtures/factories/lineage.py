@@ -121,7 +121,6 @@ async def simple_lineage(
             ]
 
         lineage = builder.build()
-        lineage.jobs = [job]
 
     yield lineage
 
@@ -235,7 +234,6 @@ async def three_days_lineage(
             ]
 
         lineage = builder.build()
-        lineage.jobs = [job]
 
     yield lineage
 
