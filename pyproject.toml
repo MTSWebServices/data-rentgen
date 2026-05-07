@@ -44,7 +44,7 @@ dependencies = [
   "uuid6~=2025.0.0",
   "python-dateutil~=2.9.0.post0",
   "packaging~=26.0",
-  "cachetools~=7.0.5",
+  "cachetools>=7.0.5,<7.2.0",
 ]
 dynamic = ["version"]
 
@@ -118,12 +118,12 @@ test = [
 dev = [
   "prek~=0.3.0",
   "ruff~=0.15.2",
-  "mypy>=1.19,<1.21",
+  "mypy>=1.19,<2.1",
   "sqlalchemy[mypy]~=2.0.44",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
   "types-jwcrypto~=1.5.0",
-  "types-cachetools~=6.2.0",
+  "types-cachetools>=6.2,<7.1",
 ]
 docs = [
   "setuptools-git-versioning~=3.0.1",
