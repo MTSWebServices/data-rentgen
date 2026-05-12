@@ -40,7 +40,7 @@ class JobDependency(Base):
         foreign_keys=[to_job_id],
     )
 
-    type: Mapped[str] = mapped_column(
+    type: Mapped[str | None] = mapped_column(
         String,
         nullable=True,
         doc="Dependency type",
