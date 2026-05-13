@@ -1,0 +1,1 @@
+Fix ``data_rentgen.db.scripts.cleanup_partitions`` script ignored detached partitions while dropping old partitions.

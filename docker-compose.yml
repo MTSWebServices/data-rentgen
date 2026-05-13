@@ -47,7 +47,7 @@ services:
   db-cleanup-partitions:
     image: mtsrus/data-rentgen:${VERSION:-latest}
     command: |
-      python -m data_rentgen.db.scripts.cleanup_partitions truncate --keep-after $(date --date='-1year' '+%Y-%m-%d')
+      python -m data_rentgen.db.scripts.cleanup_partitions truncate --keep-after $(date --date='-1 year' '+%Y-%m-%d')
     env_file: .env.docker
     depends_on:
       db-migration:

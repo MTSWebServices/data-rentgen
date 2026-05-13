@@ -50,7 +50,7 @@ This command will log which partitions would be affected if you were to clean up
 
 .. code:: shell
 
-    python3 -m data_rentgen.db.scripts.cleanup_partitions detach_partitions --keep-after 2024-01-01
+    python3 -m data_rentgen.db.scripts.cleanup_partitions detach --keep-after 2024-01-01
 
 This will detach all partitions created before January 1, 2024, from their parent tables. The detached tables will still exist with their data.
 
@@ -58,7 +58,7 @@ This will detach all partitions created before January 1, 2024, from their paren
 
 .. code:: shell
 
-    python3 -m data_rentgen.db.scripts.cleanup_partitions remove_data --keep-after 2024-01-01
+    python3 -m data_rentgen.db.scripts.cleanup_partitions drop --keep-after 2024-01-01
 
 This will detach and then **drop all partitions** created before January 1, 2024, permanently deleting their data.
 
