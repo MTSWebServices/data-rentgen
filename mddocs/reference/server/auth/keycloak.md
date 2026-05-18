@@ -30,7 +30,7 @@ else Login failed
      "Keycloak" --x "Frontend" : Display error (401 Unauthorized)
 end
 
- "Keycloak" -> "Frontend" : Callback to Frontend /callback which is proxy between Keycloak and Backend
+"Keycloak" -> "Frontend" : Callback to Frontend /callback which is proxy between Keycloak and Backend
 
 "Frontend" -> "Backend" : Send request to Backend '/v1/auth/callback'
 
@@ -44,51 +44,51 @@ end
 "Backend" --> "Frontend" : Return requested data
 
 alt Successful case
-activate "Backend"
-"Frontend" -> "Backend" : access_token
-"Backend" --> "Backend" : Validate token
-"Backend" --> "Backend" : Check user in internal backend database
-"Backend" -> "Backend" : Get data
-"Backend" --> "Frontend" : Return data
-deactivate "Backend"
+  activate "Backend"
+  "Frontend" -> "Backend" : access_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --> "Backend" : Check user in internal backend database
+  "Backend" -> "Backend" : Get data
+  "Backend" --> "Frontend" : Return data
+  deactivate "Backend"
 
 else Token is expired (Successful case)
-activate "Backend"
-"Frontend" -> "Backend"  : access_token, refresh_token
-"Backend" --> "Backend" : Validate token
-"Backend" --> "Backend" : Token is expired
-"Backend" --> "Keycloak" : Try to refresh token
-"Backend" --> "Backend" : Validate new token
-"Backend" --> "Backend" : Check user in internal backend database
-"Backend" -> "Backend" : Get data
-"Backend" --> "Frontend" : Return data
-deactivate "Backend"
+  activate "Backend"
+  "Frontend" -> "Backend"  : access_token, refresh_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --> "Backend" : Token is expired
+  "Backend" --> "Keycloak" : Try to refresh token
+  "Backend" --> "Backend" : Validate new token
+  "Backend" --> "Backend" : Check user in internal backend database
+  "Backend" -> "Backend" : Get data
+  "Backend" --> "Frontend" : Return data
+  deactivate "Backend"
 
 else Create new User
-activate "Backend"
-"Frontend" -> "Backend"  : access_token
-"Backend" --> "Backend" : Validate token
-"Backend" --> "Backend" : Check user in internal backend database
-"Backend" --> "Backend" : Create new user
-"Backend" -> "Backend" : Get data
-"Backend" --> "Frontend" : Return data
-deactivate "Backend"
+  activate "Backend"
+  "Frontend" -> "Backend"  : access_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --> "Backend" : Check user in internal backend database
+  "Backend" --> "Backend" : Create new user
+  "Backend" -> "Backend" : Get data
+  "Backend" --> "Frontend" : Return data
+  deactivate "Backend"
 
 else Token is expired and bad refresh token
-activate "Backend"
-"Frontend" -> "Backend" : access_token, refresh_token
-"Backend" --> "Backend" : Validate token
-"Backend" --> "Backend" : Token is expired
-"Backend" --> "Keycloak" : Try to refresh token
-"Backend" --x "Frontend" : RedirectResponse can't refresh
-deactivate "Backend"
+  activate "Backend"
+  "Frontend" -> "Backend" : access_token, refresh_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --> "Backend" : Token is expired
+  "Backend" --> "Keycloak" : Try to refresh token
+  "Backend" --x "Frontend" : RedirectResponse can't refresh
+  deactivate "Backend"
 
 else Bad Token payload
-activate "Backend"
-"Frontend" -> "Backend" : access_token, refresh_token
-"Backend" --> "Backend" : Validate token
-"Backend" --x "Frontend" : 307 Authorization error
-deactivate "Backend"
+  activate "Backend"
+  "Frontend" -> "Backend" : access_token, refresh_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --x "Frontend" : 307 Authorization error
+  deactivate "Backend"
 
 end
 ```

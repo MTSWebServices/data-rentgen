@@ -24,36 +24,36 @@ activate "Client"
 "Backend" --> "Client" : Generate and return personal_token
 
 alt Successful case (first request)
-"Client" -> "Backend" : Authorization Bearer personal_token
-"Backend" --> "Backend" : Validate token
-"Backend" --x "Backend" : Get token info from in-memory cache
-"Backend" --> "Database" : Fetch token info
-"Database" --> "Backend" : Return token info
-"Backend" --> "Backend" : Cache token
-"Backend" --> "Database" : Fetch data
-"Database" --> "Backend": Return data
-"Backend" --> "Client" : Return data
+  "Client" -> "Backend" : Authorization Bearer personal_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --x "Backend" : Get token info from in-memory cache
+  "Backend" --> "Database" : Fetch token info
+  "Database" --> "Backend" : Return token info
+  "Backend" --> "Backend" : Cache token
+  "Backend" --> "Database" : Fetch data
+  "Database" --> "Backend": Return data
+  "Backend" --> "Client" : Return data
 
 else Successful case (second request)
-"Client" -> "Backend": Authorization Bearer personal_token
-"Backend" --> "Backend" : Validate token
-"Backend" --> "Backend" : Get token info from in-memory cache
-"Backend" --> "Database" : Fetch data
-"Database" --> "Backend": Return data
-"Backend" --> "Client": Return data
+  "Client" -> "Backend": Authorization Bearer personal_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --> "Backend" : Get token info from in-memory cache
+  "Backend" --> "Database" : Fetch data
+  "Database" --> "Backend": Return data
+  "Backend" --> "Client": Return data
 
 else Token is expired
-"Client" -> "Backend" : Authorization Bearer personal_token
-"Backend" --x "Backend" : Validate token
-"Backend" --x "Client" : 401 Unauthorized
+  "Client" -> "Backend" : Authorization Bearer personal_token
+  "Backend" --x "Backend" : Validate token
+  "Backend" --x "Client" : 401 Unauthorized
 
 else Token was revoked
-"Client" -> "Backend": Authorization Bearer personal_token
-"Backend" --> "Backend" : Validate token
-"Backend" --x "Backend" : Get token info from in-memory cache
-"Backend" --> "Database" : Fetch token info
-"Database" --x "Backend" : No active token in database
-"Backend" --x "Client" : 401 Unauthorized
+  "Client" -> "Backend": Authorization Bearer personal_token
+  "Backend" --> "Backend" : Validate token
+  "Backend" --x "Backend" : Get token info from in-memory cache
+  "Backend" --> "Database" : Fetch token info
+  "Database" --x "Backend" : No active token in database
+  "Backend" --x "Client" : 401 Unauthorized
 end
 
 deactivate "Client"

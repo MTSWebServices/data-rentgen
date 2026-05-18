@@ -15,42 +15,42 @@ participant "Backend"
 
 activate "Client"
 alt Successful case
-"Client" ->> "Backend"  : login + password
-"Backend" ->> "Backend" : Password is completely ignored
-"Backend" ->> "Backend" : Check user in internal backend database
-"Backend" ->> "Backend" : Create user if not exist
-"Backend" ->> "Client"  : Generate and return access_token
+  "Client" ->> "Backend"  : login + password
+  "Backend" ->> "Backend" : Password is completely ignored
+  "Backend" ->> "Backend" : Check user in internal backend database
+  "Backend" ->> "Backend" : Create user if not exist
+  "Backend" ->> "Client"  : Generate and return access_token
 
 else User is blocked
-"Client" ->> "Backend"  : login + password
-"Backend" ->> "Backend" : Password is completely ignored
-"Backend" ->> "Backend" : Check user in internal backend database
-"Backend" --x "Client"  : 401 Unauthorized
+  "Client" ->> "Backend"  : login + password
+  "Backend" ->> "Backend" : Password is completely ignored
+  "Backend" ->> "Backend" : Check user in internal backend database
+  "Backend" --x "Client"  : 401 Unauthorized
 
 else User is deleted
-"Client" ->> "Backend"  : login + password
-"Backend" ->> "Backend" : Password is completely ignored
-"Backend" ->> "Backend" : Check user in internal backend database
-"Backend" --x "Client"  : 404 Not found
+  "Client" ->> "Backend"  : login + password
+  "Backend" ->> "Backend" : Password is completely ignored
+  "Backend" ->> "Backend" : Check user in internal backend database
+  "Backend" --x "Client"  : 404 Not found
 end
 
 alt Successful case
-"Client" ->> "Backend"  : access_token
-"Backend" ->> "Backend" : Validate token
-"Backend" ->> "Backend" : Check user in internal backend database
-"Backend" ->> "Backend" : Get data
-"Backend" ->> "Client"  : Return data
+  "Client" ->> "Backend"  : access_token
+  "Backend" ->> "Backend" : Validate token
+  "Backend" ->> "Backend" : Check user in internal backend database
+  "Backend" ->> "Backend" : Get data
+  "Backend" ->> "Client"  : Return data
 
 else Token is expired
-"Client" ->> "Backend"  : access_token
-"Backend" ->> "Backend" : Validate token
-"Backend" --x "Client"  : 401 Unauthorized
+  "Client" ->> "Backend"  : access_token
+  "Backend" ->> "Backend" : Validate token
+  "Backend" --x "Client"  : 401 Unauthorized
 
 else User is not found
-"Client" ->> "Backend"  : access_token
-"Backend" ->> "Backend" : Validate token
-"Backend" ->> "Backend" : Check user in internal backend database
-"Backend" --x "Client"  : 404 Not found
+  "Client" ->> "Backend"  : access_token
+  "Backend" ->> "Backend" : Validate token
+  "Backend" ->> "Backend" : Check user in internal backend database
+  "Backend" --x "Client"  : 404 Not found
 end
 
 deactivate "Client"

@@ -15,6 +15,7 @@ flowchart LR
    subgraph locations3 [locations 3]
        addresses3@{shape: docs, label: "addresses"}
     end
+
    dataset1[(dataset 1)]
    dataset2[(dataset 2)]
    operations@{shape: procs}
@@ -43,7 +44,6 @@ flowchart LR
    job -- located in ---> locations3
 
    runs -- PARENT --> runs
-
 ```
 
 ## Nodes
