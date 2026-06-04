@@ -67,7 +67,7 @@ exclude = ["docs", "tests"]
 server = [
   "fastapi~=0.136.3",
   # starlette 1.0.0 break cookies
-  "starlette<1.0",
+  "starlette<2.0",
   "uvicorn~=0.49",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=5.0.0",
@@ -83,7 +83,7 @@ consumer = [
 http2kafka = [
   "fastapi~=0.136.3",
   # starlette 1.0.0 break cookies
-  "starlette<1.0",
+  "starlette<2.0",
   "uvicorn~=0.49",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=5.0.0",
