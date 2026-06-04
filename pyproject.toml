@@ -126,7 +126,6 @@ dev = [
   "types-cachetools~=7.0.0.20260503",
 ]
 docs = [
-  "setuptools-git-versioning~=3.1.0",
   "autodoc-pydantic~=2.2.0",
   "numpydoc~=1.10.0",
   # sphinx-design and sphinx-tags do not support sphinx 9
