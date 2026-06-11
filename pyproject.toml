@@ -97,7 +97,7 @@ gssapi = [
   "gssapi~=1.11.1",
 ]
 seed = [
-  "faker~=40.21.0",
+  "faker>=40.21,<40.24",
 ]
 
 [dependency-groups]
