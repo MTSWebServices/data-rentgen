@@ -215,6 +215,62 @@ def test_extractors_extract_dataset_postgres():
     assert symlinks_dto == []
 
 
+def test_extractors_extract_dataset_clickhouse_three_components():
+    # OpenLineage <1.47 incorrectly included the JDBC default DB
+    dataset = OpenLineageDataset(
+        namespace="clickhouse://myhost:8123",
+        name="default.mydb.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="clickhouse",
+            name="myhost:8123",
+            addresses={"clickhouse://myhost:8123"},
+        ),
+        name="mydb.mytable",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_clickhouse_two_components():
+    dataset = OpenLineageDataset(
+        namespace="clickhouse://myhost:8123",
+        name="mydb.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="clickhouse",
+            name="myhost:8123",
+            addresses={"clickhouse://myhost:8123"},
+        ),
+        name="mydb.mytable",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_mysql_three_components():
+    # OpenLineage <1.47 incorrectly included the JDBC default DB
+    dataset = OpenLineageDataset(
+        namespace="mysql://myhost:3306",
+        name="mydb.mydb.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="mysql",
+            name="myhost:3306",
+            addresses={"mysql://myhost:3306"},
+        ),
+        name="mydb.mytable",
+    )
+    assert symlinks_dto == []
+
+
 def test_extractors_extract_dataset_kafka():
     dataset = OpenLineageDataset(
         namespace="kafka://192.168.1.1:9092,192.168.1.2:9092",
