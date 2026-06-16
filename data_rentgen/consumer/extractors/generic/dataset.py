@@ -24,6 +24,11 @@ from data_rentgen.openlineage.dataset_facets import (
 METASTORE = DatasetSymlinkTypeDTO.METASTORE
 WAREHOUSE = DatasetSymlinkTypeDTO.WAREHOUSE
 
+# https://github.com/OpenLineage/OpenLineage/issues/4496
+# https://github.com/OpenLineage/OpenLineage/issues/4497
+# Fixed in OpenLineage 1.47, but not all users upgraded their ETL scripts
+SCHEMALESS_LOCATION_TYPES = {"clickhouse", "mysql"}
+
 
 class DatasetExtractorMixin:
     def extract_dataset(self, dataset: OpenLineageDataset) -> DatasetDTO:
@@ -37,9 +42,13 @@ class DatasetExtractorMixin:
         self,
         dataset: OpenLineageDataset | OpenLineageColumnLineageDatasetFacetFieldRef | OpenLineageSymlinkIdentifier,
     ) -> DatasetDTO:
+        location = self._extract_dataset_location(dataset)
+        name = dataset.name
+        if location.type in SCHEMALESS_LOCATION_TYPES and name.count(".") == 2:  # noqa: PLR2004
+            name = name.split(".", maxsplit=1)[1]
         return DatasetDTO(
-            name=dataset.name,
-            location=self._extract_dataset_location(dataset),
+            name=name,
+            location=location,
         )
 
     def _extract_dataset_location(

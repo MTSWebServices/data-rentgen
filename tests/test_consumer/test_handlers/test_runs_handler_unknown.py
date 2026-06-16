@@ -140,7 +140,7 @@ async def test_runs_handler_unknown(
     hive_table = datasets[0]
     clickhouse_table = datasets[1]
 
-    assert clickhouse_table.name == "mydb.myschema.mytable"
+    assert clickhouse_table.name == "myschema.mytable"
     assert clickhouse_table.location.type == "clickhouse"
     assert clickhouse_table.location.name == "localhost:8123"
     assert len(clickhouse_table.location.addresses) == 1

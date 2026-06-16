@@ -375,7 +375,9 @@ async def test_get_job_hierarchy_with_inferred_dependencies(
     )
 
     assert response.status_code == HTTPStatus.OK, response.json()
-    assert response.json() == {
+    response_json = response.json()
+    response_json["relations"]["parents"].sort(key=lambda x: (x["from"]["id"], x["to"]["id"]))
+    assert response_json == {
         "relations": {
             "parents": jobs_ancestors_to_json(expected_nodes),
             "dependencies": [
