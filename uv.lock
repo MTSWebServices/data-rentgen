@@ -863,11 +863,11 @@ test = [
     { name = "gevent", specifier = "~=26.5" },
     { name = "httpx", specifier = "~=0.28.1" },
     { name = "psycopg2-binary", specifier = "~=2.9.11" },
-    { name = "pytest", specifier = ">=9.0.3,<9.2.0" },
-    { name = "pytest-asyncio", specifier = "~=1.4" },
+    { name = "pytest", specifier = "~=9.1.1" },
+    { name = "pytest-asyncio", specifier = "~=1.4.0" },
     { name = "pytest-deadfixtures", specifier = "~=3.1.0" },
     { name = "pytest-randomly", specifier = "~=4.1.0" },
-    { name = "pytest-rerunfailures", specifier = "~=16.1" },
+    { name = "pytest-rerunfailures", specifier = "~=16.3" },
     { name = "respx", specifier = "~=0.23.1" },
 ]
 
