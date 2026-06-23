@@ -32,12 +32,12 @@ keywords = ["Lineage", "FastAPI", "REST", "FastStream"]
 requires-python = ">=3.12"
 dependencies = [
   "pydantic~=2.13.4",
-  "pydantic-settings~=2.14.1",
+  "pydantic-settings~=2.14.2",
   "typing-extensions~=4.15.0",
   "alembic~=1.18.4",
-  "sqlalchemy~=2.0.50",
+  "sqlalchemy~=2.0.51",
   "sqlalchemy-utils~=0.42.0",
-  "greenlet~=3.5.0",
+  "greenlet~=3.5.2",
   "pyyaml~=6.0.3",
   "python-json-logger~=4.1.0",
   "coloredlogs~=15.0.1",
@@ -65,7 +65,7 @@ exclude = ["docs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  "fastapi~=0.136.3",
+  "fastapi~=0.138.0",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
   "uvicorn~=0.49",
@@ -81,7 +81,7 @@ consumer = [
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  "fastapi~=0.136.3",
+  "fastapi~=0.138.0",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
   "uvicorn~=0.49",
@@ -108,7 +108,7 @@ test = [
   "pytest-randomly~=4.1.0",
   "pytest-deadfixtures~=3.1.0",
   "pytest-rerunfailures~=16.1",
-  "coverage~=7.14.0",
+  "coverage~=7.14.3",
   "psycopg2-binary~=2.9.11",
   "deepdiff~=9.1",
   "respx~=0.23.1",
@@ -116,10 +116,10 @@ test = [
   "gevent~=26.5",
 ]
 dev = [
-  "prek~=0.4.4",
-  "ruff~=0.15.3",
+  "prek~=0.4.5",
+  "ruff~=0.15.18",
   "mypy~=2.1.0",
-  "sqlalchemy[mypy]~=2.0.50",
+  "sqlalchemy[mypy]~=2.0.51",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
   "types-jwcrypto~=1.5.0",
