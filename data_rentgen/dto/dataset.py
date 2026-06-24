@@ -21,7 +21,7 @@ class DatasetDTO:
         return (self.location.unique_key, self.name.lower())
 
     def merge(self, new: DatasetDTO) -> DatasetDTO:
-        self.location = self.location.merge(new.location)
+        self.location.merge(new.location)
         self.id = new.id or self.id
         self.tag_values.update(new.tag_values)
         return self

@@ -58,26 +58,27 @@ class RunDTO:
 
     def merge(self, new: RunDTO) -> RunDTO:
         if new.job.unique_key == self.job.unique_key:
-            self.job = self.job.merge(new.job)
+            self.job.merge(new.job)
         else:
             # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
             self.job = new.job
 
         if new.parent_run and self.parent_run:
-            self.parent_run = self.parent_run.merge(new.parent_run)
+            self.parent_run.merge(new.parent_run)
         else:
             self.parent_run = new.parent_run or self.parent_run
 
         if new.user and self.user:
-            self.user = self.user.merge(new.user)
+            self.user.merge(new.user)
         else:
             self.user = new.user or self.user
 
         existing_dependencies = {item.unique_key: item for item in self.job_dependencies}
         merged_dependencies = []
         for job_dependency in new.job_dependencies:
-            if job_dependency.unique_key in existing_dependencies:
-                merged_dependencies.append(existing_dependencies[job_dependency.unique_key].merge(job_dependency))
+            old_job_dependency = existing_dependencies.get(job_dependency.unique_key)
+            if old_job_dependency:
+                merged_dependencies.append(old_job_dependency.merge(job_dependency))
             else:
                 merged_dependencies.append(job_dependency)
         self.job_dependencies = merged_dependencies

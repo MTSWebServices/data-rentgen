@@ -20,7 +20,7 @@ class JobDependencyDTO:
         return (self.from_job.unique_key, self.to_job.unique_key, self.type)
 
     def merge(self, new: JobDependencyDTO) -> JobDependencyDTO:
-        self.from_job = self.from_job.merge(new.from_job)
-        self.to_job = self.to_job.merge(new.to_job)
+        self.from_job.merge(new.from_job)
+        self.to_job.merge(new.to_job)
         self.id = new.id or self.id
         return self

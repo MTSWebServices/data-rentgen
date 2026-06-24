@@ -25,14 +25,14 @@ class JobDTO:
 
     def merge(self, new: JobDTO) -> JobDTO:
         self.id = new.id or self.id
-        self.location = self.location.merge(new.location)
+        self.location.merge(new.location)
         if new.parent_job and self.parent_job:
-            self.parent_job = self.parent_job.merge(new.parent_job)
+            self.parent_job.merge(new.parent_job)
         else:
             self.parent_job = new.parent_job or self.parent_job
 
         if new.type and self.type:
-            self.type = self.type.merge(new.type)
+            self.type.merge(new.type)
         else:
             self.type = new.type or self.type
 

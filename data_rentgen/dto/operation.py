@@ -58,9 +58,9 @@ class OperationDTO:
         return (self.id,)
 
     def merge(self, new: OperationDTO) -> OperationDTO:
-        self.run = self.run.merge(new.run)
+        self.run.merge(new.run)
         if self.sql_query and new.sql_query:
-            self.sql_query = self.sql_query.merge(new.sql_query)
+            self.sql_query.merge(new.sql_query)
         else:
             self.sql_query = new.sql_query or self.sql_query
 
