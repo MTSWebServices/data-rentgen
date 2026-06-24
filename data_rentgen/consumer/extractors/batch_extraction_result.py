@@ -107,17 +107,17 @@ class BatchExtractionResult:
     def _add(context: dict[tuple, T], new_item: T) -> T:
         key = new_item.unique_key
         old_item = context.get(key)
-        if old_item:
-            if old_item is new_item:
-                # optimization
-                return old_item
+        if not old_item:
+            context[key] = new_item
+            return new_item
 
-            merged_item = old_item.merge(new_item)
-            context[merged_item.unique_key] = merged_item
-            return merged_item
+        if old_item is new_item:
+            # optimization
+            return old_item
 
-        context[key] = new_item
-        return new_item
+        merged_item = old_item.merge(new_item)
+        context[key] = merged_item
+        return merged_item
 
     def add_location(self, location: LocationDTO):
         return self._add(self._locations, location)

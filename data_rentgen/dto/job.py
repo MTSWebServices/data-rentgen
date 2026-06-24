@@ -24,10 +24,6 @@ class JobDTO:
         return (self.location.unique_key, self.name.lower())
 
     def merge(self, new: JobDTO) -> JobDTO:
-        if self.unique_key != new.unique_key:
-            # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
-            return new
-
         self.id = new.id or self.id
         self.location = self.location.merge(new.location)
         if new.parent_job and self.parent_job:
@@ -41,5 +37,4 @@ class JobDTO:
             self.type = new.type or self.type
 
         self.tag_values.update(new.tag_values)
-
         return self

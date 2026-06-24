@@ -37,6 +37,6 @@ class TagValueDTO:
         return hash(self.unique_key)
 
     def merge(self, new: TagValueDTO) -> TagValueDTO:
-        self.tag.merge(new.tag)
+        self.tag = self.tag.merge(new.tag)
         self.id = new.id or self.id
         return self

@@ -57,7 +57,12 @@ class RunDTO:
         return (self.id,)
 
     def merge(self, new: RunDTO) -> RunDTO:
-        self.job = self.job.merge(new.job)
+        if new.job.unique_key == self.job.unique_key:
+            self.job = self.job.merge(new.job)
+        else:
+            # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
+            self.job = new.job
+
         if new.parent_run and self.parent_run:
             self.parent_run = self.parent_run.merge(new.parent_run)
         else:
