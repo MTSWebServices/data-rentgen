@@ -39,7 +39,7 @@ get_one_by_addresses_query = (
 get_one_query = (
     select(Location)
     .from_statement(
-        get_one_by_name_query.union(get_one_by_addresses_query),
+        get_one_by_name_query.union(get_one_by_addresses_query).limit(1),
     )
     .options(selectinload(Location.addresses))
 )
@@ -51,7 +51,7 @@ insert_address_query = (
         {
             "location_id": bindparam("location_id"),
             "url": bindparam("url"),
-        }
+        },
     )
     .on_conflict_do_nothing(index_elements=["location_id", "url"])
 )
