@@ -113,4 +113,5 @@ class ColumnLineage(Base):
         primaryjoin="ColumnLineage.fingerprint == DatasetColumnRelation.fingerprint",
         lazy="noload",
         foreign_keys=[fingerprint],
+        order_by=(DatasetColumnRelation.source_column, DatasetColumnRelation.target_column),
     )
