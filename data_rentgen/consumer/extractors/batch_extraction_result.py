@@ -112,7 +112,7 @@ class BatchExtractionResult:
                 return old_item
 
             merged_item = old_item.merge(new_item)
-            context[key] = merged_item
+            context[merged_item.unique_key] = merged_item
             return merged_item
 
         context[key] = new_item
