@@ -43,6 +43,7 @@ class Location(Base):
         "Address",
         lazy="noload",
         back_populates="location",
+        order_by="Address.url",
     )
 
     search_vector: Mapped[str] = mapped_column(
