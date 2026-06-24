@@ -29,7 +29,9 @@ fetch_bulk_query = select(TagValue).where(
         ),
     ),
 )
-get_one_query = select(TagValue).where(TagValue.tag_id == bindparam("tag_id"), TagValue.value == bindparam("value"))
+get_one_query = (
+    select(TagValue).where(TagValue.tag_id == bindparam("tag_id"), TagValue.value == bindparam("value")).limit(1)
+)
 
 
 class TagValueRepository(Repository[TagValue]):

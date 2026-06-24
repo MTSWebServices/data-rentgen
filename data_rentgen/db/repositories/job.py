@@ -47,9 +47,13 @@ fetch_bulk_query = select(Job).where(
     ),
 )
 
-get_one_query = select(Job).where(
-    Job.location_id == bindparam("location_id"),
-    func.lower(Job.name) == bindparam("name_lower"),
+get_one_query = (
+    select(Job)
+    .where(
+        Job.location_id == bindparam("location_id"),
+        func.lower(Job.name) == bindparam("name_lower"),
+    )
+    .limit(1)
 )
 
 get_list_query = (

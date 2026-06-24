@@ -16,8 +16,12 @@ fetch_bulk_query = select(JobType).where(
     JobType.type == any_(bindparam("types")),
 )
 
-get_one_query = select(JobType).where(
-    JobType.type == bindparam("type"),
+get_one_query = (
+    select(JobType)
+    .where(
+        JobType.type == bindparam("type"),
+    )
+    .limit(1)
 )
 
 get_distinct_query = select(JobType.type).distinct(JobType.type).order_by(JobType.type)
