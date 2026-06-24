@@ -24,7 +24,7 @@ class JobDTO:
         return (self.location.unique_key, self.name.lower())
 
     def merge(self, new: JobDTO) -> JobDTO:
-        if self.name == "unknown" and new.name != "unknown":
+        if self.unique_key != new.unique_key:
             # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
             return new
 
