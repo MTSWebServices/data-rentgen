@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from sqlalchemy import BigInteger, Computed, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import BigInteger, Computed, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,10 +10,7 @@ from data_rentgen.db.models.location import Location
 
 class Address(Base):
     __tablename__ = "address"
-    __table_args__ = (
-        UniqueConstraint("location_id", "url"),
-        Index("ix__address__search_vector", "search_vector", postgresql_using="gin"),
-    )
+    __table_args__ = (Index("ix__address__search_vector", "search_vector", postgresql_using="gin"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     location_id: Mapped[int] = mapped_column(
@@ -33,6 +30,7 @@ class Address(Base):
     url: Mapped[str] = mapped_column(
         String,
         index=True,
+        unique=True,
         nullable=False,
         doc="Address in URL format",
     )

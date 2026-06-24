@@ -67,7 +67,6 @@ def downgrade() -> None:
         op.f("uq__tag_value__tag_id_value"),
         "tag_value",
         ["tag_id", "value"],
-        postgresql_nulls_not_distinct=False,
     )
     op.create_index(op.f("ix__tag_value__tag_id"), "tag_value", ["tag_id"], unique=False)
     op.drop_index("ix__tag_value__tag_id_value_lower", table_name="tag_value")

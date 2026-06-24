@@ -24,26 +24,14 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import LocationDTO, PaginationDTO
 from data_rentgen.exceptions.entity import EntityNotFoundError
 
-get_one_by_name_query = select(Location).where(
-    Location.type == bindparam("type"),
-    Location.name == bindparam("name"),
-)
-get_one_by_addresses_query = (
-    select(Location)
-    .join(Location.addresses)
-    .where(
-        Location.type == bindparam("type"),
-        Address.url == any_(bindparam("addresses")),
-    )
-)
 get_one_query = (
     select(Location)
-    .from_statement(
-        get_one_by_name_query.union(get_one_by_addresses_query).limit(1),
-    )
+    .join(Location.addresses)
+    .where(Address.url == any_(bindparam("addresses")))
+    .limit(1)
     .options(selectinload(Location.addresses))
 )
-get_distinct_query = select(Location.type).distinct(Location.type).order_by(Location.type)
+get_distinct_type_query = select(Location.type).distinct(Location.type).order_by(Location.type)
 
 insert_address_query = (
     insert(Address)
@@ -53,7 +41,7 @@ insert_address_query = (
             "url": bindparam("url"),
         },
     )
-    .on_conflict_do_nothing(index_elements=["location_id", "url"])
+    .on_conflict_do_nothing(index_elements=[Address.url])
 )
 
 
@@ -135,11 +123,10 @@ class LocationRepository(Repository[Location]):
         return result
 
     async def _get(self, location: LocationDTO) -> Location | None:
+        # addresses have to include {location.type}://{location.name} item
         return await self._session.scalar(
             get_one_query,
             {
-                "type": location.type,
-                "name": location.name,
                 "addresses": list(location.addresses),
             },
         )
@@ -172,5 +159,5 @@ class LocationRepository(Repository[Location]):
         return existing
 
     async def get_location_types(self):
-        scalars = await self._session.scalars(get_distinct_query)
+        scalars = await self._session.scalars(get_distinct_type_query)
         return scalars.all()
