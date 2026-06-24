@@ -106,9 +106,10 @@ class BatchExtractionResult:
     @staticmethod
     def _add(context: dict[tuple, T], new_item: T) -> T:
         key = new_item.unique_key
-        if key in context:
-            old_item = context[key]
+        old_item = context.get(key)
+        if old_item:
             if old_item is new_item:
+                # optimization
                 return old_item
 
             merged_item = old_item.merge(new_item)
