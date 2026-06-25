@@ -32,8 +32,15 @@ class ColumnLineageRepository(Repository[ColumnLineage]):
             return
 
         insert_statement = insert(ColumnLineage)
-        statement = insert_statement.on_conflict_do_nothing(
+        inserted_row = insert_statement.excluded
+        statement = insert_statement.on_conflict_do_update(
             index_elements=[ColumnLineage.created_at, ColumnLineage.id],
+            set_={
+                # in case if job or run was changed - workaround for
+                # https://github.com/OpenLineage/OpenLineage/issues/3846
+                "job_id": inserted_row.job_id,
+                "run_id": inserted_row.run_id,
+            },
         )
 
         await self._session.execute(
