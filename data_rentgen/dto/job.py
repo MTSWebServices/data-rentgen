@@ -26,7 +26,9 @@ class JobDTO:
     def merge(self, new: JobDTO) -> JobDTO:
         self.id = new.id or self.id
         self.location.merge(new.location)
-        if new.parent_job and self.parent_job:
+
+        # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
+        if new.parent_job and self.parent_job and new.parent_job.unique_key == self.parent_job.unique_key:
             self.parent_job.merge(new.parent_job)
         else:
             self.parent_job = new.parent_job or self.parent_job
