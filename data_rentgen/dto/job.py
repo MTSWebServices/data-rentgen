@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from copy import copy
 from dataclasses import dataclass, field
 
 from data_rentgen.dto.job_type import JobTypeDTO
@@ -26,23 +25,20 @@ class JobDTO:
 
     def merge(self, new: JobDTO) -> JobDTO:
         self.id = new.id or self.id
-        self.location = self.location.merge(new.location)
-        if new.parent_job and self.parent_job:
-            self.parent_job = self.parent_job.merge(new.parent_job)
-        else:
-            self.parent_job = new.parent_job or self.parent_job
+        self.location.merge(new.location)
 
-        if new.type and self.type:
-            self.type = self.type.merge(new.type)
-        else:
-            self.type = new.type or self.type
+        # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
+        if new.parent_job:
+            if self.parent_job and self.parent_job.unique_key == new.parent_job.unique_key:
+                self.parent_job.merge(new.parent_job)
+            else:
+                self.parent_job = new.parent_job
+
+        if new.type:
+            if self.type and self.type.unique_key == new.type.unique_key:
+                self.type.merge(new.type)
+            else:
+                self.type = new.type
 
         self.tag_values.update(new.tag_values)
-
-        if self.name == "unknown" and new.name != "unknown":
-            # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
-            result = copy(self)
-            result.name = new.name
-            return result
-
         return self

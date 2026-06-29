@@ -45,10 +45,11 @@ class InputDTO:
         self.operation.merge(new.operation)
         self.dataset.merge(new.dataset)
 
-        if self.schema and new.schema:
-            self.schema.merge(new.schema)
-        else:
-            self.schema = new.schema or self.schema
+        if new.schema:
+            if self.schema:
+                self.schema.merge(new.schema)
+            else:
+                self.schema = new.schema
 
         self.created_at = min([new.created_at, self.created_at])
         self.num_rows = max(filter(None, [new.num_rows, self.num_rows]), default=None)

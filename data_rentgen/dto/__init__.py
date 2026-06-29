@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
+from data_rentgen.dto.base import DTO
 from data_rentgen.dto.column_lineage import ColumnLineageDTO
 from data_rentgen.dto.dataset import DatasetDTO
 from data_rentgen.dto.dataset_column_relation import (
@@ -27,6 +28,7 @@ from data_rentgen.dto.tag import TagDTO, TagValueDTO
 from data_rentgen.dto.user import UserDTO
 
 __all__ = [
+    "DTO",
     "ColumnLineageDTO",
     "DatasetColumnRelationDTO",
     "DatasetColumnRelationTypeDTO",

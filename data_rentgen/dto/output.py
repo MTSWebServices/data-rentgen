@@ -63,13 +63,14 @@ class OutputDTO:
         return generate_incremental_uuid(self.created_at, ".".join(id_components))
 
     def merge(self, new: OutputDTO) -> OutputDTO:
-        self.operation = self.operation.merge(new.operation)
-        self.dataset = self.dataset.merge(new.dataset)
+        self.operation.merge(new.operation)
+        self.dataset.merge(new.dataset)
 
-        if self.schema and new.schema:
-            self.schema = self.schema.merge(new.schema)
-        else:
-            self.schema = new.schema or self.schema
+        if new.schema:
+            if self.schema:
+                self.schema.merge(new.schema)
+            else:
+                self.schema = new.schema
 
         if not new.type.value & self.type.value:
             # IntFlag.__or__ is slow, avoid calling it if not needed

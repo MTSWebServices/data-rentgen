@@ -132,6 +132,73 @@ def test_extractors_extract_batch_spark_openlineage_emitted_unknown_name(
     assert not extracted.outputs()
 
 
+def test_extractors_extract_batch_spark_openlineage_emitted_unknown_name_no_job_mixing(
+    spark_another_app_run_event_start_with_unknown_name_and_different_parent: OpenLineageRunEvent,
+    spark_app_run_event_start_with_unknown_name_and_parent: OpenLineageRunEvent,
+    spark_app_run_event_stop_with_parent: OpenLineageRunEvent,
+    spark_another_app_run_event_stop_with_another_parent: OpenLineageRunEvent,
+    spark_operation_run_event_start: OpenLineageRunEvent,
+    spark_operation_run_event_running: OpenLineageRunEvent,
+    spark_operation_run_event_stop: OpenLineageRunEvent,
+    extracted_airflow_location: LocationDTO,
+    extracted_airflow_task1_job_as_parent: JobDTO,
+    extracted_airflow_task1_run_as_parent: RunDTO,
+    extracted_another_airflow_location: LocationDTO,
+    extracted_airflow_task2_job: JobDTO,
+    extracted_airflow_task2_run: RunDTO,
+    extracted_spark_location: LocationDTO,
+    extracted_spark_app_job_with_parent: JobDTO,
+    extracted_spark_another_app_job_with_parent: JobDTO,
+    extracted_spark_unknown_job: JobDTO,
+    extracted_user: UserDTO,
+    extracted_spark_app_run_with_parent: RunDTO,
+    extracted_spark_another_app_run_with_parent: RunDTO,
+    extracted_spark_operation_with_parent: OperationDTO,
+):
+    events = [
+        spark_another_app_run_event_start_with_unknown_name_and_different_parent,
+        spark_app_run_event_start_with_unknown_name_and_parent,
+        spark_operation_run_event_start,
+        spark_operation_run_event_running,
+        spark_operation_run_event_stop,
+        spark_another_app_run_event_stop_with_another_parent,
+        spark_app_run_event_stop_with_parent,
+    ]
+
+    extracted = BatchExtractor().add_events(events)
+
+    extracted_spark_unknown_job.parent_job = extracted_airflow_task1_job_as_parent
+
+    # the result is the same as above
+    assert extracted.locations() == [
+        extracted_airflow_location,
+        extracted_another_airflow_location,
+        extracted_spark_location,
+    ]
+
+    assert extracted.jobs() == [
+        extracted_airflow_task1_job_as_parent,
+        extracted_airflow_task2_job,
+        extracted_spark_app_job_with_parent,
+        extracted_spark_another_app_job_with_parent,
+        extracted_spark_unknown_job,
+    ]
+    assert extracted.users() == [extracted_user]
+    assert extracted.runs() == [
+        extracted_airflow_task2_run,
+        extracted_spark_another_app_run_with_parent,
+        extracted_airflow_task1_run_as_parent,
+        extracted_spark_app_run_with_parent,
+    ]
+    assert extracted.operations() == [extracted_spark_operation_with_parent]
+
+    assert not extracted.datasets()
+    assert not extracted.dataset_symlinks()
+    assert not extracted.schemas()
+    assert not extracted.inputs()
+    assert not extracted.outputs()
+
+
 @pytest.mark.parametrize(
     "input_transformation",
     [
@@ -239,7 +306,7 @@ def test_extractors_extract_batch_spark_strip_hdfs_partitions(extracted_hdfs_dat
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession.execute_some_command",
+            name="mysession1.execute_some_command",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,
@@ -254,7 +321,7 @@ def test_extractors_extract_batch_spark_strip_hdfs_partitions(extracted_hdfs_dat
                 parent=OpenLineageParentRunFacet(
                     job=OpenLineageParentJob(
                         namespace="local://some.host.com",
-                        name="mysession",
+                        name="mysession1",
                     ),
                     run=OpenLineageParentRun(
                         runId=run_id,

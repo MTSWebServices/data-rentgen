@@ -55,11 +55,11 @@ def extracted_airflow_dag_job(
 
 
 @pytest.fixture
-def extracted_airflow_task_job(
+def extracted_airflow_task1_job(
     extracted_airflow_location: LocationDTO,
 ) -> JobDTO:
     return JobDTO(
-        name="mydag.mytask",
+        name="mydag.mytask1",
         location=extracted_airflow_location,
         type=JobTypeDTO(type="AIRFLOW_TASK"),
         tag_values={
@@ -72,6 +72,16 @@ def extracted_airflow_task_job(
                 value="1.10.0",
             ),
         },
+    )
+
+
+@pytest.fixture
+def extracted_airflow_task1_job_as_parent(
+    extracted_airflow_location: LocationDTO,
+) -> JobDTO:
+    return JobDTO(
+        name="mydag.mytask1",
+        location=extracted_airflow_location,
     )
 
 
@@ -96,12 +106,12 @@ def extracted_airflow_dag_run(
 
 
 @pytest.fixture
-def extracted_airflow_task_run(
-    extracted_airflow_task_job: JobDTO,
+def extracted_airflow_task1_run(
+    extracted_airflow_task1_job: JobDTO,
 ) -> RunDTO:
     return RunDTO(
         id=UUID("01908223-0782-7fc0-9d69-b1df9dac2c60"),
-        job=extracted_airflow_task_job,
+        job=extracted_airflow_task1_job,
         status=RunStatusDTO.SUCCEEDED,
         started_at=datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc),
         start_reason=RunStartReasonDTO.MANUAL,
@@ -119,14 +129,24 @@ def extracted_airflow_task_run(
 
 
 @pytest.fixture
-def extracted_airflow_task_operation(
-    extracted_airflow_task_run: RunDTO,
+def extracted_airflow_task1_run_as_parent(
+    extracted_airflow_task1_job_as_parent: JobDTO,
+) -> RunDTO:
+    return RunDTO(
+        id=UUID("01908223-0782-7fc0-9d69-b1df9dac2c60"),
+        job=extracted_airflow_task1_job_as_parent,
+    )
+
+
+@pytest.fixture
+def extracted_airflow_task1_operation(
+    extracted_airflow_task1_run: RunDTO,
 ) -> OperationDTO:
     return OperationDTO(
         id=UUID("01908223-0782-7fc0-9d69-b1df9dac2c60"),
         name="mytask",
         description="BashOperator",
-        run=extracted_airflow_task_run,
+        run=extracted_airflow_task1_run,
         status=OperationStatusDTO.SUCCEEDED,
         type=OperationTypeDTO.BATCH,
         started_at=datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc),
@@ -136,13 +156,13 @@ def extracted_airflow_task_operation(
 
 @pytest.fixture
 def extracted_airflow_postgres_input(
-    extracted_airflow_task_operation: OperationDTO,
+    extracted_airflow_task1_operation: OperationDTO,
     extracted_postgres_dataset: DatasetDTO,
     extracted_dataset_schema: SchemaDTO,
 ) -> InputDTO:
     return InputDTO(
-        created_at=extracted_airflow_task_operation.created_at,
-        operation=extracted_airflow_task_operation,
+        created_at=extracted_airflow_task1_operation.created_at,
+        operation=extracted_airflow_task1_operation,
         dataset=extracted_postgres_dataset,
         schema=extracted_dataset_schema,
     )
@@ -150,16 +170,45 @@ def extracted_airflow_postgres_input(
 
 @pytest.fixture
 def extracted_airflow_hdfs_output(
-    extracted_airflow_task_operation: OperationDTO,
+    extracted_airflow_task1_operation: OperationDTO,
     extracted_hdfs_dataset1: DatasetDTO,
     extracted_dataset_schema: SchemaDTO,
 ) -> OutputDTO:
     return OutputDTO(
-        created_at=extracted_airflow_task_operation.created_at,
+        created_at=extracted_airflow_task1_operation.created_at,
         type=OutputTypeDTO.CREATE,
-        operation=extracted_airflow_task_operation,
+        operation=extracted_airflow_task1_operation,
         dataset=extracted_hdfs_dataset1,
         schema=extracted_dataset_schema,
         num_rows=1_000_000,
         num_bytes=1000 * 1024 * 1024,
+    )
+
+
+@pytest.fixture
+def extracted_another_airflow_location() -> LocationDTO:
+    return LocationDTO(
+        type="http",
+        name="another-airflow-host:8081",
+        addresses={"http://another-airflow-host:8081"},
+    )
+
+
+@pytest.fixture
+def extracted_airflow_task2_job(
+    extracted_another_airflow_location: LocationDTO,
+) -> JobDTO:
+    return JobDTO(
+        name="mydag.mytask2",
+        location=extracted_another_airflow_location,
+    )
+
+
+@pytest.fixture
+def extracted_airflow_task2_run(
+    extracted_airflow_task2_job: JobDTO,
+) -> RunDTO:
+    return RunDTO(
+        id=UUID("01908222-243b-7df2-a7ce-774296a65c3b"),
+        job=extracted_airflow_task2_job,
     )

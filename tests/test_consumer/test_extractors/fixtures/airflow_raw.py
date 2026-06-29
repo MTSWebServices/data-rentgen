@@ -100,7 +100,7 @@ def airflow_dag_run_event_stop() -> OpenLineageRunEvent:
 
 
 @pytest.fixture
-def airflow_task_run_event_start() -> OpenLineageRunEvent:
+def airflow_task1_run_event_start() -> OpenLineageRunEvent:
     event_time = datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc)
     run_id = UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")
     return OpenLineageRunEvent(
@@ -108,7 +108,7 @@ def airflow_task_run_event_start() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="http://airflow-host:8081",
-            name="mydag.mytask",
+            name="mydag.mytask1",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,
@@ -150,7 +150,7 @@ def airflow_task_run_event_start() -> OpenLineageRunEvent:
 
 
 @pytest.fixture
-def airflow_task_run_event_stop() -> OpenLineageRunEvent:
+def airflow_task1_run_event_stop() -> OpenLineageRunEvent:
     event_time = datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc)
     run_id = UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")
     return OpenLineageRunEvent(
@@ -158,7 +158,7 @@ def airflow_task_run_event_stop() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="http://airflow-host:8081",
-            name="mydag.mytask",
+            name="mydag.mytask1",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,

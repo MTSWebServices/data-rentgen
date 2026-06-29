@@ -165,7 +165,7 @@ def spark_app_run_event_start() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession",
+            name="mysession1",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.NONE,
@@ -214,6 +214,72 @@ def spark_app_run_event_start_with_unknown_name() -> OpenLineageRunEvent:
 
 
 @pytest.fixture
+def spark_app_run_event_start_with_unknown_name_and_parent() -> OpenLineageRunEvent:
+    event_time = datetime(2024, 7, 5, 9, 4, 48, 794900, tzinfo=timezone.utc)
+    run_id = UUID("01908224-8410-79a2-8de6-a769ad6944c9")
+    return OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.START,
+        eventTime=event_time,
+        job=OpenLineageJob(
+            namespace="local://some.host.com",
+            name="unknown",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.NONE,
+                    integration="SPARK",
+                    jobType="APPLICATION",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                parent=OpenLineageParentRunFacet(
+                    job=OpenLineageParentJob(
+                        namespace="http://airflow-host:8081",
+                        name="mydag.mytask1",
+                    ),
+                    run=OpenLineageParentRun(runId=UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")),
+                ),
+            ),
+        ),
+    )
+
+
+@pytest.fixture
+def spark_another_app_run_event_start_with_unknown_name_and_different_parent() -> OpenLineageRunEvent:
+    event_time = datetime(2024, 7, 5, 9, 3, 38, 683800, tzinfo=timezone.utc)
+    run_id = UUID("01908222-84bb-7fdf-ac0b-36892235c3db")
+    return OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.START,
+        eventTime=event_time,
+        job=OpenLineageJob(
+            namespace="local://some.host.com",
+            name="unknown",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.NONE,
+                    integration="SPARK",
+                    jobType="APPLICATION",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                parent=OpenLineageParentRunFacet(
+                    job=OpenLineageParentJob(
+                        namespace="http://another-airflow-host:8081",
+                        name="mydag.mytask2",
+                    ),
+                    run=OpenLineageParentRun(runId=UUID("01908222-243b-7df2-a7ce-774296a65c3b")),
+                ),
+            ),
+        ),
+    )
+
+
+@pytest.fixture
 def spark_app_run_event_stop() -> OpenLineageRunEvent:
     event_time = datetime(2024, 7, 5, 9, 7, 15, 646000, tzinfo=timezone.utc)
     run_id = UUID("01908224-8410-79a2-8de6-a769ad6944c9")
@@ -222,7 +288,7 @@ def spark_app_run_event_stop() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession",
+            name="mysession1",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.NONE,
@@ -236,6 +302,72 @@ def spark_app_run_event_stop() -> OpenLineageRunEvent:
 
 
 @pytest.fixture
+def spark_app_run_event_stop_with_parent() -> OpenLineageRunEvent:
+    event_time = datetime(2024, 7, 5, 9, 7, 15, 646000, tzinfo=timezone.utc)
+    run_id = UUID("01908224-8410-79a2-8de6-a769ad6944c9")
+    return OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.COMPLETE,
+        eventTime=event_time,
+        job=OpenLineageJob(
+            namespace="local://some.host.com",
+            name="mysession1",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.NONE,
+                    integration="SPARK",
+                    jobType="APPLICATION",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                parent=OpenLineageParentRunFacet(
+                    job=OpenLineageParentJob(
+                        namespace="http://airflow-host:8081",
+                        name="mydag.mytask1",
+                    ),
+                    run=OpenLineageParentRun(runId=UUID("01908223-0782-7fc0-9d69-b1df9dac2c60")),
+                ),
+            ),
+        ),
+    )
+
+
+@pytest.fixture
+def spark_another_app_run_event_stop_with_another_parent() -> OpenLineageRunEvent:
+    event_time = datetime(2024, 7, 5, 9, 6, 15, 646000, tzinfo=timezone.utc)
+    run_id = UUID("01908222-84bb-7fdf-ac0b-36892235c3db")
+    return OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.COMPLETE,
+        eventTime=event_time,
+        job=OpenLineageJob(
+            namespace="local://some.host.com",
+            name="mysession2",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.NONE,
+                    integration="SPARK",
+                    jobType="APPLICATION",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                parent=OpenLineageParentRunFacet(
+                    job=OpenLineageParentJob(
+                        namespace="http://another-airflow-host:8081",
+                        name="mydag.mytask2",
+                    ),
+                    run=OpenLineageParentRun(runId=UUID("01908222-243b-7df2-a7ce-774296a65c3b")),
+                ),
+            ),
+        ),
+    )
+
+
+@pytest.fixture
 def spark_operation_run_event_start() -> OpenLineageRunEvent:
     event_time = datetime(2024, 7, 5, 9, 6, 29, 462000, tzinfo=timezone.utc)
     run_id = UUID("01908224-8410-79a2-8de6-a769ad6944c9")
@@ -245,7 +377,7 @@ def spark_operation_run_event_start() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession.execute_some_command",
+            name="mysession1.execute_some_command",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,
@@ -260,7 +392,7 @@ def spark_operation_run_event_start() -> OpenLineageRunEvent:
                 parent=OpenLineageParentRunFacet(
                     job=OpenLineageParentJob(
                         namespace="local://some.host.com",
-                        name="mysession",
+                        name="mysession1",
                     ),
                     run=OpenLineageParentRun(
                         runId=run_id,
@@ -290,7 +422,7 @@ def spark_operation_run_event_running() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession.execute_some_command",
+            name="mysession1.execute_some_command",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,
@@ -305,7 +437,7 @@ def spark_operation_run_event_running() -> OpenLineageRunEvent:
                 parent=OpenLineageParentRunFacet(
                     job=OpenLineageParentJob(
                         namespace="local://some.host.com",
-                        name="mysession",
+                        name="mysession1",
                     ),
                     run=OpenLineageParentRun(
                         runId=run_id,
@@ -335,7 +467,7 @@ def spark_operation_run_event_stop() -> OpenLineageRunEvent:
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession.execute_some_command",
+            name="mysession1.execute_some_command",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,
@@ -350,7 +482,7 @@ def spark_operation_run_event_stop() -> OpenLineageRunEvent:
                 parent=OpenLineageParentRunFacet(
                     job=OpenLineageParentJob(
                         namespace="local://some.host.com",
-                        name="mysession",
+                        name="mysession1",
                     ),
                     run=OpenLineageParentRun(
                         runId=run_id,
