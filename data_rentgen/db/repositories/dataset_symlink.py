@@ -29,9 +29,13 @@ get_list_query = select(DatasetSymlink).where(
     ),
 )
 
-get_one_query = select(DatasetSymlink).where(
-    DatasetSymlink.from_dataset_id == bindparam("from_dataset_id"),
-    DatasetSymlink.to_dataset_id == bindparam("to_dataset_id"),
+get_one_query = (
+    select(DatasetSymlink)
+    .where(
+        DatasetSymlink.from_dataset_id == bindparam("from_dataset_id"),
+        DatasetSymlink.to_dataset_id == bindparam("to_dataset_id"),
+    )
+    .limit(1)
 )
 
 

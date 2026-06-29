@@ -40,9 +40,13 @@ fetch_bulk_query = select(JobDependency).where(
     ),
 )
 
-get_one_query = select(JobDependency).where(
-    JobDependency.from_job_id == bindparam("from_job_id"),
-    JobDependency.to_job_id == bindparam("to_job_id"),
+get_one_query = (
+    select(JobDependency)
+    .where(
+        JobDependency.from_job_id == bindparam("from_job_id"),
+        JobDependency.to_job_id == bindparam("to_job_id"),
+    )
+    .limit(1)
 )
 
 

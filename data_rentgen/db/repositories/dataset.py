@@ -51,9 +51,13 @@ get_list_query = (
     .options(selectinload(Dataset.tag_values).selectinload(TagValue.tag))
 )
 
-get_one_query = select(Dataset).where(
-    Dataset.location_id == bindparam("location_id"),
-    func.lower(Dataset.name) == bindparam("name_lower"),
+get_one_query = (
+    select(Dataset)
+    .where(
+        Dataset.location_id == bindparam("location_id"),
+        func.lower(Dataset.name) == bindparam("name_lower"),
+    )
+    .limit(1)
 )
 
 get_stats_query = (
