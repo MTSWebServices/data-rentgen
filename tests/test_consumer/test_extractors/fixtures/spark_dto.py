@@ -35,9 +35,46 @@ def extracted_spark_app_job(
     extracted_spark_location: LocationDTO,
 ) -> JobDTO:
     return JobDTO(
-        name="mysession",
+        name="mysession1",
         location=extracted_spark_location,
         type=JobTypeDTO(type="SPARK_APPLICATION"),
+    )
+
+
+@pytest.fixture
+def extracted_spark_app_job_with_parent(
+    extracted_spark_location: LocationDTO,
+    extracted_airflow_task1_job_as_parent: JobDTO,
+) -> JobDTO:
+    return JobDTO(
+        name="mysession1",
+        location=extracted_spark_location,
+        type=JobTypeDTO(type="SPARK_APPLICATION"),
+        parent_job=extracted_airflow_task1_job_as_parent,
+    )
+
+
+@pytest.fixture
+def extracted_spark_another_app_job(
+    extracted_spark_location: LocationDTO,
+) -> JobDTO:
+    return JobDTO(
+        name="mysession2",
+        location=extracted_spark_location,
+        type=JobTypeDTO(type="SPARK_APPLICATION"),
+    )
+
+
+@pytest.fixture
+def extracted_spark_another_app_job_with_parent(
+    extracted_spark_location: LocationDTO,
+    extracted_airflow_task2_job: JobDTO,
+) -> JobDTO:
+    return JobDTO(
+        name="mysession2",
+        location=extracted_spark_location,
+        type=JobTypeDTO(type="SPARK_APPLICATION"),
+        parent_job=extracted_airflow_task2_job,
     )
 
 
@@ -70,6 +107,40 @@ def extracted_spark_app_run(
 
 
 @pytest.fixture
+def extracted_spark_app_run_with_parent(
+    extracted_spark_app_job_with_parent: JobDTO,
+    extracted_airflow_task1_run_as_parent: RunDTO,
+    extracted_user: UserDTO,
+) -> RunDTO:
+    return RunDTO(
+        id=UUID("01908224-8410-79a2-8de6-a769ad6944c9"),
+        job=extracted_spark_app_job_with_parent,
+        user=extracted_user,
+        status=RunStatusDTO.SUCCEEDED,
+        parent_run=extracted_airflow_task1_run_as_parent,
+        started_at=datetime(2024, 7, 5, 9, 4, 48, 794900, tzinfo=timezone.utc),
+        ended_at=datetime(2024, 7, 5, 9, 7, 15, 646000, tzinfo=timezone.utc),
+        external_id="local-1719136537510",
+        running_log_url="http://127.0.0.1:4040",
+    )
+
+
+@pytest.fixture
+def extracted_spark_another_app_run_with_parent(
+    extracted_spark_another_app_job_with_parent: JobDTO,
+    extracted_airflow_task2_run: RunDTO,
+) -> RunDTO:
+    return RunDTO(
+        id=UUID("01908222-84bb-7fdf-ac0b-36892235c3db"),
+        job=extracted_spark_another_app_job_with_parent,
+        status=RunStatusDTO.SUCCEEDED,
+        parent_run=extracted_airflow_task2_run,
+        started_at=datetime(2024, 7, 5, 9, 3, 38, 683800, tzinfo=timezone.utc),
+        ended_at=datetime(2024, 7, 5, 9, 6, 15, 646000, tzinfo=timezone.utc),
+    )
+
+
+@pytest.fixture
 def extracted_spark_operation(
     extracted_spark_app_run: RunDTO,
 ):
@@ -77,6 +148,21 @@ def extracted_spark_operation(
         id=UUID("01908225-1fd7-746b-910c-70d24f2898b1"),
         name="execute_some_command",
         run=extracted_spark_app_run,
+        status=OperationStatusDTO.SUCCEEDED,
+        type=OperationTypeDTO.BATCH,
+        started_at=datetime(2024, 7, 5, 9, 6, 29, 462000, tzinfo=timezone.utc),
+        ended_at=datetime(2024, 7, 5, 9, 7, 15, 642000, tzinfo=timezone.utc),
+    )
+
+
+@pytest.fixture
+def extracted_spark_operation_with_parent(
+    extracted_spark_app_run_with_parent: RunDTO,
+):
+    return OperationDTO(
+        id=UUID("01908225-1fd7-746b-910c-70d24f2898b1"),
+        name="execute_some_command",
+        run=extracted_spark_app_run_with_parent,
         status=OperationStatusDTO.SUCCEEDED,
         type=OperationTypeDTO.BATCH,
         started_at=datetime(2024, 7, 5, 9, 6, 29, 462000, tzinfo=timezone.utc),
@@ -121,7 +207,7 @@ def get_spark_operation_dto(operation_id: UUID) -> OperationDTO:
         run=RunDTO(
             id=UUID("01908224-8410-79a2-8de6-a769ad6944c9"),
             job=JobDTO(
-                name="mysession",
+                name="mysession1",
                 location=LocationDTO(
                     type="local",
                     name="some.host.com",

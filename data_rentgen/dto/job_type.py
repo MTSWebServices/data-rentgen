@@ -16,6 +16,5 @@ class JobTypeDTO:
         return (self.type,)
 
     def merge(self, new: JobTypeDTO) -> JobTypeDTO:
-        self.type = new.type
         self.id = new.id or self.id
         return self

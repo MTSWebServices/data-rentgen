@@ -6,6 +6,7 @@ from collections.abc import Callable
 from typing import TypeVar
 
 from data_rentgen.dto import (
+    DTO,
     ColumnLineageDTO,
     DatasetDTO,
     DatasetSymlinkDTO,
@@ -24,25 +25,7 @@ from data_rentgen.dto import (
     UserDTO,
 )
 
-T = TypeVar(
-    "T",
-    ColumnLineageDTO,
-    DatasetDTO,
-    DatasetSymlinkDTO,
-    InputDTO,
-    JobDependencyDTO,
-    JobDTO,
-    JobTypeDTO,
-    LocationDTO,
-    OperationDTO,
-    OutputDTO,
-    RunDTO,
-    SchemaDTO,
-    SQLQueryDTO,
-    TagDTO,
-    TagValueDTO,
-    UserDTO,
-)
+T = TypeVar("T", bound=DTO)
 
 
 class BatchExtractionResult:
@@ -106,17 +89,18 @@ class BatchExtractionResult:
     @staticmethod
     def _add(context: dict[tuple, T], new_item: T) -> T:
         key = new_item.unique_key
-        if key in context:
-            old_item = context[key]
-            if old_item is new_item:
-                return old_item
+        old_item = context.get(key)
+        if not old_item:
+            context[key] = new_item
+            return new_item
 
-            merged_item = old_item.merge(new_item)
-            context[key] = merged_item
-            return merged_item
+        if old_item is new_item:
+            # optimization
+            return old_item
 
-        context[key] = new_item
-        return new_item
+        merged_item = old_item.merge(new_item)
+        context[key] = merged_item
+        return merged_item
 
     def add_location(self, location: LocationDTO):
         return self._add(self._locations, location)

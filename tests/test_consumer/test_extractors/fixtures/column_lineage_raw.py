@@ -335,7 +335,7 @@ def get_run_event_with_column_lineage(
         eventTime=event_time,
         job=OpenLineageJob(
             namespace="local://some.host.com",
-            name="mysession.execute_some_command",
+            name="mysession1.execute_some_command",
             facets=OpenLineageJobFacets(
                 jobType=OpenLineageJobTypeJobFacet(
                     processingType=OpenLineageJobProcessingType.BATCH,
@@ -350,7 +350,7 @@ def get_run_event_with_column_lineage(
                 parent=OpenLineageParentRunFacet(
                     job=OpenLineageParentJob(
                         namespace="local://some.host.com",
-                        name="mysession",
+                        name="mysession1",
                     ),
                     run=OpenLineageParentRun(
                         runId=run_id,

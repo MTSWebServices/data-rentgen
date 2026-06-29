@@ -36,32 +36,32 @@ from data_rentgen.openlineage.run_event import (
 def test_extractors_extract_batch_airflow_without_lineage(
     airflow_dag_run_event_start: OpenLineageRunEvent,
     airflow_dag_run_event_stop: OpenLineageRunEvent,
-    airflow_task_run_event_start: OpenLineageRunEvent,
-    airflow_task_run_event_stop: OpenLineageRunEvent,
+    airflow_task1_run_event_start: OpenLineageRunEvent,
+    airflow_task1_run_event_stop: OpenLineageRunEvent,
     extracted_airflow_location: LocationDTO,
     extracted_airflow_dag_job: JobDTO,
-    extracted_airflow_task_job: JobDTO,
+    extracted_airflow_task1_job: JobDTO,
     extracted_airflow_dag_run: RunDTO,
-    extracted_airflow_task_run: RunDTO,
-    extracted_airflow_task_operation: OperationDTO,
+    extracted_airflow_task1_run: RunDTO,
+    extracted_airflow_task1_operation: OperationDTO,
     input_transformation,
 ):
     events = [
         airflow_dag_run_event_start,
-        airflow_task_run_event_start,
-        airflow_task_run_event_stop,
+        airflow_task1_run_event_start,
+        airflow_task1_run_event_stop,
         airflow_dag_run_event_stop,
     ]
 
     extracted = BatchExtractor().add_events(input_transformation(events))
 
     assert extracted.locations() == [extracted_airflow_location]
-    assert extracted.jobs() == [extracted_airflow_dag_job, extracted_airflow_task_job]
+    assert extracted.jobs() == [extracted_airflow_dag_job, extracted_airflow_task1_job]
     assert extracted.runs() == [
         extracted_airflow_dag_run,
-        extracted_airflow_task_run,
+        extracted_airflow_task1_run,
     ]
-    assert extracted.operations() == [extracted_airflow_task_operation]
+    assert extracted.operations() == [extracted_airflow_task1_operation]
 
     assert not extracted.datasets()
     assert not extracted.dataset_symlinks()
@@ -87,16 +87,16 @@ def test_extractors_extract_batch_airflow_without_lineage(
 def test_extractors_extract_batch_airflow_with_lineage(
     airflow_dag_run_event_start: OpenLineageRunEvent,
     airflow_dag_run_event_stop: OpenLineageRunEvent,
-    airflow_task_run_event_start: OpenLineageRunEvent,
-    airflow_task_run_event_stop: OpenLineageRunEvent,
+    airflow_task1_run_event_start: OpenLineageRunEvent,
+    airflow_task1_run_event_stop: OpenLineageRunEvent,
     postgres_input: OpenLineageInputDataset,
     hdfs_output: OpenLineageOutputDataset,
     hdfs_output_with_stats: OpenLineageOutputDataset,
     extracted_airflow_dag_job: JobDTO,
-    extracted_airflow_task_job: JobDTO,
+    extracted_airflow_task1_job: JobDTO,
     extracted_airflow_dag_run: RunDTO,
-    extracted_airflow_task_run: RunDTO,
-    extracted_airflow_task_operation: OperationDTO,
+    extracted_airflow_task1_run: RunDTO,
+    extracted_airflow_task1_operation: OperationDTO,
     extracted_airflow_location: LocationDTO,
     extracted_postgres_location: LocationDTO,
     extracted_hdfs_location: LocationDTO,
@@ -114,13 +114,13 @@ def test_extractors_extract_batch_airflow_with_lineage(
 ):
     events = [
         airflow_dag_run_event_start,
-        airflow_task_run_event_start.model_copy(
+        airflow_task1_run_event_start.model_copy(
             update={
                 "inputs": [postgres_input],
                 "outputs": [hdfs_output],
             },
         ),
-        airflow_task_run_event_stop.model_copy(
+        airflow_task1_run_event_stop.model_copy(
             update={
                 "inputs": [postgres_input],
                 "outputs": [hdfs_output_with_stats],
@@ -138,10 +138,10 @@ def test_extractors_extract_batch_airflow_with_lineage(
         extracted_postgres_location,
     ]
 
-    assert extracted.jobs() == [extracted_airflow_dag_job, extracted_airflow_task_job]
+    assert extracted.jobs() == [extracted_airflow_dag_job, extracted_airflow_task1_job]
     assert extracted.users() == [extracted_user]
-    assert extracted.runs() == [extracted_airflow_dag_run, extracted_airflow_task_run]
-    assert extracted.operations() == [extracted_airflow_task_operation]
+    assert extracted.runs() == [extracted_airflow_dag_run, extracted_airflow_task1_run]
+    assert extracted.operations() == [extracted_airflow_task1_operation]
 
     assert extracted.datasets() == [
         extracted_hdfs_dataset1,
