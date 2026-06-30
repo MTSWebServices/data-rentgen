@@ -29,10 +29,7 @@ from sqlalchemy.orm import aliased, selectinload
 from data_rentgen.db.models import Address, Job, JobLastRun, JobTagValue, Location, TagValue
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
-from data_rentgen.dto import JobDTO, PaginationDTO
-
-UNKNOWN_JOB_TYPE = 0
-
+from data_rentgen.dto import JobDTO, JobTypeDTO, PaginationDTO
 
 fetch_bulk_query = select(Job).where(
     tuple_(Job.location_id, func.lower(Job.name)).in_(
@@ -281,7 +278,7 @@ class JobRepository(Repository[Job]):
             location_id=job.location.id,
             parent_job_id=job.parent_job.id if job.parent_job else None,
             name=job.name,
-            type_id=job.type.id if job.type else UNKNOWN_JOB_TYPE,
+            type_id=(job.type or JobTypeDTO.UNKNOWN).id,
         )
         self._session.add(result)
         await self._session.flush([result])

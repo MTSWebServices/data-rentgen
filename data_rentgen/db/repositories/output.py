@@ -21,6 +21,10 @@ inserted_row = insert_statement.excluded
 insert_statement = insert_statement.on_conflict_do_update(
     index_elements=[Output.created_at, Output.id],
     set_={
+        # in case if job or run was changed - workaround for
+        # https://github.com/OpenLineage/OpenLineage/issues/3846
+        "job_id": inserted_row.job_id,
+        "run_id": inserted_row.run_id,
         "type": inserted_row.type.op("|")(Output.type),
         "num_bytes": func.greatest(inserted_row.num_bytes, Output.num_bytes),
         "num_rows": func.greatest(inserted_row.num_rows, Output.num_rows),

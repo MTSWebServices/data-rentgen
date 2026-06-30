@@ -7,6 +7,7 @@ from sqlalchemy import (
     bindparam,
     select,
 )
+from sqlalchemy.dialects.postgresql import insert
 
 from data_rentgen.db.models import JobType
 from data_rentgen.db.repositories.base import Repository
@@ -25,6 +26,7 @@ get_one_query = (
 )
 
 get_distinct_query = select(JobType.type).distinct(JobType.type).order_by(JobType.type)
+insert_query = insert(JobType).on_conflict_do_nothing(index_elements=["type"])
 
 
 class JobTypeRepository(Repository[JobType]):
@@ -54,7 +56,11 @@ class JobTypeRepository(Repository[JobType]):
         return await self._session.scalar(get_one_query, {"type": job_type_dto.type})
 
     async def _create(self, job_type_dto: JobTypeDTO) -> JobType:
-        result = JobType(type=job_type_dto.type)
-        self._session.add(result)
-        await self._session.flush([result])
-        return result
+        await self._session.execute(
+            insert_query,
+            {
+                "type": job_type_dto.type,
+                "id": job_type_dto.id,
+            },
+        )
+        return await self._get(job_type_dto)  # type: ignore[return-value]
