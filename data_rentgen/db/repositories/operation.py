@@ -77,6 +77,9 @@ class OperationRepository(Repository[Operation]):
         await self._session.execute(
             update_statement.values(
                 {
+                    # in case if run was changed - workaround for
+                    # https://github.com/OpenLineage/OpenLineage/issues/3846
+                    "run_id": bindparam("run_id"),
                     "name": func.coalesce(bindparam("name"), Operation.name),
                     "type": func.coalesce(bindparam("type"), Operation.type),
                     "status": func.greatest(bindparam("status"), Operation.status),
