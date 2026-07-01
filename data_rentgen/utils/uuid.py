@@ -110,5 +110,5 @@ def extract_timestamp_from_uuid(uuid: BaseUUID) -> datetime:
         msg = "Only UUIDv6+ are supported"
         raise ValueError(msg)
     if uuid.version == 8:  # noqa: PLR2004
-        return datetime.fromtimestamp(uuid.time / 1_000_000, tz=timezone.utc)
+        return datetime.fromtimestamp(uuid.time / 1_000_000_000, tz=timezone.utc)
     return datetime.fromtimestamp(uuid.time / 1_000, tz=timezone.utc)
