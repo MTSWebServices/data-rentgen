@@ -14,7 +14,7 @@ concurrency:
 
 env:
   DEFAULT_PYTHON: '3.14'
-  MIN_COVERAGE: 87
+  MIN_COVERAGE: 93
 
 jobs:
   tests:
