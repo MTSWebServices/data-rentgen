@@ -12,6 +12,7 @@ from data_rentgen.db.models.dataset_column_relation import (
     DatasetColumnRelationType,
 )
 from data_rentgen.db.models.dataset_symlink import DatasetSymlink, DatasetSymlinkType
+from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
 from data_rentgen.db.models.input import Input
 from data_rentgen.db.models.job import Job, JobTagValue
 from data_rentgen.db.models.job_dependency import JobDependency
@@ -37,6 +38,7 @@ __all__ = [
     "DatasetColumnRelation",
     "DatasetColumnRelationType",
     "DatasetSymlink",
+    "DatasetSymlinkGroup",
     "DatasetSymlinkType",
     "DatasetTagValue",
     "Input",

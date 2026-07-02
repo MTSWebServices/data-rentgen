@@ -3,7 +3,7 @@ import pytest
 from data_rentgen.consumer.extractors import BatchExtractor
 from data_rentgen.dto import (
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     InputDTO,
     JobDTO,
     LocationDTO,
@@ -64,7 +64,7 @@ def test_extractors_extract_batch_airflow_without_lineage(
     assert extracted.operations() == [extracted_airflow_task1_operation]
 
     assert not extracted.datasets()
-    assert not extracted.dataset_symlinks()
+    assert not extracted.dataset_symlink_groups()
     assert not extracted.schemas()
     assert not extracted.inputs()
     assert not extracted.outputs()
@@ -104,8 +104,7 @@ def test_extractors_extract_batch_airflow_with_lineage(
     extracted_postgres_dataset: DatasetDTO,
     extracted_hdfs_dataset1: DatasetDTO,
     extracted_hive_dataset1: DatasetDTO,
-    extracted_hdfs_dataset1_symlink: DatasetSymlinkDTO,
-    extracted_hive_dataset1_symlink: DatasetSymlinkDTO,
+    extracted_dataset1_symlink_group: DatasetSymlinkGroupDTO,
     extracted_dataset_schema: SchemaDTO,
     extracted_user: UserDTO,
     extracted_airflow_postgres_input: InputDTO,
@@ -149,10 +148,7 @@ def test_extractors_extract_batch_airflow_with_lineage(
         extracted_postgres_dataset,
     ]
 
-    assert extracted.dataset_symlinks() == [
-        extracted_hdfs_dataset1_symlink,
-        extracted_hive_dataset1_symlink,
-    ]
+    assert extracted.dataset_symlink_groups() == [extracted_dataset1_symlink_group]
 
     # Both input & output schemas are the same
     assert extracted.schemas() == [extracted_dataset_schema]

@@ -14,7 +14,7 @@ from data_rentgen.dto import (
     DatasetColumnRelationDTO,
     DatasetColumnRelationTypeDTO,
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     InputDTO,
     JobDTO,
@@ -101,15 +101,11 @@ DATASETS = {
 }
 
 DATASET_SYMLINKS = [
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hive_raw_user_metrics"],
-        to_dataset=DATASETS["hdfs_raw_user_metrics"],
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
-    ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hdfs_raw_user_metrics"],
-        to_dataset=DATASETS["hive_raw_user_metrics"],
-        type=DatasetSymlinkTypeDTO.METASTORE,
+    DatasetSymlinkGroupDTO(
+        members=[
+            (DATASETS["hive_raw_user_metrics"], DatasetSymlinkTypeDTO.METASTORE),
+            (DATASETS["hdfs_raw_user_metrics"], DatasetSymlinkTypeDTO.WAREHOUSE),
+        ],
     ),
 ]
 
@@ -200,7 +196,7 @@ def generate_spark_run_local(
     result.add_run(run)
 
     for symlink in DATASET_SYMLINKS:
-        result.add_dataset_symlink(symlink)
+        result.add_dataset_symlink_group(symlink)
 
     for generator in [clickhouse_to_hive, postgres_to_hive]:
         operation, inputs, outputs, column_lineage = generator(faker, run)

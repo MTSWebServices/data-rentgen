@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from data_rentgen.dto import (
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     LocationDTO,
     TagDTO,
@@ -28,6 +28,14 @@ WAREHOUSE = DatasetSymlinkTypeDTO.WAREHOUSE
 # https://github.com/OpenLineage/OpenLineage/issues/4497
 # Fixed in OpenLineage 1.47, but not all users upgraded their ETL scripts
 SCHEMALESS_LOCATION_TYPES = {"clickhouse", "mysql"}
+
+
+def _get_symlink_role(type_: OpenLineageSymlinkType) -> DatasetSymlinkTypeDTO:
+    return METASTORE if type_ == OpenLineageSymlinkType.TABLE else WAREHOUSE
+
+
+def _get_opposite_dataset_role(symlink_roles: list[DatasetSymlinkTypeDTO]) -> DatasetSymlinkTypeDTO:
+    return WAREHOUSE if METASTORE in symlink_roles else METASTORE
 
 
 class DatasetExtractorMixin:
@@ -73,7 +81,10 @@ class DatasetExtractorMixin:
             addresses={f"{scheme}://{host}" for host in hosts},
         )
 
-    def extract_dataset_and_symlinks(self, dataset: OpenLineageDataset) -> tuple[DatasetDTO, list[DatasetSymlinkDTO]]:
+    def extract_dataset_and_symlinks(
+        self,
+        dataset: OpenLineageDataset,
+    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
         symlink_identifiers = dataset.facets.symlinks.identifiers if dataset.facets.symlinks else []
         return self._extract_dataset_and_symlinks(dataset, symlink_identifiers)
 
@@ -81,45 +92,23 @@ class DatasetExtractorMixin:
         self,
         dataset: OpenLineageDataset,
         symlink_identifiers: list[OpenLineageSymlinkIdentifier],
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkDTO]]:
+    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
         dataset_dto = self.extract_dataset(dataset)
-        symlinks = []
-        for symlink_identifier in symlink_identifiers:
-            symlink_dto = self._extract_dataset_ref(symlink_identifier)
-            symlinks.extend(
-                self._connect_dataset_with_symlinks(
-                    dataset_dto,
-                    symlink_dto,
-                    symlink_identifier.type,
-                ),
-            )
-        return dataset_dto, symlinks
+        symlinks = [
+            (self._extract_dataset_ref(symlink_identifier), symlink_identifier.type)
+            for symlink_identifier in symlink_identifiers
+        ]
+        return dataset_dto, [self._build_dataset_symlink_group(dataset_dto, symlinks)] if symlinks else []
 
-    def _connect_dataset_with_symlinks(
+    def _build_dataset_symlink_group(
         self,
         dataset: DatasetDTO,
-        symlink: DatasetDTO,
-        type_: OpenLineageSymlinkType,
-    ) -> list[DatasetSymlinkDTO]:
-        result = []
-        is_metastore_symlink = type_ == OpenLineageSymlinkType.TABLE
-
-        result.append(
-            DatasetSymlinkDTO(
-                from_dataset=dataset,
-                to_dataset=symlink,
-                type=METASTORE if is_metastore_symlink else WAREHOUSE,
-            ),
-        )
-        result.append(
-            DatasetSymlinkDTO(
-                from_dataset=symlink,
-                to_dataset=dataset,
-                type=WAREHOUSE if is_metastore_symlink else METASTORE,
-            ),
-        )
-
-        return sorted(result, key=lambda x: x.type)
+        symlinks: list[tuple[DatasetDTO, OpenLineageSymlinkType]],
+    ) -> DatasetSymlinkGroupDTO:
+        symlink_members = [(symlink, _get_symlink_role(type_)) for symlink, type_ in symlinks]
+        dataset_role = _get_opposite_dataset_role([role for _, role in symlink_members])
+        members = [(dataset, dataset_role), *symlink_members]
+        return DatasetSymlinkGroupDTO(members=members)
 
     def _enrich_dataset_tags(self, dataset_dto: DatasetDTO, dataset: OpenLineageDataset) -> DatasetDTO:
         if not dataset.facets.tags:

@@ -74,7 +74,7 @@ def test_extractors_extract_batch_dbt_spark_thrift(
         extracted_dbt_spark_target_dataset,
     ]
 
-    assert not extracted.dataset_symlinks()
+    assert not extracted.dataset_symlink_groups()
 
     assert extracted.schemas() == [extracted_dbt_spark_source_schema]
     assert extracted.inputs() == [extracted_dbt_spark_input]

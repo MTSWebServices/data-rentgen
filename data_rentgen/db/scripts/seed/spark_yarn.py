@@ -14,7 +14,7 @@ from data_rentgen.dto import (
     DatasetColumnRelationDTO,
     DatasetColumnRelationTypeDTO,
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     InputDTO,
     JobDependencyDTO,
@@ -109,35 +109,23 @@ DATASETS = {
 }
 
 DATASET_SYMLINKS = [
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hive_raw_user_metrics"],
-        to_dataset=DATASETS["hdfs_raw_user_metrics"],
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
+    DatasetSymlinkGroupDTO(
+        members=[
+            (DATASETS["hive_raw_user_metrics"], DatasetSymlinkTypeDTO.METASTORE),
+            (DATASETS["hdfs_raw_user_metrics"], DatasetSymlinkTypeDTO.WAREHOUSE),
+        ],
     ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hdfs_raw_user_metrics"],
-        to_dataset=DATASETS["hive_raw_user_metrics"],
-        type=DatasetSymlinkTypeDTO.METASTORE,
+    DatasetSymlinkGroupDTO(
+        members=[
+            (DATASETS["hive_ref_user_info"], DatasetSymlinkTypeDTO.METASTORE),
+            (DATASETS["hdfs_ref_user_info"], DatasetSymlinkTypeDTO.WAREHOUSE),
+        ],
     ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hive_ref_user_info"],
-        to_dataset=DATASETS["hdfs_ref_user_info"],
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
-    ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hdfs_ref_user_info"],
-        to_dataset=DATASETS["hive_ref_user_info"],
-        type=DatasetSymlinkTypeDTO.METASTORE,
-    ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hive_mart_user_metrics_agg"],
-        to_dataset=DATASETS["hdfs_mart_user_metrics_agg"],
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
-    ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hdfs_mart_user_metrics_agg"],
-        to_dataset=DATASETS["hive_mart_user_metrics_agg"],
-        type=DatasetSymlinkTypeDTO.METASTORE,
+    DatasetSymlinkGroupDTO(
+        members=[
+            (DATASETS["hive_mart_user_metrics_agg"], DatasetSymlinkTypeDTO.METASTORE),
+            (DATASETS["hdfs_mart_user_metrics_agg"], DatasetSymlinkTypeDTO.WAREHOUSE),
+        ],
     ),
 ]
 
@@ -245,7 +233,7 @@ def generate_spark_run_yarn(
     result.add_run(run)
 
     for symlink in DATASET_SYMLINKS:
-        result.add_dataset_symlink(symlink)
+        result.add_dataset_symlink_group(symlink)
 
     for generator in [raw_to_mart]:
         operation, inputs, outputs, column_lineage = generator(faker, run)

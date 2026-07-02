@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data_rentgen.db.models import (
     Address,
     Dataset,
-    DatasetSymlink,
+    DatasetSymlinkGroup,
     DatasetTagValue,
     Input,
     Job,
@@ -22,7 +22,7 @@ async def clean_db(async_session: AsyncSession) -> None:
     await async_session.execute(delete(DatasetTagValue))
     await async_session.execute(delete(Location))
     await async_session.execute(delete(Address))
-    await async_session.execute(delete(DatasetSymlink))
+    await async_session.execute(delete(DatasetSymlinkGroup))
     await async_session.execute(delete(TagValue))
     await async_session.execute(delete(Tag))
     await async_session.execute(delete(Dataset))

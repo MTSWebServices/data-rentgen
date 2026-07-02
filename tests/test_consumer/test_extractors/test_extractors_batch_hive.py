@@ -3,7 +3,7 @@ import pytest
 from data_rentgen.consumer.extractors import BatchExtractor
 from data_rentgen.dto import (
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     InputDTO,
     JobDTO,
     LocationDTO,
@@ -47,10 +47,8 @@ def test_extractors_extract_batch_hive(
     extracted_hive_dataset2: DatasetDTO,
     extracted_hdfs_dataset1: DatasetDTO,
     extracted_hdfs_dataset2: DatasetDTO,
-    extracted_hdfs_dataset1_symlink: DatasetSymlinkDTO,
-    extracted_hive_dataset1_symlink: DatasetSymlinkDTO,
-    extracted_hdfs_dataset2_symlink: DatasetSymlinkDTO,
-    extracted_hive_dataset2_symlink: DatasetSymlinkDTO,
+    extracted_dataset1_symlink_group: DatasetSymlinkGroupDTO,
+    extracted_dataset2_symlink_group: DatasetSymlinkGroupDTO,
     extracted_dataset_schema: SchemaDTO,
     extracted_hive_job: JobDTO,
     extracted_hive_run: RunDTO,
@@ -89,11 +87,9 @@ def test_extractors_extract_batch_hive(
         extracted_hive_dataset2,
     ]
 
-    assert extracted.dataset_symlinks() == [
-        extracted_hdfs_dataset1_symlink,
-        extracted_hdfs_dataset2_symlink,
-        extracted_hive_dataset1_symlink,
-        extracted_hive_dataset2_symlink,
+    assert [group.fingerprint for group in extracted.dataset_symlink_groups()] == [
+        extracted_dataset2_symlink_group.fingerprint,
+        extracted_dataset1_symlink_group.fingerprint,
     ]
 
     # Both input & output schemas are the same

@@ -60,18 +60,18 @@ class BatchExtractor:
         self.result.add_operation(operation)
 
         for input_dataset in event.inputs:
-            input_dto, symlink_dtos = extractor.extract_input(operation, input_dataset, event)
+            input_dto, symlink_groups = extractor.extract_input(operation, input_dataset, event)
             self.result.add_input(input_dto)
 
-            for symlink_dto in symlink_dtos:
-                self.result.add_dataset_symlink(symlink_dto)
+            for symlink_group in symlink_groups:
+                self.result.add_dataset_symlink_group(symlink_group)
 
         for output_dataset in event.outputs:
-            output_dto, symlink_dtos = extractor.extract_output(operation, output_dataset, event)
+            output_dto, symlink_groups = extractor.extract_output(operation, output_dataset, event)
             self.result.add_output(output_dto)
 
-            for symlink_dto in symlink_dtos:
-                self.result.add_dataset_symlink(symlink_dto)
+            for symlink_group in symlink_groups:
+                self.result.add_dataset_symlink_group(symlink_group)
 
             column_lineage = extractor.extract_column_lineage(operation, output_dataset, event)
             for item in column_lineage:

@@ -29,7 +29,7 @@ class DatabaseSaver:
         await self.create_tags(data)
         await self.create_tag_values(data)
         await self.create_datasets(data)
-        await self.create_dataset_symlinks(data)
+        await self.create_dataset_symlink_groups(data)
         await self.create_job_types(data)
         await self.create_jobs(data)
         await self.create_job_dependencies(data)
@@ -72,14 +72,10 @@ class DatabaseSaver:
                     dataset = await self.unit_of_work.dataset.update(dataset, dataset_dto)  # noqa: PLW2901
             dataset_dto.id = dataset.id
 
-    async def create_dataset_symlinks(self, data: BatchExtractionResult):
+    async def create_dataset_symlink_groups(self, data: BatchExtractionResult):
         self.logger.debug("Creating dataset symlinks")
-        dataset_symlinks_pairs = await self.unit_of_work.dataset_symlink.fetch_bulk(data.dataset_symlinks())
-        for dataset_symlink_dto, dataset_symlink in dataset_symlinks_pairs:
-            if not dataset_symlink:
-                async with self.unit_of_work:
-                    dataset_symlink = await self.unit_of_work.dataset_symlink.create(dataset_symlink_dto)  # noqa: PLW2901
-            dataset_symlink_dto.id = dataset_symlink.id
+        async with self.unit_of_work:
+            await self.unit_of_work.dataset_symlink.create_bulk(data.dataset_symlink_groups())
 
     async def create_job_types(self, data: BatchExtractionResult):
         self.logger.debug("Creating job types")

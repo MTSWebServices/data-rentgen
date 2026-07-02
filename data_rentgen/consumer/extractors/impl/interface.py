@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from data_rentgen.dto import ColumnLineageDTO, DatasetSymlinkDTO, InputDTO, OperationDTO, OutputDTO, RunDTO
+from data_rentgen.dto import ColumnLineageDTO, DatasetSymlinkGroupDTO, InputDTO, OperationDTO, OutputDTO, RunDTO
 from data_rentgen.openlineage.dataset import (
     OpenLineageInputDataset,
     OpenLineageOutputDataset,
@@ -43,14 +43,14 @@ class ExtractorInterface(Protocol):
         operation: OperationDTO,
         dataset: OpenLineageInputDataset,
         event: OpenLineageRunEvent,
-    ) -> tuple[InputDTO, list[DatasetSymlinkDTO]]: ...
+    ) -> tuple[InputDTO, list[DatasetSymlinkGroupDTO]]: ...
 
     def extract_output(
         self,
         operation: OperationDTO,
         dataset: OpenLineageOutputDataset,
         event: OpenLineageRunEvent,
-    ) -> tuple[OutputDTO, list[DatasetSymlinkDTO]]: ...
+    ) -> tuple[OutputDTO, list[DatasetSymlinkGroupDTO]]: ...
 
     def extract_column_lineage(
         self,

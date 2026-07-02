@@ -86,7 +86,7 @@ def test_extractors_extract_batch_flink(
         extracted_postgres_dataset,
     ]
 
-    assert not extracted.dataset_symlinks()
+    assert not extracted.dataset_symlink_groups()
 
     # Both input & output schemas are the same
     assert extracted.schemas() == [extracted_dataset_schema]
