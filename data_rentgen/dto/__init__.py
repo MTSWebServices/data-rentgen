@@ -8,7 +8,11 @@ from data_rentgen.dto.dataset_column_relation import (
     DatasetColumnRelationDTO,
     DatasetColumnRelationTypeDTO,
 )
-from data_rentgen.dto.dataset_symlink import DatasetSymlinkDTO, DatasetSymlinkTypeDTO
+from data_rentgen.dto.dataset_symlink import (
+    DatasetSymlinkGroupDTO,
+    DatasetSymlinkTypeDTO,
+    compute_symlink_fingerprint,
+)
 from data_rentgen.dto.input import InputDTO
 from data_rentgen.dto.job import JobDTO
 from data_rentgen.dto.job_dependency import JobDependencyDTO
@@ -33,7 +37,7 @@ __all__ = [
     "DatasetColumnRelationDTO",
     "DatasetColumnRelationTypeDTO",
     "DatasetDTO",
-    "DatasetSymlinkDTO",
+    "DatasetSymlinkGroupDTO",
     "DatasetSymlinkTypeDTO",
     "InputDTO",
     "JobDTO",
@@ -54,4 +58,5 @@ __all__ = [
     "TagDTO",
     "TagValueDTO",
     "UserDTO",
+    "compute_symlink_fingerprint",
 ]

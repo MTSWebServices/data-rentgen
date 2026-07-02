@@ -3,10 +3,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import json
+from collections.abc import Iterable
+from dataclasses import dataclass
 from enum import Enum
+from uuid import UUID
 
 from data_rentgen.dto.dataset import DatasetDTO
+from data_rentgen.utils.uuid import generate_static_uuid
 
 
 class DatasetSymlinkTypeDTO(str, Enum):
@@ -17,19 +21,29 @@ class DatasetSymlinkTypeDTO(str, Enum):
         return self.value
 
 
+DatasetSymlinkMemberDTO = tuple[DatasetDTO, DatasetSymlinkTypeDTO]
+
+
+def compute_symlink_fingerprint(
+    members: Iterable[DatasetSymlinkMemberDTO],
+) -> UUID:
+    normalized = sorted((dataset.unique_key, str(role)) for dataset, role in members)
+    return generate_static_uuid(
+        json.dumps(normalized, ensure_ascii=True),
+    )
+
+
 @dataclass(slots=True)
-class DatasetSymlinkDTO:
-    from_dataset: DatasetDTO
-    to_dataset: DatasetDTO
-    type: DatasetSymlinkTypeDTO
-    id: int | None = field(default=None, compare=False)
+class DatasetSymlinkGroupDTO:
+    members: list[DatasetSymlinkMemberDTO]
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.from_dataset.unique_key, self.to_dataset.unique_key, self.type)
+    def fingerprint(self) -> UUID:
+        return compute_symlink_fingerprint(self.members)
 
-    def merge(self, new: DatasetSymlinkDTO) -> DatasetSymlinkDTO:
-        self.from_dataset.merge(new.from_dataset)
-        self.to_dataset.merge(new.to_dataset)
-        self.id = new.id or self.id
+    @property
+    def unique_key(self) -> UUID:
+        return self.fingerprint
+
+    def merge(self, new: DatasetSymlinkGroupDTO) -> DatasetSymlinkGroupDTO:
         return self

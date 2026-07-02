@@ -78,7 +78,7 @@ def test_extractors_extract_batch_starrocks(
         extracted_iceberg_dataset2,
     ]
 
-    assert not extracted.dataset_symlinks()
+    assert not extracted.dataset_symlink_groups()
     assert not extracted.schemas()
 
     assert extracted.inputs() == [extracted_starrocks_input]

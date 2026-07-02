@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from data_rentgen.consumer.extractors.generic import GenericExtractor
-from data_rentgen.dto import DatasetDTO, DatasetSymlinkDTO, OperationDTO, OutputTypeDTO, RunDTO
+from data_rentgen.dto import DatasetDTO, DatasetSymlinkGroupDTO, OperationDTO, OutputTypeDTO, RunDTO
 from data_rentgen.openlineage.dataset import OpenLineageDataset, OpenLineageOutputDataset
 from data_rentgen.openlineage.dataset_facets import (
     OpenLineageSymlinkIdentifier,
@@ -50,7 +50,7 @@ class FlinkExtractor(GenericExtractor):
         self,
         dataset: OpenLineageDataset,
         symlink_identifiers: list[OpenLineageSymlinkIdentifier],
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkDTO]]:
+    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
         # Exclude Kafka fake symlinks produced by Flink 2.x integration.
         # See https://github.com/OpenLineage/OpenLineage/pull/3657
         symlink_identifiers = [

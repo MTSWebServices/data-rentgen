@@ -2,7 +2,7 @@ from data_rentgen.consumer.extractors.generic import GenericExtractor
 from data_rentgen.consumer.extractors.impl import DbtExtractor, FlinkExtractor, SparkExtractor
 from data_rentgen.dto import (
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     LocationDTO,
     TagDTO,
@@ -95,8 +95,12 @@ def test_extractors_extract_dataset_hdfs_with_table_symlink():
     dataset_dto, symlinks_dto = SparkExtractor().extract_dataset_and_symlinks(dataset)
     assert dataset_dto == hive_dataset
     assert symlinks_dto == [
-        DatasetSymlinkDTO(from_dataset=hdfs_dataset, to_dataset=hive_dataset, type=DatasetSymlinkTypeDTO.METASTORE),
-        DatasetSymlinkDTO(from_dataset=hive_dataset, to_dataset=hdfs_dataset, type=DatasetSymlinkTypeDTO.WAREHOUSE),
+        DatasetSymlinkGroupDTO(
+            members=[
+                (hdfs_dataset, DatasetSymlinkTypeDTO.WAREHOUSE),
+                (hive_dataset, DatasetSymlinkTypeDTO.METASTORE),
+            ],
+        ),
     ]
 
 
@@ -192,8 +196,12 @@ def test_extractors_extract_dataset_hive_with_location_symlink():
     dataset_dto, symlinks_dto = SparkExtractor().extract_dataset_and_symlinks(dataset)
     assert dataset_dto == hive_dataset
     assert symlinks_dto == [
-        DatasetSymlinkDTO(from_dataset=hdfs_dataset, to_dataset=hive_dataset, type=DatasetSymlinkTypeDTO.METASTORE),
-        DatasetSymlinkDTO(from_dataset=hive_dataset, to_dataset=hdfs_dataset, type=DatasetSymlinkTypeDTO.WAREHOUSE),
+        DatasetSymlinkGroupDTO(
+            members=[
+                (hive_dataset, DatasetSymlinkTypeDTO.METASTORE),
+                (hdfs_dataset, DatasetSymlinkTypeDTO.WAREHOUSE),
+            ],
+        ),
     ]
 
 

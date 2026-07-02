@@ -4,9 +4,12 @@ from random import randint
 from typing import TYPE_CHECKING
 
 import pytest_asyncio
+from sqlalchemy.dialects.postgresql import insert
 
 from data_rentgen.db.models import Dataset, TagValue
 from data_rentgen.db.models.dataset_symlink import DatasetSymlink, DatasetSymlinkType
+from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
+from data_rentgen.utils.uuid import generate_static_uuid
 from tests.test_server.fixtures.factories.base import random_string
 from tests.test_server.fixtures.factories.location import create_location
 from tests.test_server.utils.delete import clean_db
@@ -58,15 +61,34 @@ async def make_symlink(
     to_dataset: Dataset,
     type: DatasetSymlinkType,
 ) -> DatasetSymlink:
-    symlink = DatasetSymlink(
+    await make_symlink_group(async_session, from_dataset, to_dataset, type)
+    return DatasetSymlink(
         from_dataset_id=from_dataset.id,
         to_dataset_id=to_dataset.id,
         type=type,
     )
-    async_session.add(symlink)
+
+
+async def make_symlink_group(
+    async_session: AsyncSession,
+    from_dataset: Dataset,
+    to_dataset: Dataset,
+    type: DatasetSymlinkType,
+) -> None:
+    left, right = sorted((from_dataset.id, to_dataset.id))
+    fingerprint = generate_static_uuid(f"symlink_group:{left}:{right}")
+    opposite = DatasetSymlinkType.WAREHOUSE if type == DatasetSymlinkType.METASTORE else DatasetSymlinkType.METASTORE
+    statement = insert(DatasetSymlinkGroup).on_conflict_do_nothing(
+        index_elements=[DatasetSymlinkGroup.dataset_id, DatasetSymlinkGroup.fingerprint],
+    )
+    await async_session.execute(
+        statement,
+        [
+            {"fingerprint": fingerprint, "dataset_id": from_dataset.id, "type": opposite},
+            {"fingerprint": fingerprint, "dataset_id": to_dataset.id, "type": type},
+        ],
+    )
     await async_session.commit()
-    await async_session.refresh(symlink)
-    return symlink
 
 
 @pytest_asyncio.fixture(params=[{}])

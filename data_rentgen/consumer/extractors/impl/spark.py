@@ -6,7 +6,7 @@ import logging
 import re
 
 from data_rentgen.consumer.extractors.generic import GenericExtractor
-from data_rentgen.dto import DatasetDTO, DatasetSymlinkDTO, OperationDTO, RunDTO, UserDTO
+from data_rentgen.dto import DatasetDTO, DatasetSymlinkGroupDTO, OperationDTO, RunDTO, UserDTO
 from data_rentgen.openlineage.dataset import OpenLineageDataset
 from data_rentgen.openlineage.dataset_facets import (
     OpenLineageColumnLineageDatasetFacetFieldRef,
@@ -93,7 +93,7 @@ class SparkExtractor(GenericExtractor):
         self,
         dataset: OpenLineageDataset,
         symlink_identifiers: list[OpenLineageSymlinkIdentifier],
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkDTO]]:
+    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
         table_symlinks = [
             identifier for identifier in symlink_identifiers if identifier.type == OpenLineageSymlinkType.TABLE
         ]
@@ -121,9 +121,10 @@ class SparkExtractor(GenericExtractor):
 
         return (
             table_dataset_dto,
-            self._connect_dataset_with_symlinks(
-                location_dataset_dto,
-                table_dataset_dto,
-                OpenLineageSymlinkType.TABLE,
-            ),
+            [
+                self._build_dataset_symlink_group(
+                    location_dataset_dto,
+                    [(table_dataset_dto, OpenLineageSymlinkType.TABLE)],
+                ),
+            ],
         )

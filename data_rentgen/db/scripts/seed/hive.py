@@ -14,7 +14,7 @@ from data_rentgen.dto import (
     DatasetColumnRelationDTO,
     DatasetColumnRelationTypeDTO,
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     InputDTO,
     JobDTO,
@@ -89,15 +89,11 @@ DATASETS = {
 }
 
 DATASET_SYMLINKS = [
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hive_ref_user_info"],
-        to_dataset=DATASETS["hdfs_ref_user_info"],
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
-    ),
-    DatasetSymlinkDTO(
-        from_dataset=DATASETS["hdfs_ref_user_info"],
-        to_dataset=DATASETS["hive_ref_user_info"],
-        type=DatasetSymlinkTypeDTO.METASTORE,
+    DatasetSymlinkGroupDTO(
+        members=[
+            (DATASETS["hive_ref_user_info"], DatasetSymlinkTypeDTO.METASTORE),
+            (DATASETS["hdfs_ref_user_info"], DatasetSymlinkTypeDTO.WAREHOUSE),
+        ],
     ),
 ]
 
@@ -150,7 +146,7 @@ def generate_hive_run(
     result.add_run(run)
 
     for symlink in DATASET_SYMLINKS:
-        result.add_dataset_symlink(symlink)
+        result.add_dataset_symlink_group(symlink)
 
     for generator in [load_ref_user_info]:
         operation, inputs, outputs, column_lineage = generator(faker, run)

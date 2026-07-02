@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from data_rentgen.dto import (
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     InputDTO,
     OperationDTO,
@@ -51,7 +51,10 @@ class IOExtractorMixin(ABC):
     io_time_resolution = timedelta(hours=1)
 
     @abstractmethod
-    def extract_dataset_and_symlinks(self, dataset: OpenLineageDataset) -> tuple[DatasetDTO, list[DatasetSymlinkDTO]]:
+    def extract_dataset_and_symlinks(
+        self,
+        dataset: OpenLineageDataset,
+    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
         pass
 
     def extract_io_created_at(self, operation: OperationDTO, event: OpenLineageRunEvent) -> datetime:
@@ -106,7 +109,7 @@ class IOExtractorMixin(ABC):
         operation: OperationDTO,
         dataset: OpenLineageInputDataset,
         event: OpenLineageRunEvent,
-    ) -> tuple[InputDTO, list[DatasetSymlinkDTO]]:
+    ) -> tuple[InputDTO, list[DatasetSymlinkGroupDTO]]:
         """
         Extract InputDTO with optional symlinks
         """
@@ -130,7 +133,7 @@ class IOExtractorMixin(ABC):
         operation: OperationDTO,
         dataset: OpenLineageOutputDataset,
         event: OpenLineageRunEvent,
-    ) -> tuple[OutputDTO, list[DatasetSymlinkDTO]]:
+    ) -> tuple[OutputDTO, list[DatasetSymlinkGroupDTO]]:
         """
         Extract OutputDTO with optional symlinks
         """

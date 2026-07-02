@@ -2,7 +2,7 @@ import pytest
 
 from data_rentgen.dto import (
     DatasetDTO,
-    DatasetSymlinkDTO,
+    DatasetSymlinkGroupDTO,
     DatasetSymlinkTypeDTO,
     LocationDTO,
     SchemaDTO,
@@ -88,50 +88,28 @@ def extracted_hive_dataset2(
 
 
 @pytest.fixture
-def extracted_hdfs_dataset1_symlink(
+def extracted_dataset1_symlink_group(
     extracted_hdfs_dataset1: DatasetDTO,
     extracted_hive_dataset1: DatasetDTO,
-) -> DatasetSymlinkDTO:
-    return DatasetSymlinkDTO(
-        from_dataset=extracted_hdfs_dataset1,
-        to_dataset=extracted_hive_dataset1,
-        type=DatasetSymlinkTypeDTO.METASTORE,
+) -> DatasetSymlinkGroupDTO:
+    return DatasetSymlinkGroupDTO(
+        members=[
+            (extracted_hdfs_dataset1, DatasetSymlinkTypeDTO.WAREHOUSE),
+            (extracted_hive_dataset1, DatasetSymlinkTypeDTO.METASTORE),
+        ],
     )
 
 
 @pytest.fixture
-def extracted_hive_dataset1_symlink(
-    extracted_hdfs_dataset1: DatasetDTO,
-    extracted_hive_dataset1: DatasetDTO,
-) -> DatasetSymlinkDTO:
-    return DatasetSymlinkDTO(
-        from_dataset=extracted_hive_dataset1,
-        to_dataset=extracted_hdfs_dataset1,
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
-    )
-
-
-@pytest.fixture
-def extracted_hdfs_dataset2_symlink(
+def extracted_dataset2_symlink_group(
     extracted_hdfs_dataset2: DatasetDTO,
     extracted_hive_dataset2: DatasetDTO,
-) -> DatasetSymlinkDTO:
-    return DatasetSymlinkDTO(
-        from_dataset=extracted_hdfs_dataset2,
-        to_dataset=extracted_hive_dataset2,
-        type=DatasetSymlinkTypeDTO.METASTORE,
-    )
-
-
-@pytest.fixture
-def extracted_hive_dataset2_symlink(
-    extracted_hdfs_dataset2: DatasetDTO,
-    extracted_hive_dataset2: DatasetDTO,
-) -> DatasetSymlinkDTO:
-    return DatasetSymlinkDTO(
-        from_dataset=extracted_hive_dataset2,
-        to_dataset=extracted_hdfs_dataset2,
-        type=DatasetSymlinkTypeDTO.WAREHOUSE,
+) -> DatasetSymlinkGroupDTO:
+    return DatasetSymlinkGroupDTO(
+        members=[
+            (extracted_hdfs_dataset2, DatasetSymlinkTypeDTO.WAREHOUSE),
+            (extracted_hive_dataset2, DatasetSymlinkTypeDTO.METASTORE),
+        ],
     )
 
 
