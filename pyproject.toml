@@ -169,6 +169,7 @@ relative_files = true
 concurrency = ["gevent"]
 omit = [
   "tests/*",
+  "data_rentgen/db/migrations/**/*",
 ]
 data_file = "reports/.coverage"
 
