@@ -6,14 +6,15 @@ from collections import defaultdict
 from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, NamedTuple
 from uuid import UUID
 
 from fastapi import Depends
 
 from data_rentgen.db.models import (
     Dataset,
-    DatasetSymlink,
+    DatasetSymlinkGroup,
+    DatasetSymlinkType,
     Job,
     Operation,
     Run,
@@ -28,13 +29,37 @@ from data_rentgen.services.uow import UnitOfWork
 logger = logging.getLogger(__name__)
 
 
+class SymlinkPair(NamedTuple):
+    from_dataset_id: int
+    to_dataset_id: int
+    type: DatasetSymlinkType
+
+
+def _reconstruct_symlink_pairs(symlink_groups: list[DatasetSymlinkGroup]) -> list[SymlinkPair]:
+    members_by_fingerprint: dict[UUID, list[tuple[int, DatasetSymlinkType]]] = defaultdict(list)
+    for row in symlink_groups:
+        members_by_fingerprint[row.fingerprint].append((row.dataset_id, row.type))
+
+    pairs: dict[tuple[int, int], SymlinkPair] = {}
+    for members in members_by_fingerprint.values():
+        for from_dataset_id, _ in members:
+            for to_dataset_id, to_type in members:
+                if from_dataset_id != to_dataset_id:
+                    pairs[(from_dataset_id, to_dataset_id)] = SymlinkPair(
+                        from_dataset_id=from_dataset_id,
+                        to_dataset_id=to_dataset_id,
+                        type=to_type,
+                    )
+    return list(pairs.values())
+
+
 @dataclass
 class LineageServiceResult:
     jobs: dict[int, Job] = field(default_factory=dict)
     runs: dict[UUID, Run] = field(default_factory=dict)
     operations: dict[UUID, Operation] = field(default_factory=dict)
     datasets: dict[int, Dataset] = field(default_factory=dict)
-    dataset_symlinks: dict[tuple[int, int], DatasetSymlink] = field(default_factory=dict)
+    dataset_symlinks: dict[tuple[int, int], SymlinkPair] = field(default_factory=dict)
     inputs: dict[tuple[int, int, UUID | None, UUID | None], InputRow] = field(default_factory=dict)
     outputs: dict[tuple[int, int, UUID | None, UUID | None, int | None], OutputRow] = field(default_factory=dict)
     column_lineage: dict[tuple[int, int], list[ColumnLineageRow]] = field(default_factory=dict)
@@ -682,7 +707,7 @@ class LineageService:
 
         datasets_by_id = {dataset.id: dataset for dataset in datasets}
 
-        # Threat dataset symlinks like they are specified in `start_node_ids`
+        # Treat dataset symlinks like they are specified in `start_node_ids`
         ids_to_skip = ids_to_skip or IdsToSkip()
         extra_dataset_ids, dataset_symlinks = await self._resolve_dataset_ids_via_symlink(datasets_by_id, ids_to_skip)
         extra_datasets = await self._uow.dataset.list_by_ids(extra_dataset_ids)
@@ -775,22 +800,18 @@ class LineageService:
         self,
         dataset_ids: Collection[int],
         ids_to_skip: IdsToSkip | None = None,
-    ) -> tuple[set[int], list[DatasetSymlink]]:
-        # For now return all symlinks regardless of direction
-        dataset_symlinks = await self._uow.dataset_symlink.list_by_dataset_ids(dataset_ids)
+    ) -> tuple[set[int], list[SymlinkPair]]:
+        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(dataset_ids)
 
         ids_to_skip = ids_to_skip or IdsToSkip()
-        dataset_ids_from_symlinks = {dataset_symlink.from_dataset_id for dataset_symlink in dataset_symlinks}
-        dataset_ids_to_symlinks = {dataset_symlink.to_dataset_id for dataset_symlink in dataset_symlinks}
-        new_dataset_ids = (
-            (dataset_ids_from_symlinks | dataset_ids_to_symlinks) - set(dataset_ids) - ids_to_skip.datasets
-        )
-        return new_dataset_ids, dataset_symlinks
+        symlink_dataset_ids = {row.dataset_id for row in symlink_groups}
+        new_dataset_ids = symlink_dataset_ids - set(dataset_ids) - ids_to_skip.datasets
+        return new_dataset_ids, _reconstruct_symlink_pairs(symlink_groups)
 
     async def _dataset_lineage_with_operation_granularity(
         self,
         datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], DatasetSymlink],
+        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
         direction: LineageDirectionV1,
         since: datetime,
         until: datetime | None,
@@ -931,7 +952,7 @@ class LineageService:
     async def _dataset_lineage_with_run_granularity(
         self,
         datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], DatasetSymlink],
+        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
         direction: LineageDirectionV1,
         since: datetime,
         until: datetime | None,
@@ -1049,7 +1070,7 @@ class LineageService:
     async def _dataset_lineage_with_job_granularity(
         self,
         datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], DatasetSymlink],
+        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
         direction: LineageDirectionV1,
         since: datetime,
         until: datetime | None,
@@ -1142,7 +1163,7 @@ class LineageService:
     async def _dataset_lineage_with_dataset_granularity(  # noqa: C901, PLR0915, PLR0912
         self,
         datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], DatasetSymlink],
+        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
         direction: LineageDirectionV1,
         since: datetime,
         until: datetime | None,

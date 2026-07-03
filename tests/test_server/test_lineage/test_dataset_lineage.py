@@ -1285,7 +1285,7 @@ async def test_get_dataset_lineage_with_symlink(
     datasets = [dataset for dataset in lineage.datasets if dataset.id in dataset_ids]
     assert datasets
 
-    # Threat all datasets from symlinks like they were passed as `start_node_id`
+    # Treat all datasets from symlinks like they were passed as `start_node_id`
     inputs = [input for input in lineage.inputs if input.dataset_id in dataset_ids]
     assert inputs
 
@@ -1315,6 +1315,80 @@ async def test_get_dataset_lineage_with_symlink(
         params={
             "since": since.isoformat(),
             "start_node_id": initial_dataset.id,
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": run_parents_to_json(runs),
+            "symlinks": symlinks_to_json(dataset_symlinks),
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
+                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
+            ],
+            "outputs": [
+                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
+            ],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets, outputs, inputs),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
+            "operations": {},
+        },
+    }
+
+
+async def test_get_dataset_lineage_with_transitive_symlinks(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    lineage_with_transitive_symlinks: LineageResult,
+    mocked_user: MockedUser,
+):
+    lineage = lineage_with_transitive_symlinks
+    datasets_by_name = {dataset.name: dataset for dataset in lineage.datasets}
+    hive_a = datasets_by_name["schema.table_a"]
+    hdfs_shared = datasets_by_name["/warehouse/shared"]
+    hive_b = datasets_by_name["schema.table_b"]
+    dataset_ids = {hive_a.id, hdfs_shared.id, hive_b.id}
+
+    datasets = [dataset for dataset in lineage.datasets if dataset.id in dataset_ids]
+    assert datasets
+
+    dataset_symlinks = [
+        dataset_symlink
+        for dataset_symlink in lineage.dataset_symlinks
+        if dataset_symlink.from_dataset_id in dataset_ids or dataset_symlink.to_dataset_id in dataset_ids
+    ]
+    assert dataset_symlinks
+
+    inputs = [input for input in lineage.inputs if input.dataset_id in dataset_ids]
+    outputs = [output for output in lineage.outputs if output.dataset_id in dataset_ids]
+    assert outputs
+
+    run_ids = {output.run_id for output in outputs if output.run_id is not None}
+    runs = [run for run in lineage.runs if run.id in run_ids]
+    assert runs
+
+    job_ids = {run.job_id for run in runs}
+    jobs = [job for job in lineage.jobs if job.id in job_ids]
+    assert jobs
+
+    datasets = await enrich_datasets(datasets, async_session)
+    jobs = await enrich_jobs(jobs, async_session)
+    runs = await enrich_runs(runs, async_session)
+    since = min(run.created_at for run in lineage.runs)
+
+    response = await test_client.get(
+        "v1/datasets/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            "start_node_id": hive_a.id,
         },
     )
 
