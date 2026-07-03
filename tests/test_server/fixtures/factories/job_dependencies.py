@@ -325,10 +325,17 @@ async def job_dependency_chain_with_lineage_and_symlinks(
         # Create datasets connected via symlinks.
         left_dataset_location = await create_location(async_session)
         left_output_dataset = await create_dataset(async_session, location_id=left_dataset_location.id)
+        left_intermediate_dataset = await create_dataset(async_session, location_id=left_dataset_location.id)
         left_input_dataset = await create_dataset(async_session, location_id=left_dataset_location.id)
         await make_symlink(
             async_session=async_session,
             from_dataset=left_output_dataset,
+            to_dataset=left_intermediate_dataset,
+            type=DatasetSymlinkType.METASTORE,
+        )
+        await make_symlink(
+            async_session=async_session,
+            from_dataset=left_intermediate_dataset,
             to_dataset=left_input_dataset,
             type=DatasetSymlinkType.METASTORE,
         )

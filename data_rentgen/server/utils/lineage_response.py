@@ -36,12 +36,11 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from data_rentgen.db.models.dataset import Dataset
-    from data_rentgen.db.models.dataset_symlink import DatasetSymlink
     from data_rentgen.db.models.operation import Operation
     from data_rentgen.db.models.run import Run
     from data_rentgen.db.repositories.column_lineage import ColumnLineageRow
     from data_rentgen.db.repositories.io_dataset_relation import IODatasetRelationRow
-    from data_rentgen.server.services.lineage import LineageServiceResult
+    from data_rentgen.server.services.lineage import LineageServiceResult, SymlinkPair
 
 
 def build_lineage_response(lineage: LineageServiceResult) -> LineageResponseV1:
@@ -108,7 +107,7 @@ def _get_operation_parent_relations(operations: dict[UUID, Operation]) -> list[L
     return parents
 
 
-def _get_symlink_relations(dataset_symlinks: dict[Any, DatasetSymlink]) -> list[LineageSymlinkRelationV1]:
+def _get_symlink_relations(dataset_symlinks: dict[Any, SymlinkPair]) -> list[LineageSymlinkRelationV1]:
     symlinks = []
     for key in sorted(dataset_symlinks):
         dataset_symlink = dataset_symlinks[key]

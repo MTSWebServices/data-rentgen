@@ -46,6 +46,11 @@ def upgrade() -> None:
         ),
     )
     _backfill_symlink_groups()
+    op.create_index(
+        op.f("ix__dataset_symlink_group__fingerprint"),
+        "dataset_symlink_group",
+        ["fingerprint"],
+    )
     op.drop_table("dataset_symlink")
     op.execute(
         sa.text(

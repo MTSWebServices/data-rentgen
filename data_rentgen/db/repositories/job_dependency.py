@@ -19,13 +19,46 @@ from sqlalchemy import (
     select,
     tuple_,
 )
+from sqlalchemy.orm import aliased
 
-from data_rentgen.db.models.dataset_symlink import DatasetSymlink
+from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
 from data_rentgen.db.models.input import Input
 from data_rentgen.db.models.job_dependency import JobDependency
 from data_rentgen.db.models.output import Output
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import JobDependencyDTO
+
+
+def _symlink_connected_cte():
+    output = aliased(Output, name="connected_output")
+    base_part = (
+        select(
+            output.dataset_id.label("original_dataset_id"),
+            output.dataset_id.label("dataset_id_via_symlink"),
+        )
+        .where(
+            output.created_at >= bindparam("since"),
+            or_(
+                bindparam("until", type_=DateTime(timezone=True)).is_(None),
+                output.created_at <= bindparam("until"),
+            ),
+        )
+        .distinct()
+    )
+    cte = base_part.cte("symlink_connected", recursive=True)
+    reached_group = aliased(DatasetSymlinkGroup, name="connected_reached_group")
+    next_group = aliased(DatasetSymlinkGroup, name="connected_next_group")
+    recursive_part = (
+        select(
+            cte.c.original_dataset_id.label("original_dataset_id"),
+            next_group.dataset_id.label("dataset_id_via_symlink"),
+        )
+        .select_from(cte)
+        .join(reached_group, reached_group.dataset_id == cte.c.dataset_id_via_symlink)
+        .join(next_group, next_group.fingerprint == reached_group.fingerprint)
+    )
+    return cte.union(recursive_part)
+
 
 fetch_bulk_query = select(JobDependency).where(
     tuple_(JobDependency.from_job_id, JobDependency.to_job_id).in_(
@@ -163,25 +196,14 @@ class JobDependencyRepository(Repository[JobDependency]):
                 Input,
                 Output.dataset_id == Input.dataset_id,
             ).where(*where_clauses)
-            # IO connections Output.d_id == Symlink.to_d_id Symlink.from_d_id == Input.d_id
-            via_symlinks_from_output = (
-                inferred_columns.join(DatasetSymlink, Output.dataset_id == DatasetSymlink.to_dataset_id)
-                .join(
-                    Input,
-                    DatasetSymlink.from_dataset_id == Input.dataset_id,
-                )
-                .where(*where_clauses)
-            )
-            # IO connections Input.d_id == Symlink.to_d_id Symlink.from_d_id == Output.d_id
-            via_symlinks_from_input = (
-                inferred_columns.join(DatasetSymlink, Input.dataset_id == DatasetSymlink.to_dataset_id)
-                .join(
-                    Output,
-                    DatasetSymlink.from_dataset_id == Output.dataset_id,
-                )
-                .where(*where_clauses)
+            # IO connections via symlinked datasets
+            connected = _symlink_connected_cte()
+            via_symlinks = (
+                inferred_columns.join(connected, Output.dataset_id == connected.c.original_dataset_id)
+                .join(Input, connected.c.dataset_id_via_symlink == Input.dataset_id)
+                .where(*where_clauses, connected.c.original_dataset_id != connected.c.dataset_id_via_symlink)
             )
 
-            query = query.union(direct_connection, via_symlinks_from_input, via_symlinks_from_output)
+            query = query.union(direct_connection, via_symlinks)
 
         return query

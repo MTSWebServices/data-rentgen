@@ -26,7 +26,7 @@ class DatasetSymlinkGroup(Base):
         lazy="noload",
         foreign_keys=[dataset_id],
     )
-    fingerprint: Mapped[UUID] = mapped_column(SQL_UUID, primary_key=True)
+    fingerprint: Mapped[UUID] = mapped_column(SQL_UUID, primary_key=True, index=True)
     type: Mapped[DatasetSymlinkType] = mapped_column(
         ChoiceType(DatasetSymlinkType, impl=String(32)),
         nullable=False,

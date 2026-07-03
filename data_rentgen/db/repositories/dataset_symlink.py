@@ -3,10 +3,11 @@
 
 from collections.abc import Collection
 
-from sqlalchemy import any_, bindparam, or_, select
+from sqlalchemy import ARRAY, BigInteger, bindparam, func, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import aliased
 
-from data_rentgen.db.models.dataset_symlink import DatasetSymlink, DatasetSymlinkType
+from data_rentgen.db.models.dataset_symlink import DatasetSymlinkType
 from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import DatasetSymlinkGroupDTO
@@ -15,11 +16,24 @@ insert_group_query = insert(DatasetSymlinkGroup).on_conflict_do_nothing(
     index_elements=[DatasetSymlinkGroup.dataset_id, DatasetSymlinkGroup.fingerprint],
 )
 
-get_list_query = select(DatasetSymlink).where(
-    or_(
-        DatasetSymlink.from_dataset_id == any_(bindparam("dataset_ids")),
-        DatasetSymlink.to_dataset_id == any_(bindparam("dataset_ids")),
-    ),
+group_member = aliased(DatasetSymlinkGroup, name="group_member")
+neighbour_group_member = aliased(DatasetSymlinkGroup, name="neighbour_group_member")
+
+closure_base_part = select(
+    func.unnest(bindparam("dataset_ids", type_=ARRAY(BigInteger()))).label("dataset_id"),
+)
+closure_cte = closure_base_part.cte("reachable_datasets", recursive=True)
+closure_recursive_part = (
+    select(neighbour_group_member.dataset_id.label("dataset_id"))
+    .select_from(closure_cte)
+    .join(group_member, group_member.dataset_id == closure_cte.c.dataset_id)
+    .join(neighbour_group_member, neighbour_group_member.fingerprint == group_member.fingerprint)
+)
+closure_cte = closure_cte.union(closure_recursive_part)
+
+get_symlink_groups_query = select(DatasetSymlinkGroup).join(
+    closure_cte,
+    DatasetSymlinkGroup.dataset_id == closure_cte.c.dataset_id,
 )
 
 
@@ -41,9 +55,12 @@ class DatasetSymlinkRepository(Repository[DatasetSymlinkGroup]):
             ],
         )
 
-    async def list_by_dataset_ids(self, dataset_ids: Collection[int]) -> list[DatasetSymlink]:
+    async def get_symlink_groups(self, dataset_ids: Collection[int]) -> list[DatasetSymlinkGroup]:
         if not dataset_ids:
             return []
 
-        scalars = await self._session.scalars(get_list_query, {"dataset_ids": list(dataset_ids)})
+        scalars = await self._session.scalars(
+            get_symlink_groups_query,
+            {"dataset_ids": list(dataset_ids)},
+        )
         return list(scalars.all())

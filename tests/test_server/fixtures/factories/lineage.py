@@ -1749,3 +1749,102 @@ async def lineage_with_parent_run_relations(
 
     async with async_session_maker() as async_session:
         await clean_db(async_session)
+
+
+@pytest_asyncio.fixture()
+async def lineage_with_transitive_symlinks(
+    async_session_maker: Callable[[], AbstractAsyncContextManager[AsyncSession]],
+    user: User,
+) -> AsyncGenerator[LineageResult, None]:
+    created_at = datetime.now(tz=UTC)
+
+    async with async_session_maker() as async_session:
+        builder = LineageBuilder(async_session)
+
+        hdfs_location = await builder.create_location(
+            key="transitive_symlinks_hdfs_location",
+            location_kwargs={"type": "hdfs"},
+        )
+        hive_location = await builder.create_location(
+            key="transitive_symlinks_hive_location",
+            location_kwargs={"type": "hive"},
+        )
+        hdfs_shared = await builder.create_dataset(
+            key="transitive_symlinks_hdfs_shared",
+            location=hdfs_location,
+            dataset_kwargs={"name": "/warehouse/shared"},
+        )
+        hive_a = await builder.create_dataset(
+            key="transitive_symlinks_hive_a",
+            location=hive_location,
+            dataset_kwargs={"name": "schema.table_a"},
+        )
+        hive_b = await builder.create_dataset(
+            key="transitive_symlinks_hive_b",
+            location=hive_location,
+            dataset_kwargs={"name": "schema.table_b"},
+        )
+
+        for name, hive_dataset in (("a", hive_a), ("b", hive_b)):
+            await builder.create_dataset_symlink(
+                key=f"transitive_symlinks_metastore_{name}",
+                from_dataset=hdfs_shared,
+                to_dataset=hive_dataset,
+                type=DatasetSymlinkType.METASTORE,
+            )
+            await builder.create_dataset_symlink(
+                key=f"transitive_symlinks_warehouse_{name}",
+                from_dataset=hive_dataset,
+                to_dataset=hdfs_shared,
+                type=DatasetSymlinkType.WAREHOUSE,
+            )
+
+        schema = await builder.create_schema(key="transitive_symlinks_schema")
+        job_type = await builder.create_job_type(key="transitive_symlinks_job_type")
+        job = await builder.create_job(
+            key="transitive_symlinks_job",
+            location_key="transitive_symlinks_job_location",
+            job_type=job_type,
+        )
+        run = await builder.create_run(
+            key="transitive_symlinks_run",
+            job=job,
+            run_kwargs={
+                "job_id": job.id,
+                "started_by_user_id": user.id,
+                "created_at": created_at,
+            },
+        )
+        operation = await builder.create_operation(
+            key="transitive_symlinks_operation",
+            run=run,
+            operation_kwargs={
+                "created_at": run.created_at + timedelta(seconds=0.2),
+                "run_id": run.id,
+            },
+        )
+        await builder.create_output(
+            key="transitive_symlinks_output",
+            operation=operation,
+            run=run,
+            job=job,
+            dataset=hive_a,
+            output_type=OutputType.APPEND,
+            schema=schema,
+            output_kwargs={
+                "created_at": operation.created_at,
+                "operation_id": operation.id,
+                "run_id": operation.run_id,
+                "job_id": job.id,
+                "dataset_id": hive_a.id,
+                "type": OutputType.APPEND,
+                "schema_id": schema.id,
+            },
+        )
+
+        lineage = builder.build()
+
+    yield lineage
+
+    async with async_session_maker() as async_session:
+        await clean_db(async_session)
