@@ -4,7 +4,7 @@
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import any_, select, text
+from sqlalchemy import any_, bindparam, select, text
 from sqlalchemy.dialects.postgresql import insert
 
 from data_rentgen.db.models import (
@@ -13,6 +13,10 @@ from data_rentgen.db.models import (
 )
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import ColumnLineageDTO
+
+get_fingerprints_query = select(DatasetColumnRelation.fingerprint.distinct()).where(
+    DatasetColumnRelation.fingerprint == any_(bindparam("fingerprints"))
+)
 
 
 class DatasetColumnRelationRepository(Repository[DatasetColumnRelation]):
@@ -31,11 +35,9 @@ class DatasetColumnRelationRepository(Repository[DatasetColumnRelation]):
 
     async def _get_missing_fingerprints(self, fingerprints: list[UUID]) -> set[UUID]:
         existing = await self._session.execute(
-            select(DatasetColumnRelation.fingerprint.distinct()).where(
-                DatasetColumnRelation.fingerprint == any_(fingerprints),  # type: ignore[arg-type]
-            ),
+            get_fingerprints_query,
+            {"fingerprints": fingerprints},
         )
-
         return set(fingerprints) - set(existing.scalars().all())
 
     async def _create_dataset_column_relations_bulk(self, items: list[ColumnLineageDTO]):
