@@ -37,9 +37,14 @@ class UserRepository(Repository[User]):
     async def create(self, user_dto: UserDTO) -> User:
         # if another worker already created the same row, just use it. if not - create with holding the lock.
         await self._lock(user_dto.name)
-        return await self.get_or_create(user_dto)
+        return await self._get(user_dto.name) or await self._create(user_dto)
 
     async def get_or_create(self, user_dto: UserDTO) -> User:
+        result = await self._get(user_dto.name)
+        if result:
+            return result
+
+        await self._lock(user_dto.name)
         return await self._get(user_dto.name) or await self._create(user_dto)
 
     async def _get(self, name: str) -> User | None:

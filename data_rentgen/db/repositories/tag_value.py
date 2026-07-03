@@ -55,9 +55,6 @@ class TagValueRepository(Repository[TagValue]):
     async def create(self, tag_value_dto: TagValueDTO) -> TagValue:
         # if another worker already created the same row, just use it. if not - create with holding the lock.
         await self._lock(tag_value_dto.tag.id, tag_value_dto.value)
-        return await self.get_or_create(tag_value_dto)
-
-    async def get_or_create(self, tag_value_dto: TagValueDTO) -> TagValue:
         return (
             await self._get(tag_value_dto.tag.id, tag_value_dto.value)  # type: ignore[arg-type]
             or await self._create(tag_value_dto)
