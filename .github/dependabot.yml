@@ -24,8 +24,11 @@ updates:
       # do not use Sphinx 9
       - dependency-name: sphinx
         update-types: [version-update:semver-major]
-      # do not use Starlette 1.x
+      # do not use Starlette 1.0+
       - dependency-name: starlette
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      # do not use FastAPI 0.137.0+
+      - dependency-name: fastapi
         update-types: [version-update:semver-major, version-update:semver-minor]
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
