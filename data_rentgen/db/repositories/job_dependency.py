@@ -79,7 +79,7 @@ get_one_query = (
         JobDependency.from_job_id == bindparam("from_job_id"),
         JobDependency.to_job_id == bindparam("to_job_id"),
     )
-    .limit(1)
+    .limit(literal(1, literal_execute=True))
 )
 
 

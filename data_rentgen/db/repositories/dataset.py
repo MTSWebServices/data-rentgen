@@ -18,6 +18,7 @@ from sqlalchemy import (
     desc,
     distinct,
     func,
+    literal,
     select,
     tuple_,
     union,
@@ -57,7 +58,7 @@ get_one_query = (
         Dataset.location_id == bindparam("location_id"),
         func.lower(Dataset.name) == bindparam("name_lower"),
     )
-    .limit(1)
+    .limit(literal(1, literal_execute=True))
 )
 
 get_stats_query = (

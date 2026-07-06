@@ -9,6 +9,7 @@ from sqlalchemy import (
     bindparam,
     cast,
     func,
+    literal,
     select,
     tuple_,
 )
@@ -30,7 +31,9 @@ fetch_bulk_query = select(TagValue).where(
     ),
 )
 get_one_query = (
-    select(TagValue).where(TagValue.tag_id == bindparam("tag_id"), TagValue.value == bindparam("value")).limit(1)
+    select(TagValue)
+    .where(TagValue.tag_id == bindparam("tag_id"), TagValue.value == bindparam("value"))
+    .limit(literal(1, literal_execute=True))
 )
 
 

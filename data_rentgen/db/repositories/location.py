@@ -12,6 +12,7 @@ from sqlalchemy import (
     bindparam,
     desc,
     func,
+    literal,
     select,
     union,
 )
@@ -39,7 +40,7 @@ get_one_by_addresses_query = (
 get_one_query = (
     select(Location)
     .from_statement(
-        get_one_by_name_query.union(get_one_by_addresses_query).limit(1),
+        get_one_by_name_query.union(get_one_by_addresses_query).limit(literal(1, literal_execute=True)),
     )
     .options(selectinload(Location.addresses))
 )

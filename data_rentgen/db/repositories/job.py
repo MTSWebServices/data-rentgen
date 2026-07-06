@@ -19,6 +19,7 @@ from sqlalchemy import (
     desc,
     distinct,
     func,
+    literal,
     select,
     tuple_,
     union,
@@ -50,7 +51,7 @@ get_one_query = (
         Job.location_id == bindparam("location_id"),
         func.lower(Job.name) == bindparam("name_lower"),
     )
-    .limit(1)
+    .limit(literal(1, literal_execute=True))
 )
 
 get_list_query = (

@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from sqlalchemy import (
     any_,
     bindparam,
+    literal,
     select,
 )
 from sqlalchemy.dialects.postgresql import insert
@@ -22,7 +23,7 @@ get_one_query = (
     .where(
         JobType.type == bindparam("type"),
     )
-    .limit(1)
+    .limit(literal(1, literal_execute=True))
 )
 
 get_distinct_query = select(JobType.type).distinct(JobType.type).order_by(JobType.type)
