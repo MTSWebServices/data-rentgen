@@ -38,6 +38,12 @@ class SparkExtractor(GenericExtractor):
     def extract_run(self, event: OpenLineageRunEvent) -> RunDTO:
         run = super().extract_run(event)
         self._enrich_run_identifiers(run, event)
+        if run.job.name == "unknown":
+            # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
+            # Avoid updating the same temporary job multiple times
+            run.job.parent_job = None
+            run.job.tag_values.clear()
+            run.job_dependencies.clear()
         return run
 
     def _enrich_run_identifiers(self, run: RunDTO, event: OpenLineageRunEvent):
@@ -60,7 +66,6 @@ class SparkExtractor(GenericExtractor):
         # For Spark, SQL_JOB --parent-> SPARK_APPLICATION = operation -> run,
         # and parent is always here.
         run = self.extract_parent_run(event.run.facets.parent)  # type: ignore[arg-type]
-        # Workaround for https://github.com/OpenLineage/OpenLineage/issues/3846
         self._enrich_run_identifiers(run, event)
         self._enrich_run_tags(run, event)
         operation = super()._extract_operation(event, run)

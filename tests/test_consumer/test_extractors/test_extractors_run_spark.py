@@ -370,3 +370,75 @@ def test_extractors_extract_run_spark_parent_job():
         persistent_log_url=None,
         running_log_url="http://localhost:4040",
     )
+
+
+def test_extractors_extract_run_spark_parent_job_for_unknown():
+    now = datetime(2024, 7, 5, 9, 4, 13, 979349, tzinfo=timezone.utc)
+    run_id = UUID("01908223-0e9b-7c52-9856-6cecfc842610")
+    parent_run_id = UUID("01908224-8410-79a2-8de6-a769ad6944c9")
+    run = OpenLineageRunEvent(
+        eventType=OpenLineageRunEventType.RUNNING,
+        eventTime=now,
+        job=OpenLineageJob(
+            namespace="host://some.host.com",
+            name="unknown",
+            facets=OpenLineageJobFacets(
+                jobType=OpenLineageJobTypeJobFacet(
+                    processingType=OpenLineageJobProcessingType.NONE,
+                    integration="SPARK",
+                    jobType="APPLICATION",
+                ),
+            ),
+        ),
+        run=OpenLineageRun(
+            runId=run_id,
+            facets=OpenLineageRunFacets(
+                parent=OpenLineageParentRunFacet(
+                    job=OpenLineageParentJob(
+                        namespace="anything",
+                        name="parentjob",
+                    ),
+                    run=OpenLineageParentRun(
+                        runId=parent_run_id,
+                    ),
+                ),
+                processing_engine=OpenLineageProcessingEngineRunFacet(
+                    version=Version("3.4.3"),
+                    name="spark",
+                    openlineageAdapterVersion=Version("1.19.0"),
+                ),
+            ),
+        ),
+    )
+
+    assert SparkExtractor().extract_run(run) == RunDTO(
+        id=run_id,
+        job=JobDTO(
+            name="unknown",
+            parent_job=None,
+            location=LocationDTO(type="host", name="some.host.com", addresses={"host://some.host.com"}),
+            type=JobTypeDTO(type="SPARK_APPLICATION"),
+            tag_values=set(),
+        ),
+        parent_run=RunDTO(
+            id=parent_run_id,
+            job=JobDTO(
+                name="parentjob",
+                type=None,
+                location=LocationDTO(
+                    type="unknown",
+                    name="anything",
+                    addresses={"unknown://anything"},
+                ),
+            ),
+            status=RunStatusDTO.UNKNOWN,
+        ),
+        status=RunStatusDTO.STARTED,
+        started_at=None,
+        start_reason=None,
+        user=None,
+        external_id=None,
+        attempt=None,
+        persistent_log_url=None,
+        running_log_url=None,
+    )

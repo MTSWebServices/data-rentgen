@@ -179,7 +179,7 @@ def spark_app_run_event_start() -> OpenLineageRunEvent:
             facets=OpenLineageRunFacets(
                 spark_applicationDetails=OpenLineageSparkApplicationDetailsRunFacet(
                     master="local[*]",
-                    appName="spark_session",
+                    appName="mysession1",
                     applicationId="local-1719136537510",
                     deployMode=OpenLineageSparkDeployMode.CLIENT,
                     driverHost="127.0.0.1",
@@ -400,7 +400,7 @@ def spark_operation_run_event_start() -> OpenLineageRunEvent:
                 ),
                 spark_applicationDetails=OpenLineageSparkApplicationDetailsRunFacet(
                     master="local[*]",
-                    appName="spark_session",
+                    appName="mysession1",
                     applicationId="local-1719136537510",
                     deployMode=OpenLineageSparkDeployMode.CLIENT,
                     driverHost="127.0.0.1",
@@ -445,7 +445,7 @@ def spark_operation_run_event_running() -> OpenLineageRunEvent:
                 ),
                 spark_applicationDetails=OpenLineageSparkApplicationDetailsRunFacet(
                     master="local[*]",
-                    appName="spark_session",
+                    appName="mysession1",
                     applicationId="local-1719136537510",
                     deployMode=OpenLineageSparkDeployMode.CLIENT,
                     driverHost="127.0.0.1",
