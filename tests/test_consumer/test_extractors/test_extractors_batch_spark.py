@@ -167,8 +167,6 @@ def test_extractors_extract_batch_spark_openlineage_emitted_unknown_name_no_job_
 
     extracted = BatchExtractor().add_events(events)
 
-    extracted_spark_unknown_job.parent_job = extracted_airflow_task1_job_as_parent
-
     # the result is the same as above
     assert extracted.locations() == [
         extracted_airflow_location,
