@@ -1,3 +1,5 @@
+import pytest
+
 from data_rentgen.consumer.extractors.generic import GenericExtractor
 from data_rentgen.consumer.extractors.impl import DbtExtractor, FlinkExtractor, SparkExtractor
 from data_rentgen.dto import (
@@ -205,7 +207,69 @@ def test_extractors_extract_dataset_hive_with_location_symlink():
     ]
 
 
-def test_extractors_extract_dataset_postgres():
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "postgres://192.168.1.1:5432",
+        "postgresql://192.168.1.1:5432",
+    ],
+)
+def test_extractors_extract_dataset_postgres(namespace: str):
+    dataset = OpenLineageDataset(
+        namespace=namespace,
+        name="mydb.myschema.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="postgres",
+            name="192.168.1.1:5432",
+            addresses={"postgres://192.168.1.1:5432"},
+        ),
+        name="mydb.myschema.mytable",
+    )
+    assert symlinks_dto == []
+    dataset = OpenLineageDataset(
+        namespace="postgres://192.168.1.1:5432",
+        name="mydb.myschema.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="postgres",
+            name="192.168.1.1:5432",
+            addresses={"postgres://192.168.1.1:5432"},
+        ),
+        name="mydb.myschema.mytable",
+    )
+    assert symlinks_dto == []
+
+
+@pytest.mark.parametrize(
+    "namespace",
+    [
+        "sqlserver://192.168.1.1:1433",
+        "mssql://192.168.1.1:1433",
+    ],
+)
+def test_extractors_extract_dataset_sqlserver(namespace: str):
+    dataset = OpenLineageDataset(
+        namespace=namespace,
+        name="mydb.myschema.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="sqlserver",
+            name="192.168.1.1:1433",
+            addresses={"sqlserver://192.168.1.1:1433"},
+        ),
+        name="mydb.myschema.mytable",
+    )
+    assert symlinks_dto == []
     dataset = OpenLineageDataset(
         namespace="postgres://192.168.1.1:5432",
         name="mydb.myschema.mytable",
@@ -341,6 +405,60 @@ def test_extractors_extract_dataset_dbt_none():
             addresses={"unknown://some-namespace"},
         ),
         name="some.name",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_bigquery():
+    dataset = OpenLineageDataset(
+        namespace="bigquery",
+        name="myproject.mydataset.mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="bigquery",
+            name="googleapis.com",
+            addresses={"bigquery://googleapis.com"},
+        ),
+        name="myproject.mydataset.mytable",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_pubsub():
+    dataset = OpenLineageDataset(
+        namespace="pubsub",
+        name="topic:myproject:mytopic",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="pubsub",
+            name="googleapis.com",
+            addresses={"pubsub://googleapis.com"},
+        ),
+        name="topic:myproject:mytopic",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_awsglue():
+    dataset = OpenLineageDataset(
+        namespace="arn:aws:glue:us-east-1:myacc",
+        name="table/myproject/mytable",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="awsglue",
+            name="myacc",
+            addresses={"awsglue://myacc"},
+        ),
+        name="table/myproject/mytable",
     )
     assert symlinks_dto == []
 

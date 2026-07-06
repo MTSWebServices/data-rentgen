@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import re
 from urllib.parse import urlparse
 
 from data_rentgen.dto import (
@@ -27,7 +28,20 @@ WAREHOUSE = DatasetSymlinkTypeDTO.WAREHOUSE
 # https://github.com/OpenLineage/OpenLineage/issues/4496
 # https://github.com/OpenLineage/OpenLineage/issues/4497
 # Fixed in OpenLineage 1.47, but not all users upgraded their ETL scripts
-SCHEMALESS_LOCATION_TYPES = {"clickhouse", "mysql"}
+SCHEMALESS_DATABASES = {"clickhouse", "mysql"}
+
+# OpenLineage namespaces are not necessarily URLs:
+# https://openlineage.io/docs/spec/naming/
+# But Data.Rentgen expects them to be actual URLs.
+LOCATION_REPLACEMENTS = {
+    re.compile(r"^file$"): "file://unknown",
+    re.compile(r"^bigquery$"): "bigquery://googleapis.com",
+    re.compile(r"^pubsub$"): "pubsub://googleapis.com",
+    re.compile(r"^arn:aws:glue:(?P<region>[^:]+):(?P<account>[^:]+)$"): r"awsglue://\g<account>",
+    # also there are some pattern which actually mean the same thing
+    re.compile(r"^mssql://"): "sqlserver://",
+    re.compile(r"^postgresql://"): "postgres://",
+}
 
 
 def _get_symlink_role(type_: OpenLineageSymlinkType) -> DatasetSymlinkTypeDTO:
@@ -52,7 +66,7 @@ class DatasetExtractorMixin:
     ) -> DatasetDTO:
         location = self._extract_dataset_location(dataset)
         name = dataset.name
-        if location.type in SCHEMALESS_LOCATION_TYPES and name.count(".") == 2:  # noqa: PLR2004
+        if location.type in SCHEMALESS_DATABASES and name.count(".") == 2:  # noqa: PLR2004
             name = name.split(".", maxsplit=1)[1]
         return DatasetDTO(
             name=name,
@@ -65,9 +79,8 @@ class DatasetExtractorMixin:
     ) -> LocationDTO:
         # hostname and scheme are normalized to lowercase for uniqueness
         namespace = dataset.namespace.lower()
-        if namespace == "file":
-            # TODO: remove after https://github.com/OpenLineage/OpenLineage/issues/2709
-            namespace = "file://"
+        for pattern, replacement in LOCATION_REPLACEMENTS.items():
+            namespace = pattern.sub(replacement, namespace)
 
         url = urlparse(namespace)
         scheme = url.scheme or "unknown"
