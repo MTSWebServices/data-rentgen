@@ -30,13 +30,13 @@ class SchemaRepository(Repository[Schema]):
         if not schemas_dto:
             return []
 
-        scalars = await self._session.execute(
+        existing = await self._session.execute(
             fetch_bulk_query,
             {
                 "digests": [item.digest for item in schemas_dto],
             },
         )
-        known_ids = {item.digest: item.id for item in scalars.all()}
+        known_ids = {item.digest: item.id for item in existing.all()}
         return [
             (
                 schema_dto,

@@ -21,13 +21,13 @@ class SQLQueryRepository(Repository[SQLQuery]):
         if not sql_queries_dto:
             return []
 
-        scalars = await self._session.execute(
+        existing = await self._session.execute(
             fetch_bulk_query,
             {
                 "fingerprints": [item.fingerprint for item in sql_queries_dto],
             },
         )
-        known_ids = {item.fingerprint: item.id for item in scalars.all()}
+        known_ids = {item.fingerprint: item.id for item in existing.all()}
         return [
             (
                 sql_query_dto,

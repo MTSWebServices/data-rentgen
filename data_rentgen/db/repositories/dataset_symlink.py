@@ -3,7 +3,7 @@
 
 from collections.abc import Collection
 
-from sqlalchemy import ARRAY, BigInteger, bindparam, func, select
+from sqlalchemy import ARRAY, BigInteger, any_, bindparam, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
@@ -11,6 +11,10 @@ from data_rentgen.db.models.dataset_symlink import DatasetSymlinkType
 from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import DatasetSymlinkGroupDTO
+
+fetch_bulk_query = select(DatasetSymlinkGroup.fingerprint).where(
+    DatasetSymlinkGroup.fingerprint == any_(bindparam("fingerprints")),
+)
 
 insert_group_query = insert(DatasetSymlinkGroup).on_conflict_do_nothing(
     index_elements=[DatasetSymlinkGroup.dataset_id, DatasetSymlinkGroup.fingerprint],
@@ -42,6 +46,18 @@ class DatasetSymlinkRepository(Repository[DatasetSymlinkGroup]):
         if not items:
             return
 
+        # skip inserting existing symlink groups
+        existing = await self._session.execute(
+            fetch_bulk_query,
+            {
+                "fingerprints": [item.fingerprint for item in items],
+            },
+        )
+        known_fingerprints = {item.fingerprint for item in existing.all()}
+        to_insert = [item for item in items if item.fingerprint not in known_fingerprints]
+        if not to_insert:
+            return
+
         await self._session.execute(
             insert_group_query,
             [
@@ -50,7 +66,7 @@ class DatasetSymlinkRepository(Repository[DatasetSymlinkGroup]):
                     "dataset_id": dataset.id,
                     "type": DatasetSymlinkType(type_),
                 }
-                for item in items
+                for item in to_insert
                 for dataset, type_ in item.members
             ],
         )
