@@ -37,8 +37,8 @@ theme:
         name: Switch to system preference
 
 extra_css:
-  - _static/custom.css
-  - _static/autodoc_pydantic.css
+  - _static/stylesheets/custom.css
+  - _static/stylesheets/mermaid_zoom.css
 
 extra_javascript:
   - _static/javascripts/mermaid_zoom.js

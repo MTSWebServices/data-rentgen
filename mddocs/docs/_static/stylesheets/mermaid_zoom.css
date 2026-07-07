@@ -1,6 +1,6 @@
 .mermaid {
   cursor: zoom-in;
-  }
+}
 
 .mermaid-zoom-overlay {
   position: fixed;
@@ -13,7 +13,7 @@
   z-index: 9999;
   padding: 48px 2vw 2vh;
   box-sizing: border-box;
-  }
+}
 
 .mermaid-zoom-toolbar {
   position: fixed;
@@ -26,7 +26,7 @@
   padding: 8px 12px;
   background: rgba(0, 0, 0, 0.7);
   box-sizing: border-box;
-  }
+}
 
 .mermaid-zoom-toolbar button {
   background: rgba(255, 255, 255, 0.15);
@@ -37,19 +37,19 @@
   font-size: 16px;
   cursor: pointer;
   line-height: 1;
-  }
+}
 
 .mermaid-zoom-toolbar button:hover {
   background: rgba(255, 255, 255, 0.3);
-  }
+}
 
 .mermaid-zoom-toolbar .mermaid-zoom-close {
   margin-left: auto;
-  }
+}
 
 .mermaid-zoom-overlay svg {
   display: block;
   background: white;
   height: auto;
   cursor: default;
-  }
+}
