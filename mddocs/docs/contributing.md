@@ -210,7 +210,7 @@ After pull request is created, it get a corresponding number, e.g. 123 (`pr_numb
 
 Data.Rentgen uses [towncrier](https://pypi.org/project/towncrier/) for changelog management.
 
-To submit a change note about your PR, add a text file into the [mddocs/docs/changelog/next_release](./next_release) folder. It should contain an explanation of what applying this PR will change in the way end-users interact with the project. One sentence is usually enough but feel free to add as many details as you feel necessary for the users to understand what it means.
+To submit a change note about your PR, add a text file into the `mddocs/docs/changelog/next_release` folder. It should contain an explanation of what applying this PR will change in the way end-users interact with the project. One sentence is usually enough but feel free to add as many details as you feel necessary for the users to understand what it means.
 
 **Use the past tense** for the text in your fragment because, combined with others, it will be a part of the “news digest” telling the readers **what changed** in a specific version of the library *since the previous version*.
 

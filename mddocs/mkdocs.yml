@@ -4,7 +4,7 @@ docs_dir: docs
 site_dir: generated
 
 exclude_docs: |
-  changelog/NEXT_RELEASE.md
+  changelog/RELEASE_TEMPLATE.md
   changelog/next_release/
 
 theme:

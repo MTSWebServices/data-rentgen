@@ -1,6 +1,6 @@
 # Changelog
 
-- [Next release](./NEXT_RELEASE)
+- [Next release](./NEXT_RELEASE.md)
 - [0.5.1][0.5.1]
 - [0.5.0][0.5.0]
 - [0.4.8][0.4.8]
