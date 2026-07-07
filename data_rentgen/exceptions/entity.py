@@ -11,10 +11,12 @@ class EntityNotFoundError(ApplicationError):
     Examples
     --------
 
+    ```python
     >>> from data_rentgen.exceptions import EntityNotFoundError
     >>> raise EntityNotFoundError("User", "username", "test")
     Traceback (most recent call last):
     data_rentgen.exceptions.entity.EntityNotFoundError: User with username='test' not found
+    ```
     """
 
     entity_type: str
@@ -50,10 +52,12 @@ class EntityAlreadyExistsError(ApplicationError):
     Examples
     --------
 
+    ```python
     >>> from data_rentgen.exceptions import EntityNotFoundError
     >>> raise EntityAlreadyExistsError("User", "username", "test")
     Traceback (most recent call last):
     data_rentgen.exceptions.entity.EntityAlreadyExistsError: User with username='test' already exists
+    ```
     """
 
     entity_type: str

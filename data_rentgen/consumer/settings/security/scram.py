@@ -15,11 +15,11 @@ class KafkaSecurityScram256Settings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-256
-        DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
-        DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```bash
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-256
+    DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
+    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```
     """
 
     type: Literal["SCRAM-SHA-256"] = "SCRAM-SHA-256"
@@ -39,11 +39,11 @@ class KafkaSecurityScram512Settings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-512
-        DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
-        DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```bash
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-512
+    DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
+    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```
     """
 
     type: Literal["SCRAM-SHA-512"] = "SCRAM-SHA-512"

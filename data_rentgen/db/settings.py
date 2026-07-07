@@ -10,20 +10,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class DatabaseSettings(BaseSettings):
     """Data.Rentgen backend database settings.
 
-    .. note::
+    !!! note
 
         You can pass here any extra option supported by
-        `SQLAlchemy Engine class <https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine>`_,
+        [SQLAlchemy Engine class](https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy.create_engine),
         even if it is not mentioned in documentation.
 
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
-        # custom option passed directly to engine factory
-        DATA_RENTGEN__DATABASE__POOL_PRE_PING=True
+    ```bash
+    DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
+    # custom option passed directly to engine factory
+    DATA_RENTGEN__DATABASE__POOL_PRE_PING=True
+    ```
     """
 
     url: str = Field(
@@ -31,11 +31,11 @@ class DatabaseSettings(BaseSettings):
             """
             Database connection URL.
 
-            See `SQLAlchemy documentation <https://docs.sqlalchemy.org/en/20/core/engines.html#backend-specific-urls>`_
+            See [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/core/engines.html#backend-specific-urls)
 
-            .. warning:
+            !!! warning
 
-                Only async drivers are supported, e.g. ``asyncpg``
+                Only async drivers are supported, e.g. `asyncpg`
             """,
         ),
     )

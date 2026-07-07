@@ -66,6 +66,7 @@ class IOExtractorMixin(ABC):
         to store new number of rows/bytes/files.
 
         For long running operations (mostly streaming), this behavior lead to the following situation:
+
         * Flink job started 01.05.2025, sending a `START` event.
         * This lead to creating input/output with `created_at=2025-05-01`
         * For every checkpoint interval (60 seconds) OpenLineage sends `RUNNING` event,

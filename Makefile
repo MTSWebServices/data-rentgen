@@ -40,7 +40,6 @@ venv-cleanup: ##@Env Cleanup venv
 
 venv-install: ##@Env Install requirements to venv
 	${UV} sync --inexact --no-install-project --frozen --all-extras --all-groups --no-extra gssapi $(ARGS)
-	${UV} pip install --no-deps sphinx-plantuml
 
 
 db: db-start db-upgrade db-partitions ##@DB Prepare database (in docker)
@@ -135,16 +134,28 @@ prod-cleanup: ##@Application Stop production containers
 docs: docs-build docs-open ##@Docs Generate & open docs
 
 docs-build: ##@Docs Generate docs
-	$(MAKE) -C docs html
+	PYTHONPATH=. DISABLE_MKDOCS_2_WARNING=true ${VIRTUAL_ENV}/bin/mkdocs build --config-file mddocs/mkdocs.yml
 
 docs-open: ##@Docs Open docs
-	xdg-open docs/_build/html/index.html
+	xdg-open mddocs/generated/index.html
 
 docs-cleanup: ##@Docs Cleanup docs
-	$(MAKE) -C docs clean
+	rm -rf mddocs/generated/
 
 docs-fresh: docs-cleanup docs-build ##@Docs Cleanup & build docs
 
+docs-serve: ##@Docs Run docs server
+	PYTHONPATH=. DISABLE_MKDOCS_2_WARNING=true ${VIRTUAL_ENV}/bin/mkdocs serve --config-file mddocs/mkdocs.yml
+
+docs-generate-changelog: ##@Docs Generate changelog
+	cp "mddocs/docs/changelog/RELEASE_TEMPLATE.md" "mddocs/docs/changelog/temp_RELEASE_TEMPLATE.md"
+	${UV} run towncrier build "--version=$(shell cat data_rentgen/VERSION)" --yes
+	mv "mddocs/docs/changelog/RELEASE_TEMPLATE.md" "mddocs/docs/changelog/$(shell cat data_rentgen/VERSION).md"
+	mv "mddocs/docs/changelog/temp_RELEASE_TEMPLATE.md" "mddocs/docs/changelog/RELEASE_TEMPLATE.md"
+	awk '!/towncrier release notes start/' "mddocs/docs/changelog/$(shell cat data_rentgen/VERSION).md" | sed '/./,$$!d' > temp && mv temp "mddocs/docs/changelog/$(shell cat data_rentgen/VERSION).md"
+	sed "s#\(.*NEXT_RELEASE.*\)#\1\n- [$(shell cat data_rentgen/VERSION)][$(shell cat data_rentgen/VERSION)]#" "mddocs/docs/changelog/index.md" > temp && mv temp "mddocs/docs/changelog/index.md"
+	sed "s#\(.*NEXT_RELEASE.*\)#\1\n    * [$(shell cat data_rentgen/VERSION)](changelog/$(shell cat data_rentgen/VERSION).md)#" "mddocs/docs/nav.md" > temp && mv temp "mddocs/docs/nav.md"
+
 docs-openapi: ##@Docs Generate OpenAPI schema
-	${PYTHON} -m data_rentgen.server.scripts.export_openapi_schema docs/_static/openapi_server.json
-	${PYTHON} -m data_rentgen.http2kafka.scripts.export_openapi_schema docs/_static/openapi_http2kafka.json
+	${PYTHON} -m data_rentgen.server.scripts.export_openapi_schema mddocs/docs/_static/openapi_server.json
+	${PYTHON} -m data_rentgen.http2kafka.scripts.export_openapi_schema mddocs/docs/_static/openapi_http2kafka.json

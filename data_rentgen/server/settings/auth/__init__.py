@@ -14,12 +14,12 @@ class AuthSettings(BaseModel):
     Examples
     --------
 
-    .. code-block:: bash
+    ```bash
+    DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
 
-        DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
-
-        # pass access_key.secret_key = "secret" to DummyAuthProviderSettings
-        DATA_RENTGEN__AUTH__ACCESS_KEY__SECRET_KEY=secret
+    # pass access_key.secret_key = "secret" to DummyAuthProviderSettings
+    DATA_RENTGEN__AUTH__ACCESS_KEY__SECRET_KEY=secret
+    ```
     """
 
     provider: ImportString = Field(  # type: ignore[assignment]

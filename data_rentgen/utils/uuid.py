@@ -23,10 +23,11 @@ def generate_new_uuid(instant: datetime | None = None) -> NewUUID:
     """Generate new UUID for an instant of time. Each function call returns a new UUID value.
 
     UUID version is an implementation detail, and **should not** be relied on.
-    For now it is `UUIDv7 <https://datatracker.ietf.org/doc/rfc9562/>`_, so for increasing instant values,
+    For now it is [UUIDv7](https://datatracker.ietf.org/doc/rfc9562/), so for increasing instant values,
     returned UUID is always greater than previous one.
 
     Using uuid6 lib implementation (MIT License), with few changes:
+
     * https://github.com/oittaa/uuid6-python/blob/4f879849178b8a7a564f7cb76c3f7a6e5228d9ed/src/uuid6/__init__.py#L128-L147
     * https://github.com/oittaa/uuid6-python/blob/4f879849178b8a7a564f7cb76c3f7a6e5228d9ed/src/uuid6/__init__.py#L46-L51
     """
@@ -40,10 +41,11 @@ def generate_incremental_uuid(instant: datetime, data: str) -> NewUUID:
     """Generate new UUID for an instant of time and data. Each function call with the same arguments returns the same result.
 
     UUID version is an implementation detail, and **should not** be relied on.
-    For now it is `UUIDv7 <https://datatracker.ietf.org/doc/rfc9562/>`_, so for increasing instant values,
+    For now it is [UUIDv7](https://datatracker.ietf.org/doc/rfc9562/), so for increasing instant values,
     returned UUID is always greater than previous one.
 
     Using uuid6 lib implementation (MIT License), with few changes:
+
     * https://github.com/oittaa/uuid6-python/blob/4f879849178b8a7a564f7cb76c3f7a6e5228d9ed/src/uuid6/__init__.py#L128-L147
     * https://github.com/oittaa/uuid6-python/blob/4f879849178b8a7a564f7cb76c3f7a6e5228d9ed/src/uuid6/__init__.py#L46-L51
     """  # noqa: E501

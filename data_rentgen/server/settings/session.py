@@ -12,33 +12,32 @@ DEFAULT_MAX_AGE = 1_209_600
 class SessionSettings(BaseModel):
     """Session Middleware Settings.
 
-    Required for :ref:`auth-server-keycloak`.
+    Required for [auth-server-keycloak][].
 
-    See `SessionMiddleware <https://www.starlette.io/middleware/#sessionmiddleware>`_ documentation.
+    See [SessionMiddleware](https://www.starlette.io/middleware/#sessionmiddleware) documentation.
 
-    .. note::
+    !!! note
 
-        You can pass here any extra option supported by ``SessionMiddleware``,
+        You can pass here any extra option supported by `SessionMiddleware`,
         even if it is not mentioned in documentation.
 
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__SERVER__SESSION__ENABLED=True
-        DATA_RENTGEN__SERVER__SESSION__SECRET_KEY=secret
-        DATA_RENTGEN__SERVER__SESSION__SESSION_COOKIE=custom_cookie_name
-        DATA_RENTGEN__SERVER__SESSION__MAX_AGE=None  # cookie will last as long as the browser session
-        DATA_RENTGEN__SERVER__SESSION__SAME_SITE=strict
-        DATA_RENTGEN__SERVER__SESSION__HTTPS_ONLY=True
-        DATA_RENTGEN__SERVER__SESSION__DOMAIN=example.com
-
+    ```bash
+    DATA_RENTGEN__SERVER__SESSION__ENABLED=True
+    DATA_RENTGEN__SERVER__SESSION__SECRET_KEY=secret
+    DATA_RENTGEN__SERVER__SESSION__SESSION_COOKIE=custom_cookie_name
+    DATA_RENTGEN__SERVER__SESSION__MAX_AGE=None  # cookie will last as long as the browser session
+    DATA_RENTGEN__SERVER__SESSION__SAME_SITE=strict
+    DATA_RENTGEN__SERVER__SESSION__HTTPS_ONLY=True
+    DATA_RENTGEN__SERVER__SESSION__DOMAIN=example.com
+    ```
     """
 
     enabled: bool = Field(
         default=True,
-        description="Set to ``True`` to enable SessionMiddleware",
+        description="Set to `True` to enable SessionMiddleware",
     )
     secret_key: SecretStr | None = Field(
         default=None,
@@ -48,9 +47,9 @@ class SessionSettings(BaseModel):
 
             Can be any string. It is recommended to generate random value for every application instance, e.g.:
 
-            .. code:: shell
-
-                pwgen 32 1
+            ```shell
+            pwgen 32 1
+            ```
             """,
         ),
     )

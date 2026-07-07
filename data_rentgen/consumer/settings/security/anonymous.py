@@ -11,9 +11,9 @@ class KafkaSecurityAnonymousSettings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=None
+    ```bash
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=None
+    ```
     """
 
     type: Literal[None] = None  # noqa: PYI061

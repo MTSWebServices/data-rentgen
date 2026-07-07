@@ -50,7 +50,7 @@ dynamic = ["version"]
 
 [tool.setuptools.packages.find]
 include = ["data_rentgen*"]
-exclude = ["docs", "tests"]
+exclude = ["mddocs", "tests"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed", "*.yml",  "*.ini", "VERSION"]
@@ -129,23 +129,18 @@ dev = [
   "types-jwcrypto~=1.5.0",
   "types-cachetools~=7.0.0.20260503",
 ]
-docs = [
-  "autodoc-pydantic~=2.2.0",
-  "numpydoc~=1.10.0",
-  # sphinx-design and sphinx-tags do not support sphinx 9
-  "sphinx~=8.2.3",
-  "furo~=2025.12.19",
-  "sphinx-copybutton~=0.5.2",
-  "sphinxcontrib-towncrier~=0.5.0a0",
+mddocs = [
+  "mkdocs~=1.6.1",
+  "mkdocs-material~=9.7.6",
+  "mkdocstrings[python]~=1.0.3",
+  "mkdocs-autorefs~=1.4.4",
+  "pymdown-extensions>=10.21.2,<11.1.0",
+  "griffe-inherited-docstrings~=1.1.3",
+  "griffe-pydantic~=1.3.1",
+  "mkdocs-literate-nav~=0.6.1",
+  "mkdocs-towncrier>=0.1.5,<1",
   "towncrier~=25.8.0",
-  "sphinx-issues~=6.0.0",
-  "sphinx-design~=0.7.0",
-  "sphinx-favicon~=1.1.0",
-  "sphinx-last-updated-by-git~=0.3.8",
-  # uncomment after https://github.com/zqmillet/sphinx-plantuml/pull/4
-  # "sphinx-plantuml~=1.0.0",
-  "sphinx-argparse>=0.5.2,<0.7.0",
-  "sphinx-tabs~=3.5.0",
+  "setuptools<82",
 ]
 
 [tool.uv]
@@ -200,7 +195,7 @@ partial_also = [
 [tool.ruff]
 target-version = "py310"
 line-length = 120
-extend-exclude = ["docs/", "Makefile"]
+extend-exclude = ["mddocs/", "Makefile"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -250,10 +245,12 @@ ignore-words-list = "selectin"
 [tool.towncrier]
 name = "Data.Rentgen"
 package = "data_rentgen"
-filename = "docs/changelog/NEXT_RELEASE.rst"
-directory = "docs/changelog/next_release/"
-title_format = "{version} ({project_date})"
-issue_format = ":issue:`{issue}`"
+filename = "mddocs/docs/changelog/RELEASE_TEMPLATE.md"
+start_string = "<!-- towncrier release notes start -->\n"
+underlines = ["", "", ""]
+directory = "mddocs/docs/changelog/next_release/"
+title_format = "# {version} ({project_date}) {{ #{version} }}"
+issue_format = "[#{issue}](https://github.com/MTSWebServices/data-rentgen/issues/{issue})"
 
 [[tool.towncrier.type]]
 directory = "breaking"

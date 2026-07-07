@@ -16,7 +16,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /var/cache/*
 
 # Logos
-COPY --chmod=755 ./docs/_static/*.svg ./data_rentgen/server/static/
+COPY --chmod=755 ./mddocs/docs/_static/*.svg ./data_rentgen/server/static/
 
 # Swagger UI
 ADD --chmod=755 https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui-bundle.js https://cdn.jsdelivr.net/npm/swagger-ui-dist@latest/swagger-ui.css \

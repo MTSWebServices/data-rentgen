@@ -11,10 +11,12 @@ class AuthorizationError(ApplicationError):
     Examples
     --------
 
+    ```python
     >>> from data_rentgen.exceptions import AuthorizationError
     >>> raise AuthorizationError("User 'test' is disabled")
     Traceback (most recent call last):
     data_rentgen.exceptions.auth.AuthorizationError: User 'test' is disabled
+    ```
     """
 
     def __init__(self, message: str, details: Any = None) -> None:
@@ -52,10 +54,12 @@ class ActionNotAllowedError(ApplicationError):
     Examples
     --------
 
+    ```python
     >>> from data_rentgen.exceptions import ActionNotAllowedError
     >>> raise ActionNotAllowedError("User 'test' cannot perform some action")
     Traceback (most recent call last):
     data_rentgen.exceptions.auth.ActionNotAllowedError: User 'test' cannot perform some action
+    ```
     """
 
     def __init__(self, details: str) -> None:

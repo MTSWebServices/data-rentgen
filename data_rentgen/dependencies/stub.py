@@ -10,12 +10,12 @@ class Stub:
     real dependencies attributes detecting them as request data
 
     So instead of
-    ``value: Annotated[MyDependency, Depends()]``
+    `value: Annotated[MyDependency, Depends()]`
     Write
-    ``value: Annotated[MyDependency, Depends(Stub(MyDependency))]``
+    `value: Annotated[MyDependency, Depends(Stub(MyDependency))]`
 
     And then you can declare how to create it:
-    ``app.dependency_overrides[MyDependency] = my_dependency_factory``
+    `app.dependency_overrides[MyDependency] = my_dependency_factory`
 
     """
 

@@ -19,16 +19,16 @@ class KeycloakAuthProviderSettings(BaseModel):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.keycloak_provider.KeycloakAuthProvider
-        DATA_RENTGEN__AUTH__KEYCLOAK__SERVER_URL=http://keycloak:8080
-        DATA_RENTGEN__AUTH__KEYCLOAK__REDIRECT_URI=http://localhost:8000/auth-callback
-        DATA_RENTGEN__AUTH__KEYCLOAK__REALM_NAME=fastapi_realm
-        DATA_RENTGEN__AUTH__KEYCLOAK__CLIENT_ID=fastapi_client
-        DATA_RENTGEN__AUTH__KEYCLOAK__CLIENT_SECRET=generated_by_keycloak
-        DATA_RENTGEN__AUTH__KEYCLOAK__SCOPE=email
-        DATA_RENTGEN__AUTH__KEYCLOAK__VERIFY_SSL=False
+    ```bash
+    DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.keycloak_provider.KeycloakAuthProvider
+    DATA_RENTGEN__AUTH__KEYCLOAK__SERVER_URL=http://keycloak:8080
+    DATA_RENTGEN__AUTH__KEYCLOAK__REDIRECT_URI=http://localhost:8000/auth-callback
+    DATA_RENTGEN__AUTH__KEYCLOAK__REALM_NAME=fastapi_realm
+    DATA_RENTGEN__AUTH__KEYCLOAK__CLIENT_ID=fastapi_client
+    DATA_RENTGEN__AUTH__KEYCLOAK__CLIENT_SECRET=generated_by_keycloak
+    DATA_RENTGEN__AUTH__KEYCLOAK__SCOPE=email
+    DATA_RENTGEN__AUTH__KEYCLOAK__VERIFY_SSL=False
+    ```
     """
 
     keycloak: KeycloakSettings = Field(

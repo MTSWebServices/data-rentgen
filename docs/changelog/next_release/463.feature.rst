@@ -1,1 +1,0 @@
-Add handling database VS schema for ClickHouse & MySQL

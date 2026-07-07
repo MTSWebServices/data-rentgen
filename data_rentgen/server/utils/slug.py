@@ -3,8 +3,8 @@
 
 
 def slugify(text: str) -> str:
-    """Convert ``Some value`` to ``some-value``.
+    """Convert `Some value` to `some-value`.
 
-    Used to convert ``FastAPI.title`` to short name which can be used as label for Prometheus metrics.
+    Used to convert `FastAPI.title` to short name which can be used as label for Prometheus metrics.
     """
     return text.lower().strip().replace(" ", "-")

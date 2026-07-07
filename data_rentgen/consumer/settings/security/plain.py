@@ -15,11 +15,11 @@ class KafkaSecurityPlaintextSettings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=PLAINTEXT
-        DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
-        DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```bash
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=PLAINTEXT
+    DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
+    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```
     """
 
     type: Literal["PLAINTEXT"] = "PLAINTEXT"

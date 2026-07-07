@@ -2,7 +2,7 @@
 
 |Logo|
 
-.. |Logo| image:: docs/_static/logo_wide_white_text.svg
+.. |Logo| image:: mddocs/docs/_static/logo_wide_white_text.svg
     :alt: Data.Rentgen logo
     :target: https://github.com/MTSWebServices/data-rentgen
 
@@ -90,74 +90,74 @@ Lineage graph
 
 Dataset-level lineage graph
 
-.. image:: docs/entities/dataset_lineage.png
+.. image:: mddocs/docs/entities/dataset_lineage.png
     :alt: Dataset-level lineage graph
 
 Dataset column-level lineage graph
 
-.. image:: docs/entities/dataset_column_lineage.png
+.. image:: mddocs/docs/entities/dataset_column_lineage.png
     :alt: Dataset column-level lineage graph
 
 Job-level lineage graph
 
-.. image:: docs/entities/job_lineage.png
+.. image:: mddocs/docs/entities/job_lineage.png
     :alt: Job-level lineage graph
 
 Run-level lineage graph
 
-.. image:: docs/entities/run_lineage.png
+.. image:: mddocs/docs/entities/run_lineage.png
     :alt: Job-level lineage graph
 
 Hierarchy graph
 ~~~~~~~~~~~~~~~
 
-.. image:: docs/integrations/airflow/job_hierarchy.png
+.. image:: mddocs/docs/integrations/airflow/job_hierarchy.png
     :alt: Job hierarchy
 
 Datasets
 ~~~~~~~~
 
-.. image:: docs/entities/dataset_list.png
+.. image:: mddocs/docs/entities/dataset_list.png
     :alt: Datasets list
 
 Runs
 ~~~~
 
-.. image:: docs/entities/run_list.png
+.. image:: mddocs/docs/entities/run_list.png
     :alt: Runs list
 
 Spark application
 ~~~~~~~~~~~~~~~~~
 
-.. image:: docs/integrations/spark/job_details.png
+.. image:: mddocs/docs/integrations/spark/job_details.png
     :alt: Spark application details
 
 Spark run
 ~~~~~~~~~
 
-.. image:: docs/integrations/spark/run_details.png
+.. image:: mddocs/docs/integrations/spark/run_details.png
     :alt: Spark run details
 
 Spark command
 ~~~~~~~~~~~~~~~
 
-.. image:: docs/integrations/spark/operation_details.png
+.. image:: mddocs/docs/integrations/spark/operation_details.png
     :alt: Spark command details
 
 Hive query
 ~~~~~~~~~~
 
-.. image:: docs/integrations/hive/operation_details.png
+.. image:: mddocs/docs/integrations/hive/operation_details.png
     :alt: Hive query details
 
 Airflow DagRun
 ~~~~~~~~~~~~~~
 
-.. image:: docs/integrations/airflow/dag_run_details.png
+.. image:: mddocs/docs/integrations/airflow/dag_run_details.png
     :alt: Airflow DagRun details
 
 Airflow TaskInstance
 ~~~~~~~~~~~~~~~~~~~~
 
-.. image:: docs/integrations/airflow/task_run_details.png
+.. image:: mddocs/docs/integrations/airflow/task_run_details.png
     :alt: Airflow TaskInstance details

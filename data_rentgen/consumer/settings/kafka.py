@@ -25,17 +25,17 @@ class KafkaSettings(BaseModel):
     """Data.Rentgen consumer Kafka-specific settings.
 
     These options are passed directly to
-    `AIOKafkaConsumer <https://aiokafka.readthedocs.io/en/stable/api.html#aiokafka.AIOKafkaConsumer>`_.
+    [AIOKafkaConsumer](https://aiokafka.readthedocs.io/en/stable/api.html#aiokafka.AIOKafkaConsumer).
 
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__KAFKA__BOOTSTRAP_SERVERS="localhost:9092"
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-256
-        DATA_RENTGEN__KAFKA__REQUEST_TIMEOUT_MS=5000
-        DATA_RENTGEN__KAFKA__CONNECTIONS_MAX_IDLE_MS=540000
+    ```bash
+    DATA_RENTGEN__KAFKA__BOOTSTRAP_SERVERS="localhost:9092"
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-256
+    DATA_RENTGEN__KAFKA__REQUEST_TIMEOUT_MS=5000
+    DATA_RENTGEN__KAFKA__CONNECTIONS_MAX_IDLE_MS=540000
+    ```
     """
 
     bootstrap_servers: list[str] = Field(
@@ -75,7 +75,7 @@ class KafkaSettings(BaseModel):
         description=textwrap.dedent(
             """
             Close idle connections after the number of milliseconds specified by this config.
-            Specifying ``None`` will disable idle checks.
+            Specifying `None` will disable idle checks.
             """,
         ),
     )
