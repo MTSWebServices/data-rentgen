@@ -22,6 +22,13 @@ from data_rentgen.consumer.subscribers import runs_events_subscriber
 from data_rentgen.db.factory import session_generator
 from data_rentgen.logging.setup_logging import setup_logging
 
+__all__ = [
+    "ConsumerApplicationSettings",
+    "application_factory",
+    "broker_factory",
+    "get_application",
+]
+
 logger = logging.getLogger(__name__)
 
 

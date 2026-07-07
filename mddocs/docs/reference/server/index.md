@@ -73,10 +73,11 @@ Implemented using [FastAPI](https://fastapi.tiangolo.com/).
 
 Instead of relying on environment variables, application can also be configured by explicitly building it in Python code:
 
-::: data_rentgen.server.application_factory
-    options:
-      show_root_heading: true
-      show_root_full_path: true
+```python
+from data_rentgen.server import application_factory, ServerApplicationSettings
+
+app = application_factory(ServerApplicationSettings(...))
+```
 
 ## See also
 

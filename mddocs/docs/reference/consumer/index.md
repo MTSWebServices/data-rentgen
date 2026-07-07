@@ -79,10 +79,11 @@ Data.Rentgen fetches messages from a [`message-broker`][message-broker] using a 
 
 Instead of relying on environment variables, application can also be configured by explicitly building it in Python code:
 
-::: data_rentgen.consumer.application_factory
-    options:
-      show_root_heading: true
-      show_root_full_path: true
+```python
+from data_rentgen.consumer import application_factory, ConsumerApplicationSettings
+
+app = application_factory(ConsumerApplicationSettings)
+```
 
 ## See also
 
