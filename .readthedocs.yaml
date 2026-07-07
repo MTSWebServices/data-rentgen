@@ -1,5 +1,8 @@
 version: 2
 
+mkdocs:
+  configuration: mddocs/mkdocs.yml
+
 build:
   os: ubuntu-22.04
   apt_packages:
@@ -15,10 +18,9 @@ build:
       - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH python -m pip install uv
 
     post_install:
-      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --frozen --no-install-project --all-extras --no-extra gssapi --group docs
-      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv pip install --no-deps sphinx-plantuml # remove after https://github.com/zqmillet/sphinx-plantuml/pull/4
+      - UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --frozen --no-install-project --all-extras --no-extra gssapi --group mddocs
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH python -m pip list -v
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH make docs-openapi
-
-sphinx:
-  configuration: docs/conf.py
+    pre_build:
+      - python mddocs/scripts/fix_refs.py
+      - python mddocs/scripts/links2anchors.py

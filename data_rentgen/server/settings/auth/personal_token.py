@@ -13,17 +13,17 @@ class PersonalTokenSettings(BaseModel):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__AUTH__PERSONAL_TOKENS__ENABLED=True
-        DATA_RENTGEN__AUTH__PERSONAL_TOKENS__SECRET_KEY=somesecret
-        DATA_RENTGEN__AUTH__PERSONAL_TOKENS__SECURITY_ALGORITHM=HS256
-        DATA_RENTGEN__AUTH__PERSONAL_TOKENS__MAX_DURATION_DAYS=366
+    ```bash
+    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__ENABLED=True
+    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__SECRET_KEY=somesecret
+    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__SECURITY_ALGORITHM=HS256
+    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__MAX_DURATION_DAYS=366
+    ```
     """
 
     enabled: bool = Field(
         default=True,
-        description="Set to ``True`` to allow using Personal Tokens",
+        description="Set to `True` to allow using Personal Tokens",
     )
 
     secret_key: SecretStr | None = Field(
@@ -35,9 +35,9 @@ class PersonalTokenSettings(BaseModel):
 
             Can be any string. It is recommended to generate random value for every application instance, e.g.:
 
-            .. code:: shell
-
-                pwgen 32 1
+            ```shell
+            pwgen 32 1
+            ```
             """,
         ),
     )
@@ -47,7 +47,7 @@ class PersonalTokenSettings(BaseModel):
             """
             Algorithm used for signing Personal Tokens.
 
-            See `pyjwt <https://pyjwt.readthedocs.io/en/latest/algorithms.html>`_
+            See [pyjwt](https://pyjwt.readthedocs.io/en/latest/algorithms.html)
             documentation.
             """,
         ),

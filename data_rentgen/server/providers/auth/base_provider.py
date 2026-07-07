@@ -12,41 +12,41 @@ class AuthProvider(ABC):
     """Basic class for all Auth providers.
 
     Constructor is called by FastAPI, and can use Dependency injection mechanism.
-    See :obj:`~setup` for more details.
+    See [setup][] for more details.
     """
 
     @classmethod
     @abstractmethod
     def setup(cls, app: FastAPI) -> FastAPI:
         """
-        This method is called by :obj:`data_rentgen.server.application_factory`.
+        This method is called by [data_rentgen.server.application_factory][].
 
         Here you should add dependency overrides for auth provider,
-        and return new ``app`` object.
+        and return new `app` object.
 
         Examples
         --------
 
-        .. code-block::
+        ```python
+        from fastapi import FastAPI
+        from my_awesome_auth_provider.settings import MyAwesomeAuthProviderSettings
+        from data_rentgen.dependencies import Stub
 
-            from fastapi import FastAPI
-            from my_awesome_auth_provider.settings import MyAwesomeAuthProviderSettings
-            from data_rentgen.dependencies import Stub
+        class MyAwesomeAuthProvider(AuthProvider):
+            def setup(app):
+                app.dependency_overrides[AuthProvider] = MyAwesomeAuthProvider
 
-            class MyAwesomeAuthProvider(AuthProvider):
-                def setup(app):
-                    app.dependency_overrides[AuthProvider] = MyAwesomeAuthProvider
+                # `settings_object_factory` returns MyAwesomeAuthProviderSettings object
+                app.dependency_overrides[MyAwesomeAuthProviderSettings] = settings_object_factory
+                return app
 
-                    # `settings_object_factory` returns MyAwesomeAuthProviderSettings object
-                    app.dependency_overrides[MyAwesomeAuthProviderSettings] = settings_object_factory
-                    return app
-
-                def __init__(
-                    self,
-                    settings: Annotated[MyAwesomeAuthProviderSettings, Depends(Stub(MyAwesomeAuthProviderSettings))],
-                ):
-                    # settings object is set automatically by FastAPI's dependency_overrides
-                    self.settings = settings
+            def __init__(
+                self,
+                settings: Annotated[MyAwesomeAuthProviderSettings, Depends(Stub(MyAwesomeAuthProviderSettings))],
+            ):
+                # settings object is set automatically by FastAPI's dependency_overrides
+                self.settings = settings
+        ```
         """
         ...
 
@@ -58,11 +58,11 @@ class AuthProvider(ABC):
         Parameters
         ----------
         access_token : str
-            JWT token got from ``Authorization: Bearer <token>`` header.
+            JWT token got from `Authorization: Bearer <token>` header.
 
         Returns
         -------
-        :obj:`data_rentgen.db.models.User`
+        User
             Current user object
         """
         ...
@@ -78,20 +78,28 @@ class AuthProvider(ABC):
 
         Parameters
         ----------
-        See:
-          * https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-resource-owner-password-flow
-          * https://connect2id.com/products/server/docs/api/token
+        login : str
+            User's login name.
+        password : str
+            User's password.
 
         Returns
         -------
         Dict:
-            .. code-block:: python
+            ```python
+            {
+                "access_token": "some.jwt.token",
+                "token_type": "bearer",
+                "expires_in": 3600,
+            }
+            ```
 
-                {
-                    "access_token": "some.jwt.token",
-                    "token_type": "bearer",
-                    "expires_in": 3600,
-                }
+        Notes
+        -----
+        See:
+
+        * https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-resource-owner-password-flow
+        * https://connect2id.com/products/server/docs/api/token
         """
         ...
 

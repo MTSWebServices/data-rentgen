@@ -31,18 +31,18 @@ T = TypeVar("T", bound=DTO)
 class BatchExtractionResult:
     """Track results of batch extraction.
 
-    Calling any ``add_*`` method will add DTO item to the result, including nested DTOs,
-    like ``OperationDTO`` -> ``RunDTO`` -> ``JobDTO`` -> ``LocationDTO``, and so on.
+    Calling any `add_*` method will add DTO item to the result, including nested DTOs,
+    like `OperationDTO` -> `RunDTO` -> `JobDTO` -> `LocationDTO`, and so on.
 
-    Each DTO type is tracked separately. DTOs with same ``unique_key`` are merged into one final DTO,
-    by calling ``existing.merge(new)``. The resulting final DTO contains all non-null attributes of original DTOs.
+    Each DTO type is tracked separately. DTOs with same `unique_key` are merged into one final DTO,
+    by calling `existing.merge(new)`. The resulting final DTO contains all non-null attributes of original DTOs.
     Last DTO in the chain has a higher priority than previuos ones.
-    For example ``RunDTO(status=STARTED, started_at=...).merge(RunDTO(status=SUCCEEDED, ended_at=...))``
-    produces final ``RunDTO(status=SUCCEEDED, started_at=..., ended_at=...)``.
+    For example `RunDTO(status=STARTED, started_at=...).merge(RunDTO(status=SUCCEEDED, ended_at=...))`
+    produces final `RunDTO(status=SUCCEEDED, started_at=..., ended_at=...)`.
 
-    Calling get methods, like ``jobs()``, will return the list of tracked DTOs with resolved
-    cross-links. For example, iterating over ``jobs()`` with return the same objects
-    as in ``[run.job for run in runs()]``.
+    Calling get methods, like `jobs()`, will return the list of tracked DTOs with resolved
+    cross-links. For example, iterating over `jobs()` with return the same objects
+    as in `[run.job for run in runs()]`.
     This makes modification of nested DTOs easier, all changes will be reflected in the parent DTOs as well.
     """
 

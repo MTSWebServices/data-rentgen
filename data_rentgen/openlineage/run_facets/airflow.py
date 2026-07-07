@@ -27,11 +27,13 @@ class OpenLineageAirflowDagInfo(OpenLineageBase):
         """
 
         At different moments time tags could be passed in formats:
-        * ``["tag1", "tag2"]`` - as expected by JSON spec
-        * ``"['tag1', 'tag2']"`` - `str(list)` representation
-        * ``'["tag1", "tag2"]'`` - `str(list)` representation if tag contains single quotes
+
+        * `["tag1", "tag2"]` - as expected by JSON spec
+        * `"['tag1', 'tag2']"` - `str(list)` representation
+        * `'["tag1", "tag2"]'` - `str(list)` representation if tag contains single quotes
 
         See:
+
         * https://github.com/apache/airflow/pull/40371
         * https://github.com/apache/airflow/pull/40854
         * https://github.com/apache/airflow/pull/41786
@@ -90,11 +92,13 @@ class OpenLineageAirflowTaskInfo(OpenLineageBase):
         """
 
         At different moments time tags could be passed in formats:
-        * ``["task1", "task2"]`` - as expected by JSON spec
-        * ``"['task1', 'task2']"`` - `str(list)` representation
-        * ``'["task1", "task2"]'`` - `str(list)` representation if tag contains single quotes
+
+        * `["task1", "task2"]` - as expected by JSON spec
+        * `"['task1', 'task2']"` - `str(list)` representation
+        * `'["task1", "task2"]'` - `str(list)` representation if tag contains single quotes
 
         See:
+
         * https://github.com/apache/airflow/pull/40371
         * https://github.com/apache/airflow/pull/40854
         * https://github.com/apache/airflow/pull/41786

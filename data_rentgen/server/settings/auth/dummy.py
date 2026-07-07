@@ -11,10 +11,10 @@ class DummyAuthProviderSettings(BaseModel):
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
-        DATA_RENTGEN__AUTH__ACCESS_KEY__SECRET_KEY=secret
+    ```bash
+    DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
+    DATA_RENTGEN__AUTH__ACCESS_KEY__SECRET_KEY=secret
+    ```
     """
 
     access_token: JWTSettings = Field(description="Access-token related settings")

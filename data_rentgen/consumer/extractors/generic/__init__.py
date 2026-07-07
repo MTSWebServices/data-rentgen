@@ -21,6 +21,7 @@ class GenericExtractor(
 ):
     """
     Generic DTO extractor implementation. Uses mixin classes to extract specific entities:
+
     * JobDTO
     * RunDTO
     * OperationDTO

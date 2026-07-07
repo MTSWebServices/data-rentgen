@@ -21,29 +21,28 @@ logger = logging.getLogger(__name__)
 class KafkaSecurityGSSAPISettings(KafkaSecurityBaseSettings):
     """Kafka GSSAPI auth settings.
 
-    This auth method requires installing ``data-rentgen[gssapi]`` extra,
-    and relies on presence of ``kinit`` and ``kdestroy`` binaries in your operating system.
+    This auth method requires installing `data-rentgen[gssapi]` extra,
+    and relies on presence of `kinit` and `kdestroy` binaries in your operating system.
 
     Examples
     --------
 
-    Using principal + password for calling ``kinit``:
+    Using principal + password for calling `kinit`:
 
-    .. code-block:: bash
+    ```bash
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=GSSAPI
+    DATA_RENTGEN__KAFKA__SECURITY__PRINCIPAL=dummy
+    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    DATA_RENTGEN__KAFKA__SECURITY__REALM=MY.REALM.COM
+    ```
+    Using principal + keytab for calling `kinit`:
 
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=GSSAPI
-        DATA_RENTGEN__KAFKA__SECURITY__PRINCIPAL=dummy
-        DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
-        DATA_RENTGEN__KAFKA__SECURITY__REALM=MY.REALM.COM
-
-    Using principal + keytab for calling ``kinit``:
-
-    .. code-block:: bash
-
-        DATA_RENTGEN__KAFKA__SECURITY__TYPE=GSSAPI
-        DATA_RENTGEN__KAFKA__SECURITY__PRINCIPAL=dummy
-        DATA_RENTGEN__KAFKA__SECURITY__KEYTAB=/etc/security/dummy.keytab
-        DATA_RENTGEN__KAFKA__SECURITY__REALM=MY.REALM.COM
+    ```bash
+    DATA_RENTGEN__KAFKA__SECURITY__TYPE=GSSAPI
+    DATA_RENTGEN__KAFKA__SECURITY__PRINCIPAL=dummy
+    DATA_RENTGEN__KAFKA__SECURITY__KEYTAB=/etc/security/dummy.keytab
+    DATA_RENTGEN__KAFKA__SECURITY__REALM=MY.REALM.COM
+    ```
     """
 
     type: Literal["GSSAPI"] = "GSSAPI"

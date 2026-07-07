@@ -16,47 +16,47 @@ class ConsumerApplicationSettings(BaseSettings):
 
     Application can be configured in 2 ways:
 
-    * By explicitly passing ``settings`` object as an argument to :obj:`application_factory <data_rentgen.consumer.application_factory>`
+    * By explicitly passing `settings` object as an argument to [application_factory][data_rentgen.consumer.application_factory]
     * By setting up environment variables matching a specific key.
 
-      All environment variable names are written in uppercase and should be prefixed with ``DATA_RENTGEN__``.
-      Nested items are delimited with ``__``.
+      All environment variable names are written in uppercase and should be prefixed with `DATA_RENTGEN__`.
+      Nested items are delimited with `__`.
 
-    More details can be found in `Pydantic documentation <https://docs.pydantic.dev/latest/concepts/pydantic_settings/>`_.
+    More details can be found in [Pydantic documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
 
     Examples
     --------
 
-    .. code-block:: bash
+    ```bash
+    # same as settings.database.url = "postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen"
+    DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
 
-        # same as settings.database.url = "postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen"
-        DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
+    # same as settings.kafka.bootstrap_servers = ["kafka1:9092", "kafka2:9092"]
+    DATA_RENTGEN__KAFKA__BOOTSTRAP_SERVERS="kafka1:9092,kafka2:9092"
 
-        # same as settings.kafka.bootstrap_servers = ["kafka1:9092", "kafka2:9092"]
-        DATA_RENTGEN__KAFKA__BOOTSTRAP_SERVERS="kafka1:9092,kafka2:9092"
-
-        # same as settings.logging.preset = "json"
-        DATA_RENTGEN__LOGGING__PRESET=json
+    # same as settings.logging.preset = "json"
+    DATA_RENTGEN__LOGGING__PRESET=json
+    ```
     """  # noqa: E501
 
     database: DatabaseSettings = Field(
         default_factory=DatabaseSettings,  # type: ignore[arg-type]
-        description=":ref:`Database settings <configuration-database>`",
+        description="[Database settings][configuration-database]",
     )
     logging: LoggingSettings = Field(
         default_factory=LoggingSettings,
-        description=":ref:`Logging settings <configuration-consumer-logging>`",
+        description="[Logging settings][configuration-consumer-logging]",
     )
     kafka: KafkaSettings = Field(
-        description=":ref:`Kafka settings <configuration-consumer-kafka>`",
+        description="[Kafka settings][configuration-consumer-kafka]",
     )
     consumer: ConsumerSettings = Field(
         default_factory=ConsumerSettings,
-        description=":ref:`Consumer settings <configuration-consumer-specific>`",
+        description="[Consumer settings][configuration-consumer-specific]",
     )
     producer: ProducerSettings = Field(
         default_factory=ProducerSettings,
-        description=":ref:`Producer settings <configuration-producer-specific>`",
+        description="[Producer settings][configuration-producer-specific]",
     )
 
     model_config = SettingsConfigDict(env_prefix="DATA_RENTGEN__", env_nested_delimiter="__", extra="forbid")

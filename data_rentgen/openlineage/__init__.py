@@ -5,5 +5,5 @@
 Currently, openlineage-python [does not support](https://github.com/OpenLineage/OpenLineage/issues/2629) deserialization from JSON.
 So we have to write our own deserialization logic.
 
-Also FastStream support only ``pydantic`` models whether openlineage-python provides ``attrs`` models.
+Also FastStream support only `pydantic` models whether openlineage-python provides `attrs` models.
 """  # noqa: E501

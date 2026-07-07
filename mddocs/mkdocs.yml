@@ -1,0 +1,93 @@
+site_name: Data.Rentgen Docs
+site_url: !ENV READTHEDOCS_CANONICAL_URL
+docs_dir: docs
+site_dir: generated
+
+exclude_docs: |
+  changelog/NEXT_RELEASE.md
+  changelog/next_release/
+
+theme:
+  name: material
+  language: en
+  logo: _static/logo.svg
+  favicon: _static/icon.svg
+  features:
+    - navigation.indexes
+    - content.tabs.link
+    - content.code.copy
+    - content.code.select
+    - content.footnote.tooltips
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+extra_css:
+  - _static/custom.css
+  - _static/autodoc_pydantic.css
+
+extra_javascript:
+  - _static/javascripts/mermaid_zoom.js
+
+plugins:
+  - towncrier
+  - autorefs:
+      resolve_closest: true
+  - literate-nav:
+      nav_file: nav.md
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [..]
+          options:
+            preload_modules:
+              - pydantic_settings
+            extensions:
+              - griffe_pydantic
+            filters:
+              - '!^_'
+              - '!^model_config$'
+              - '!^settings_customise_sources$'
+            show_source: false
+            show_root_heading: false
+            show_root_toc_entry: false
+            show_root_full_path: false
+            heading_level: 3
+            scoped_crossrefs: true
+            docstring_style: numpy
+            docstring_section_style: list
+            inherited_members: true
+            show_if_no_docstring: true
+
+markdown_extensions:
+  - footnotes
+  - attr_list
+  - md_in_html
+  - admonition
+  - pymdownx.details
+  - pymdownx.magiclink
+  - pymdownx.snippets:
+      base_path: .
+      check_paths: true
+  - toc:
+      permalink: true
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

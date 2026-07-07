@@ -11,27 +11,27 @@ class ConsumerSettings(BaseModel):
     """Data.Rentgen consumer-specific settings.
 
     These options are passed directly to
-    `AIOKafkaConsumer <https://aiokafka.readthedocs.io/en/stable/api.html#aiokafka.AIOKafkaConsumer>`_.
+    [AIOKafkaConsumer](https://aiokafka.readthedocs.io/en/stable/api.html#aiokafka.AIOKafkaConsumer).
 
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__CONSUMER__TOPICS_LIST=["input.runs"]
-        DATA_RENTGEN__CONSUMER__MALFOMED_TOPIC="input.runs:malformed"
-        DATA_RENTGEN__CONSUMER__GROUP_ID=data-rentgen
-        DATA_RENTGEN__CONSUMER__FETCH_MAX_WAIT_MS=5000
-        DATA_RENTGEN__CONSUMER__MAX_PARTITION_FETCH_BYTES=5MiB
+    ```bash
+    DATA_RENTGEN__CONSUMER__TOPICS_LIST=["input.runs"]
+    DATA_RENTGEN__CONSUMER__MALFOMED_TOPIC="input.runs:malformed"
+    DATA_RENTGEN__CONSUMER__GROUP_ID=data-rentgen
+    DATA_RENTGEN__CONSUMER__FETCH_MAX_WAIT_MS=5000
+    DATA_RENTGEN__CONSUMER__MAX_PARTITION_FETCH_BYTES=5MiB
+    ```
     """
 
     topics_list: list[str] = Field(
         default=["input.runs"],
-        description="List of Kafka topics to subscribe. Mutually exclusive with :obj:`~topics_pattern`.",
+        description="List of Kafka topics to subscribe. Mutually exclusive with [topics_pattern][].",
     )
     topics_pattern: str | None = Field(
         default=None,
-        description="Regex pattern of topics to subscribe. Mutually exclusive with :obj:`~topics_list`.",
+        description="Regex pattern of topics to subscribe. Mutually exclusive with [topics_list][].",
     )
 
     @model_validator(mode="after")
@@ -50,7 +50,7 @@ class ConsumerSettings(BaseModel):
             """
             Name of the consumer group to join for dynamic partition assignment (if enabled),
             and to use for fetching and committing offsets.
-            If ``None``, auto-partition assignment (via group coordinator) and offset commits are disabled.
+            If `None`, auto-partition assignment (via group coordinator) and offset commits are disabled.
             """,
         ),
     )
@@ -62,7 +62,7 @@ class ConsumerSettings(BaseModel):
         description=textwrap.dedent(
             """
             Number of messages to consume as one batch.
-            ``None`` means no limit applied.
+            `None` means no limit applied.
             """,
         ),
     )
@@ -76,7 +76,7 @@ class ConsumerSettings(BaseModel):
             """
             Minimum amount of data the server should
             return for a fetch request, otherwise wait up to
-            :obj:`~fetch_max_wait_ms` for more data to accumulate.
+            [fetch_max_wait_ms][] for more data to accumulate.
             """,
         ),
     )
@@ -87,7 +87,7 @@ class ConsumerSettings(BaseModel):
             The maximum amount of time in milliseconds
             the server will block before answering the fetch request if
             there isn't sufficient data to immediately satisfy the
-            requirement given by :obj:`~fetch_min_bytes`.
+            requirement given by [fetch_min_bytes][].
             """,
         ),
     )
@@ -97,7 +97,7 @@ class ConsumerSettings(BaseModel):
             """
             The maximum amount of data
             per-partition the server will return. The maximum total memory
-            used for a request ``= #partitions * max_partition_fetch_bytes``.
+            used for a request `= #partitions * max_partition_fetch_bytes`.
 
             This size must be at least as large as the maximum message size
             the server allows or else it is possible for the producer to
@@ -120,12 +120,12 @@ class ConsumerSettings(BaseModel):
     auto_offset_reset: Literal["latest", "earliest", "none"] = Field(
         default="latest",
         description=textwrap.dedent(
-            """"
-            A policy for resetting offsets on ``OffsetOutOfRangeError`` errors:
+            """
+            A policy for resetting offsets on `OffsetOutOfRangeError` errors:
 
-            * ``earliest`` will move to the oldest available message
-            * ``latest`` will move to the most recent
-            * ``none`` will raise an exception so you can handle this case
+            * `earliest` will move to the oldest available message
+            * `latest` will move to the most recent
+            * `none` will raise an exception so you can handle this case
             """,
         ),
     )
@@ -148,14 +148,14 @@ class ConsumerSettings(BaseModel):
             """
             Client group session and failure detection
             timeout. The consumer sends periodic heartbeats
-            (``heartbeat.interval.ms``) to indicate its liveness to the broker.
+            (`heartbeat.interval.ms`) to indicate its liveness to the broker.
 
             If no hearts are received by the broker for a group member within
             the session timeout, the broker will remove the consumer from the
             group and trigger a rebalance.
 
             The allowed range is configured with the **broker** configuration properties
-            ``group.min.session.timeout.ms`` and ``group.max.session.timeout.ms``.
+            `group.min.session.timeout.ms` and `group.max.session.timeout.ms`.
             """,
         ),
     )
@@ -169,7 +169,7 @@ class ConsumerSettings(BaseModel):
             that the consumer's session stays active and to facilitate
             rebalancing when new consumers join or leave the group.
 
-            The value must be set lower than :obj:`~session_timeout_ms`, but typically
+            The value must be set lower than [session_timeout_ms][], but typically
             should be set no higher than 1/3 of that value. It can be
             adjusted even lower to control the expected time for normal
             rebalances.
@@ -193,10 +193,10 @@ class ConsumerSettings(BaseModel):
             Controls how to read messages written
             transactionally.
 
-            * ``read_committed`` - batch consumer will only return
+            * `read_committed` - batch consumer will only return
               transactional messages which have been committed.
 
-            * ``read_uncommitted`` (the default) - batch consumer will
+            * `read_uncommitted` (the default) - batch consumer will
               return all messages, even transactional messages which have been
               aborted.
 
@@ -204,14 +204,14 @@ class ConsumerSettings(BaseModel):
             either mode.
 
             Messages will always be returned in offset order. Hence, in
-            ``read_committed`` mode, batch consumer will only return
+            `read_committed` mode, batch consumer will only return
             messages up to the last stable offset (LSO), which is the one less
             than the offset of the first open transaction. In particular any
             messages appearing after messages belonging to ongoing transactions
             will be withheld until the relevant transaction has been completed.
-            As a result, ``read_committed`` consumers will not be able to read up
+            As a result, `read_committed` consumers will not be able to read up
             to the high watermark when there are in flight transactions.
-            Further, when in ``read_committed`` the seek_to_end method will
+            Further, when in `read_committed` the seek_to_end method will
             return the LSO.
             """,
         ),

@@ -15,27 +15,27 @@ class ServerApplicationSettings(BaseSettings):
 
     Application can be configured in 2 ways:
 
-    * By explicitly passing ``settings`` object as an argument to :obj:`application_factory <data_rentgen.server.application_factory>`
+    * By explicitly passing `settings` object as an argument to [application_factory][data_rentgen.server.application_factory]
     * By setting up environment variables matching a specific key.
 
-      All environment variable names are written in uppercase and should be prefixed with ``DATA_RENTGEN__``.
-      Nested items are delimited with ``__``.
+      All environment variable names are written in uppercase and should be prefixed with `DATA_RENTGEN__`.
+      Nested items are delimited with `__`.
 
-    More details can be found in `Pydantic documentation <https://docs.pydantic.dev/latest/concepts/pydantic_settings/>`_.
+    More details can be found in [Pydantic documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
 
     Examples
     --------
 
-    .. code-block:: bash
+    ```bash
+    # same as settings.database.url = "postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen"
+    DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
 
-        # same as settings.database.url = "postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen"
-        DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
+    # same as settings.logging.preset = "json"
+    DATA_RENTGEN__LOGGING__PRESET=json
 
-        # same as settings.logging.preset = "json"
-        DATA_RENTGEN__LOGGING__PRESET=json
-
-        # same as settings.server.debug = True
-        DATA_RENTGEN__SERVER__DEBUG=True
+    # same as settings.server.debug = True
+    DATA_RENTGEN__SERVER__DEBUG=True
+    ```
     """  # noqa: E501
 
     auth: AuthSettings = Field(
@@ -44,15 +44,15 @@ class ServerApplicationSettings(BaseSettings):
     )
     database: DatabaseSettings = Field(
         default_factory=DatabaseSettings,  # type: ignore[arg-type]
-        description=":ref:`Database settings <configuration-database>`",
+        description="[Database settings][configuration-database]",
     )
     logging: LoggingSettings = Field(
         default_factory=LoggingSettings,
-        description=":ref:`Logging settings <configuration-server-logging>`",
+        description="[Logging settings][configuration-server-logging]",
     )
     server: ServerSettings = Field(
         default_factory=ServerSettings,
-        description=":ref:`Server settings <configuration-server>`",
+        description="[Server settings][configuration-server]",
     )
 
     model_config = SettingsConfigDict(env_prefix="DATA_RENTGEN__", env_nested_delimiter="__", extra="forbid")

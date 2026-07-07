@@ -10,15 +10,15 @@ class ProducerSettings(BaseModel):
     """Data.Rentgen producer-specific settings.
 
     These options are passed directly to
-    `AIOKafkaProducer <https://aiokafka.readthedocs.io/en/stable/api.html#aiokafka.AIOKafkaProducer>`_.
+    [AIOKafkaProducer](https://aiokafka.readthedocs.io/en/stable/api.html#aiokafka.AIOKafkaProducer).
 
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__PRODUCER__MAIN_TOPIC="input.runs"
-        DATA_RENTGEN__PRODUCER__MALFOMED_TOPIC="input.runs__malformed"
+    ```bash
+    DATA_RENTGEN__PRODUCER__MAIN_TOPIC="input.runs"
+    DATA_RENTGEN__PRODUCER__MALFOMED_TOPIC="input.runs__malformed"
+    ```
     """
 
     main_topic: str = Field(

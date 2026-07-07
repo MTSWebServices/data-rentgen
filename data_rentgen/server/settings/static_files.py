@@ -9,20 +9,20 @@ from pydantic import BaseModel, Field, field_validator
 class StaticFilesSettings(BaseModel):
     """Static files serving settings.
 
-    Files are served at ``/static`` endpoint.
+    Files are served at `/static` endpoint.
 
     Examples
     --------
 
-    .. code-block:: bash
-
-        DATA_RENTGEN__SERVER__STATIC_FILES__ENABLED=True
-        DATA_RENTGEN__SERVER__STATIC_FILES__DIRECTORY=/app/data_rentgen/server/static
+    ```bash
+    DATA_RENTGEN__SERVER__STATIC_FILES__ENABLED=True
+    DATA_RENTGEN__SERVER__STATIC_FILES__DIRECTORY=/app/data_rentgen/server/static
+    ```
     """
 
-    enabled: bool = Field(default=True, description="Set to ``True`` to enable static file serving")
+    enabled: bool = Field(default=True, description="Set to `True` to enable static file serving")
     directory: Path = Field(
-        default=Path("docs/_static"),
+        default=Path("mddocs/docs/_static"),
         description="Directory containing static files",
     )
 

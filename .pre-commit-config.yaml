@@ -68,7 +68,7 @@ repos:
         priority: 6
       - id: insert-license
         types: [python]
-        exclude: ^(data_rentgen/dependencies/stub.py|docs/.*\.py|tests/.*\.py)$
+        exclude: ^(data_rentgen/dependencies/stub.py|tests/.*\.py)$
         args:
           - --license-filepath
           - .spdx-license-header.txt

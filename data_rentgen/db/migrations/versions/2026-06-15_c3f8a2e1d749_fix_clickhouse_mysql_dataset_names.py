@@ -4,7 +4,7 @@
 
 OpenLineage <1.47 incorrectly included the JDBC default database
 for ClickHouse and MySQL, producing 3-component names like
-``default.mydb.mytable`` instead of ``mydb.mytable``.
+`default.mydb.mytable` instead of `mydb.mytable`.
 
 https://github.com/OpenLineage/OpenLineage/issues/4494
 https://github.com/OpenLineage/OpenLineage/issues/4496
