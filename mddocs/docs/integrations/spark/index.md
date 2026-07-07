@@ -290,7 +290,6 @@ To fill up this facet, it is required to:
 - Setup [OpenLineage integration for Airflow][overview-setup-airflow]
 - [Pass parent Run info from Airflow to Spark](https://openlineage.io/docs/integrations/spark/configuration/airflow#preserving-job-hierarchy):
 
-    {% raw %}
     ``` python title="dag.py"
     def my_etl(
         parent_job_namespace: str,
@@ -334,7 +333,6 @@ To fill up this facet, it is required to:
         },
     )
     ```
-    {% endraw %}
 
     The exact way of substituting Airflow macros to SparkSession config may be different depending on used Airflow operator:
 
