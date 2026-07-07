@@ -172,6 +172,7 @@ To fill up this facet, it is required to:
 
     === "BashOperator"
 
+        {% raw %}
         ```py
         from airflow.providers.standard.operators.bash import BashOperator
 
@@ -188,9 +189,11 @@ To fill up this facet, it is required to:
             }
         )
         ```
+        {% endraw %}
 
     === "SSHOperator"
 
+        {% raw %}
         ```py
         from airflow.providers.ssh.operators.ssh import SSHOperator
 
@@ -205,9 +208,11 @@ To fill up this facet, it is required to:
             }
         )
         ```
+        {% endraw %}
 
     === "KubernetesPodOperator"
 
+        {% raw %}
         ```py
         from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 
@@ -222,3 +227,4 @@ To fill up this facet, it is required to:
             }
         )
         ```
+        {% endraw %}

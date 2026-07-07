@@ -46,7 +46,7 @@ extra_javascript:
   - _static/javascripts/readthedocs.js
 
 plugins:
-  - towncrier
+  - search
   - autorefs:
       resolve_closest: true
   - literate-nav:
@@ -75,6 +75,8 @@ plugins:
             docstring_section_style: list
             inherited_members: true
             show_if_no_docstring: true
+  - macros
+  - towncrier
 
 markdown_extensions:
   - footnotes
