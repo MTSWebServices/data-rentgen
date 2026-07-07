@@ -62,19 +62,17 @@ By default, database is created with no data. To seed database with some example
 
     Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-    ??? note "docker-compose.yml"
-        ```yaml
-        --8<--
-        docker-compose.yml:1:69,176:176
-        --8<--
-        ```
+    ```yaml title="docker-compose.yml"
+    --8<--
+    docker-compose.yml:1:69,176:176
+    --8<--
+    ```
 
-    ??? note ".env.docker"
-        ```ini
-        --8<--
-        .env.docker:1:5,23:23
-        --8<--
-        ```
+    ```ini title=".env.docker"
+    --8<--
+    .env.docker:1:5,23:23
+    --8<--
+    ```
 
 - Add scripts to crontab:
 

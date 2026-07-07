@@ -22,19 +22,17 @@ Implemented using [FastAPI](https://fastapi.tiangolo.com/).
 
     Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-    ??? note "docker-compose.yml"
-        ```yaml
-        --8<--
-        docker-compose.yml:71:99
-        --8<--
-        ```
+    ```yaml title="docker-compose.yml"
+    --8<--
+    docker-compose.yml:71:99
+    --8<--
+    ```
 
-    ??? note ".env.docker"
-        ```ini
-        --8<--
-        .env.docker:22:27
-        --8<--
-        ```
+    ```ini title=".env.docker"
+    --8<--
+    .env.docker:22:27
+    --8<--
+    ```
 
 - After server is started and ready, open [http://localhost:8000/docs](http://localhost:8000/docs).
 

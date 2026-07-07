@@ -39,19 +39,17 @@ If this is not possible, http2kafka is the way to go.
 
     Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-    ??? note "docker-compose.yml"
-        ```yaml
-        --8<--
-        docker-compose.yml:155:173
-        --8<--
-        ```
+    ```yaml title="docker-compose.yml"
+    --8<--
+    docker-compose.yml:155:173
+    --8<--
+    ```
 
-    ??? note ".env.docker"
-        ```ini
-        --8<--
-        .env.docker:29:34
-        --8<--
-        ```
+    ```ini title=".env.docker"
+    --8<--
+    .env.docker:29:34
+    --8<--
+    ```
 
 - After component is started and ready, open <http://localhost:8002/docs>.
 
