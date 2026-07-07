@@ -10,7 +10,7 @@ exclude_docs: |
 theme:
   name: material
   language: en
-  logo: _static/logo.svg
+  logo: _static/logo_wide_white_text.svg
   favicon: _static/icon.svg
   features:
     - navigation.indexes
