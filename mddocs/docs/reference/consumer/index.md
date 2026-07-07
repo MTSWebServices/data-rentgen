@@ -85,6 +85,11 @@ from data_rentgen.consumer import application_factory, ConsumerApplicationSettin
 app = application_factory(ConsumerApplicationSettings)
 ```
 
+::: data_rentgen.consumer.application_factory
+    options:
+      show_root_heading: true
+      show_root_full_path: true
+
 ## See also
 
 [Consumer configuration][configuration-consumer]

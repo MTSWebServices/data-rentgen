@@ -79,6 +79,11 @@ from data_rentgen.server import application_factory, ServerApplicationSettings
 app = application_factory(ServerApplicationSettings(...))
 ```
 
+::: data_rentgen.server.application_factory
+    options:
+      show_root_heading: true
+      show_root_full_path: true
+
 ## See also
 
 - [Authentication and Authorization][auth-server]

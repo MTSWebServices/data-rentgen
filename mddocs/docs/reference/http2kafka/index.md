@@ -96,6 +96,11 @@ from data_rentgen.http2kafka import application_factory, Http2KafkaApplicationSe
 app = application_factory(Http2KafkaApplicationSettings(...))
 ```
 
+::: data_rentgen.http2kafka.application_factory
+    options:
+      show_root_heading: true
+      show_root_full_path: true
+
 ## See also
 
 - [Configuration][configuration-http2kafka]
