@@ -44,8 +44,7 @@ Other popular OpenLineage server implementations use HTTP protocol for receiving
     Image entrypoint will create database if volume is empty.
     Options can be set via `.env` file or `environment` section in `docker-compose.yml`
 
-    !!! note "docker-compose.yml"
-        ```yaml
+        ```yaml title="docker-compose.yml"
         --8<--
         docker-compose.yml:101:117,177:177
         --8<--
