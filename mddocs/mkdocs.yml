@@ -42,6 +42,7 @@ extra_css:
 
 extra_javascript:
   - _static/javascripts/mermaid_zoom.js
+  - _static/javascripts/readthedocs.js
 
 plugins:
   - towncrier
