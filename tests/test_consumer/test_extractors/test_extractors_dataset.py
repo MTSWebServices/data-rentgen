@@ -451,6 +451,35 @@ def test_extractors_extract_dataset_unknown():
     assert symlinks_dto == []
 
 
+@pytest.mark.parametrize(
+    ["namespace", "name"],
+    [
+        ("postgres://myhost:5432", "mydb.information_schema.tables"),
+        ("postgres://myhost:5432", "mydb.pg_catalog.pg_tables"),
+        ("sqlserver://myhost:1433", "mydb.information_schema.tables"),
+        ("mysql://myhost:3306", "information_schema.tables"),
+        ("clickhouse://myhost:8123", "information_schema.tables"),
+        ("clickhouse://myhost:8123", "system.tables"),
+        ("oracle://myhost:1521", "mydb.dual"),
+        ("oracle://myhost:1521", "mydb.sys.all_tables"),
+        ("oracle://myhost:1521", "mydb.all_tables"),
+        ("oracle://myhost:1521", "mydb.user_tables"),
+        ("oracle://myhost:1521", "mydb.dba_tables"),
+        ("oracle://myhost:1521", "mydb.v$session"),
+        ("oracle://myhost:1521", "mydb.v_$session"),
+        ("oracle://myhost:1521", "mydb.gv_$session"),
+    ],
+)
+def test_extractors_extract_dataset_prohibited_name(namespace: str, name: str):
+    dataset = OpenLineageDataset(
+        namespace=namespace,
+        name=name,
+    )
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto is None
+    assert symlinks_dto == []
+
+
 def test_extractors_extract_dataset_with_tags():
     dataset = OpenLineageDataset(
         namespace="postgres://192.168.1.1:5432",

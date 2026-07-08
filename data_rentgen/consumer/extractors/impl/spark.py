@@ -84,11 +84,11 @@ class SparkExtractor(GenericExtractor):
     def _extract_dataset_ref(
         self,
         dataset: OpenLineageDataset | OpenLineageColumnLineageDatasetFacetFieldRef | OpenLineageSymlinkIdentifier,
-    ) -> DatasetDTO:
+    ) -> DatasetDTO | None:
         dataset_dto = super()._extract_dataset_ref(dataset)
 
         # convert /some/long/path/with=partition/another=abc to /some/long/path
-        if "=" in dataset_dto.name and "/" in dataset_dto.name:
+        if dataset_dto and "=" in dataset_dto.name and "/" in dataset_dto.name:
             name_with_partitions = PARTITION_PATH_PATTERN.match(dataset_dto.name)
             if name_with_partitions:
                 dataset_dto.name = name_with_partitions.group(1)
@@ -98,7 +98,7 @@ class SparkExtractor(GenericExtractor):
         self,
         dataset: OpenLineageDataset,
         symlink_identifiers: list[OpenLineageSymlinkIdentifier],
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[DatasetDTO | None, list[DatasetSymlinkGroupDTO]]:
         table_symlinks = [
             identifier for identifier in symlink_identifiers if identifier.type == OpenLineageSymlinkType.TABLE
         ]
@@ -118,9 +118,14 @@ class SparkExtractor(GenericExtractor):
             )
 
         location_dataset_dto = self.extract_dataset(dataset)
-        table_dataset_dto = self._extract_dataset_ref(table_symlinks[0])
+        if not location_dataset_dto:
+            return None, []
 
         # Swap datasets in column lineage as well
+        table_dataset_dto = self._extract_dataset_ref(table_symlinks[0])
+        if not table_dataset_dto:
+            return None, []
+
         dataset_cache_key = (dataset.namespace, dataset.name)
         self._dataset_ref_to_dto_cache[dataset_cache_key] = table_dataset_dto
 

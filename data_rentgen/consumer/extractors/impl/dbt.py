@@ -44,17 +44,18 @@ class DbtExtractor(GenericExtractor):
     def _extract_dataset_ref(
         self,
         dataset: OpenLineageDataset | OpenLineageColumnLineageDatasetFacetFieldRef | OpenLineageSymlinkIdentifier,
-    ) -> DatasetDTO:
+    ) -> DatasetDTO | None:
         dataset_dto = super()._extract_dataset_ref(dataset)
-        # https://github.com/OpenLineage/OpenLineage/pull/3707
-        dataset_dto.name = dataset.name.replace("None.", "")
+        if dataset_dto:
+            # https://github.com/OpenLineage/OpenLineage/pull/3707
+            dataset_dto.name = dataset.name.replace("None.", "")
         return dataset_dto
 
     def _extract_output_type(
         self,
         operation: OperationDTO,
         dataset: OpenLineageOutputDataset,
-    ) -> OutputTypeDTO | None:
+    ) -> OutputTypeDTO:
         # by default, model is not materialized, and is either VIEW or INSERT INTO
         result = super()._extract_output_type(operation, dataset)
         return result or OutputTypeDTO.APPEND

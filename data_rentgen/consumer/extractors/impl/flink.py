@@ -50,7 +50,7 @@ class FlinkExtractor(GenericExtractor):
         self,
         dataset: OpenLineageDataset,
         symlink_identifiers: list[OpenLineageSymlinkIdentifier],
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[DatasetDTO | None, list[DatasetSymlinkGroupDTO]]:
         # Exclude Kafka fake symlinks produced by Flink 2.x integration.
         # See https://github.com/OpenLineage/OpenLineage/pull/3657
         symlink_identifiers = [
