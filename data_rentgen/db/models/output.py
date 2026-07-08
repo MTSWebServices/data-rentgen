@@ -6,7 +6,7 @@ from enum import IntFlag
 from uuid import UUID
 
 from sqlalchemy import UUID as SQL_UUID
-from sqlalchemy import BigInteger, DateTime, Integer, PrimaryKeyConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_utils import ChoiceType
 
@@ -37,7 +37,7 @@ class OutputType(IntFlag):
     MERGE = 512
 
 
-# no foreign keys to avoid scanning all the partitions
+# no foreign keys to partitioned tables
 class Output(Base):
     __tablename__ = "output"
     __table_args__ = (
@@ -81,6 +81,7 @@ class Output(Base):
 
     job_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("job.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Parent job of run",
@@ -94,6 +95,7 @@ class Output(Base):
 
     dataset_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("dataset.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Dataset the output is performed against",
@@ -114,6 +116,7 @@ class Output(Base):
 
     schema_id: Mapped[int | None] = mapped_column(
         BigInteger,
+        ForeignKey("schema.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
         doc="Schema the output is performed with, if any",

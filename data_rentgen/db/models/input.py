@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import UUID as SQL_UUID
-from sqlalchemy import BigInteger, DateTime, PrimaryKeyConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from data_rentgen.db.models.base import Base
@@ -16,7 +16,7 @@ from data_rentgen.db.models.run import Run
 from data_rentgen.db.models.schema import Schema
 
 
-# no foreign keys to avoid scanning all the partitions
+# no foreign keys to partitioned tables
 class Input(Base):
     __tablename__ = "input"
     __table_args__ = (
@@ -60,6 +60,7 @@ class Input(Base):
 
     job_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("job.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Parent job of run",
@@ -73,6 +74,7 @@ class Input(Base):
 
     dataset_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("dataset.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Dataset the input is performed against",
@@ -86,6 +88,7 @@ class Input(Base):
 
     schema_id: Mapped[int | None] = mapped_column(
         BigInteger,
+        ForeignKey("schema.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
         doc="Schema the input is performed with, if any",

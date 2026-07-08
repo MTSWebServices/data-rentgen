@@ -18,6 +18,6 @@ class SQLQuery(Base):
         index=True,
         unique=True,
         nullable=False,
-        doc="Fingerprint to indetify sql query",
+        doc="Fingerprint to identify sql query",
     )
     query: Mapped[str] = mapped_column(Text, nullable=False, doc="SQL query")

@@ -39,7 +39,7 @@ class DatasetColumnRelationType(Flag):
     CONDITIONAL = 2048
 
 
-# no foreign keys to avoid scanning all the partitions
+# no foreign keys to partitioned tables
 class DatasetColumnRelation(Base):
     __tablename__ = "dataset_column_relation"
     __table_args__ = (
