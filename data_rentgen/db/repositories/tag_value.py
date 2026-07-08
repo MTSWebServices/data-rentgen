@@ -32,7 +32,7 @@ fetch_bulk_query = select(TagValue).where(
 )
 get_one_query = (
     select(TagValue)
-    .where(TagValue.tag_id == bindparam("tag_id"), TagValue.value == bindparam("value"))
+    .where(TagValue.tag_id == bindparam("tag_id"), func.lower(TagValue.value) == bindparam("value"))
     .limit(literal(1, literal_execute=True))
 )
 
@@ -64,7 +64,7 @@ class TagValueRepository(Repository[TagValue]):
         )
 
     async def _get(self, tag_id: int, value: str) -> TagValue | None:
-        return await self._session.scalar(get_one_query, {"tag_id": tag_id, "value": value})
+        return await self._session.scalar(get_one_query, {"tag_id": tag_id, "value": value.lower()})
 
     async def _create(self, tag_value: TagValueDTO) -> TagValue:
         result = TagValue(tag_id=tag_value.tag.id, value=tag_value.value)
