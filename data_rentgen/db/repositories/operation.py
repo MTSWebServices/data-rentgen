@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Collection
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Row, UnaryExpression, any_, bindparam, func, select, update
@@ -16,13 +16,7 @@ from data_rentgen.utils.uuid import extract_timestamp_from_uuid, get_max_uuid, g
 insert_statement = insert(Operation).on_conflict_do_nothing()
 update_statement = update(Operation)
 
-get_list_by_run_ids_query = select(Operation).where(
-    Operation.id >= bindparam("min_id"),
-    Operation.created_at >= bindparam("since"),
-    Operation.run_id == any_(bindparam("run_ids")),
-)
-
-# Do not use `tuple_(Operation.created_at, Operation.id).in_(...),
+# Do not use `tuple_(Operation.id, Operation.created_at).in_(...),
 # as this is too complex filter for Postgres to make an optimal query plan.
 # Primary key starts with id already, and created_at filter is used to select specific partitions
 get_list_by_ids = select(Operation).where(
@@ -103,7 +97,7 @@ class OperationRepository(Repository[Operation]):
         until: datetime | None,
         run_ids: Collection[UUID],
     ) -> PaginationDTO[Operation]:
-        # do not use `tuple_(Operation.created_at, Operation.id).in_(...),
+        # do not use `tuple_(Operation.id, Operation.created_at).in_(...),
         # as this is too complex filter for Postgres to make an optimal query plan
         where = []
 
@@ -152,34 +146,6 @@ class OperationRepository(Repository[Operation]):
             page=page,
             page_size=page_size,
         )
-
-    async def list_by_run_ids(
-        self,
-        run_ids: Collection[UUID],
-        since: datetime,
-        until: datetime | None,
-    ) -> list[Operation]:
-        if not run_ids:
-            return []
-
-        # All operations are created after run
-        min_run_created_at = extract_timestamp_from_uuid(min(run_ids))
-        min_operation_created_at = max(min_run_created_at, since.astimezone(timezone.utc))
-
-        query = get_list_by_run_ids_query
-        if until:
-            # until is rarely used, avoid making query too complicated
-            query = query.where(Operation.created_at <= until)
-
-        result = await self._session.scalars(
-            query,
-            {
-                "min_id": get_min_uuid(min_operation_created_at),
-                "since": min_operation_created_at,
-                "run_ids": list(run_ids),
-            },
-        )
-        return list(result.all())
 
     async def list_by_ids(self, operation_ids: Collection[UUID]) -> list[Operation]:
         if not operation_ids:
