@@ -24,8 +24,8 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.dto.tag import TagDTO
 
-fetch_bulk_query = select(Tag).where(Tag.name == any_(bindparam("names")))
-get_one_by_name_query = select(Tag).where(Tag.name == bindparam("name"))
+fetch_bulk_query = select(Tag).where(func.lower(Tag.name) == any_(bindparam("names")))
+get_one_by_name_query = select(Tag).where(func.lower(Tag.name) == bindparam("name"))
 
 
 class TagRepository(Repository[Tag]):
@@ -85,7 +85,7 @@ class TagRepository(Repository[Tag]):
         scalars = await self._session.scalars(
             fetch_bulk_query,
             {
-                "names": [item.name for item in tags_dto],
+                "names": [item.name.lower() for item in tags_dto],
             },
         )
         existing = {tag.name: tag for tag in scalars.all()}
@@ -97,7 +97,7 @@ class TagRepository(Repository[Tag]):
         return await self._get(tag_dto.name) or await self._create(tag_dto)
 
     async def _get(self, name: str) -> Tag | None:
-        return await self._session.scalar(get_one_by_name_query, {"name": name})
+        return await self._session.scalar(get_one_by_name_query, {"name": name.lower()})
 
     async def _create(self, tag: TagDTO) -> Tag:
         result = Tag(name=tag.name)
