@@ -16,6 +16,8 @@ __all__ = [
     "generate_incremental_uuid",
     "generate_new_uuid",
     "generate_static_uuid",
+    "get_max_uuid",
+    "get_min_uuid",
 ]
 
 

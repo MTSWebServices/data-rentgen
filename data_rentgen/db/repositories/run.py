@@ -23,7 +23,7 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import PaginationDTO, RunDTO
 from data_rentgen.utils.uuid import extract_timestamp_from_uuid, get_max_uuid, get_min_uuid
 
-# Do not use `tuple_(Run.created_at, Run.id).in_(...),
+# Do not use `tuple_(Run.id, Run.created_at).in_(...),
 # as this is too complex filter for Postgres to make an optimal query plan.
 # Primary key starts with id already, and created_at filter is used to select specific partitions
 get_list_by_id_query = (
@@ -167,7 +167,7 @@ class RunRepository(Repository[Run]):
         ended_until: datetime | None,
         search_query: str | None,
     ) -> PaginationDTO[Run]:
-        # do not use `tuple_(Run.created_at, Run.id).in_(...),
+        # do not use `tuple_(Run.id, Run.created_at).in_(...),
         # as this is too complex filter for Postgres to make an optimal query plan
         where = []
 
