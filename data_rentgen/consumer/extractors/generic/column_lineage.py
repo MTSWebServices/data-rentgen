@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import cast
 
 from data_rentgen.dto import (
     ColumnLineageDTO,
@@ -45,10 +46,12 @@ TRANSFORMATION_SUBTYPE_MAP = {
     "CONDITIONAL": DatasetColumnRelationTypeDTO.CONDITIONAL,
 }
 
+MISSING = object()
+
 
 class ColumnLineageExtractorMixin(ABC):
     def __init__(self):
-        self._dataset_ref_to_dto_cache: dict[tuple[str, str], DatasetDTO] = {}
+        self._dataset_ref_to_dto_cache: dict[tuple[str, str], DatasetDTO | None] = {}
 
     @abstractmethod
     def extract_io_created_at(self, operation: OperationDTO, event: OpenLineageRunEvent) -> datetime:
@@ -58,20 +61,22 @@ class ColumnLineageExtractorMixin(ABC):
     def _extract_dataset_ref(
         self,
         dataset: OpenLineageDataset | OpenLineageColumnLineageDatasetFacetFieldRef | OpenLineageSymlinkIdentifier,
-    ) -> DatasetDTO:
+    ) -> DatasetDTO | None:
         pass
 
     def _resolve_dataset_ref(
         self,
         dataset_ref: OpenLineageDataset | OpenLineageColumnLineageDatasetFacetFieldRef | OpenLineageSymlinkIdentifier,
-    ) -> DatasetDTO:
+    ) -> DatasetDTO | None:
         """
         Column lineage has a lot of dataset references, so this is a hot path which requires caching.
         """
         dataset_cache_key = (dataset_ref.namespace, dataset_ref.name)
-        if dataset_cache_key not in self._dataset_ref_to_dto_cache:
-            self._dataset_ref_to_dto_cache[dataset_cache_key] = self._extract_dataset_ref(dataset_ref)
-        return self._dataset_ref_to_dto_cache[dataset_cache_key]
+        result = self._dataset_ref_to_dto_cache.get(dataset_cache_key, MISSING)
+        if result is MISSING:
+            result = self._extract_dataset_ref(dataset_ref)
+            self._dataset_ref_to_dto_cache[dataset_cache_key] = result
+        return cast("DatasetDTO | None", result)
 
     def extract_column_lineage(
         self,
@@ -86,16 +91,20 @@ class ColumnLineageExtractorMixin(ABC):
             return []
 
         output_dataset_dto = self._resolve_dataset_ref(output_dataset)
-        created_at = self.extract_io_created_at(operation, event)
+        if not output_dataset_dto:
+            return []
 
         # Grouping column lineage by source+target dataset. This is unique combination within operation,
         # so we can use it to generate the same fingerprint for all dataset column relations
         result: dict[tuple, ColumnLineageDTO] = {}
+        created_at = self.extract_io_created_at(operation, event)
 
         # direct lineage (source_column -> target_column)
         for field, raw_column_lineage in output_dataset.facets.columnLineage.fields.items():
             for input_field in raw_column_lineage.inputFields:
                 input_dataset_dto = self._resolve_dataset_ref(input_field)
+                if not input_dataset_dto:
+                    continue
                 column_lineage = ColumnLineageDTO(
                     created_at=created_at,
                     operation=operation,
@@ -122,6 +131,8 @@ class ColumnLineageExtractorMixin(ABC):
         # added to OL since v1.23 and send only when columnLineage.datasetLineageEnabled=true
         for input_field in output_dataset.facets.columnLineage.dataset:
             input_dataset_dto = self._resolve_dataset_ref(input_field)
+            if not input_dataset_dto:
+                continue
             column_lineage = ColumnLineageDTO(
                 created_at=created_at,
                 operation=operation,

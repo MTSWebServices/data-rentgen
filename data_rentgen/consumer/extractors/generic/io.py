@@ -54,7 +54,7 @@ class IOExtractorMixin(ABC):
     def extract_dataset_and_symlinks(
         self,
         dataset: OpenLineageDataset,
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[DatasetDTO | None, list[DatasetSymlinkGroupDTO]]:
         pass
 
     def extract_io_created_at(self, operation: OperationDTO, event: OpenLineageRunEvent) -> datetime:
@@ -110,13 +110,15 @@ class IOExtractorMixin(ABC):
         operation: OperationDTO,
         dataset: OpenLineageInputDataset,
         event: OpenLineageRunEvent,
-    ) -> tuple[InputDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[InputDTO | None, list[DatasetSymlinkGroupDTO]]:
         """
         Extract InputDTO with optional symlinks
         """
         resolved_dataset_dto, symlinks = self.extract_dataset_and_symlinks(dataset)
-        created_at = self.extract_io_created_at(operation, event)
+        if not resolved_dataset_dto:
+            return None, []
 
+        created_at = self.extract_io_created_at(operation, event)
         result = InputDTO(
             created_at=created_at,
             operation=operation,
@@ -134,13 +136,15 @@ class IOExtractorMixin(ABC):
         operation: OperationDTO,
         dataset: OpenLineageOutputDataset,
         event: OpenLineageRunEvent,
-    ) -> tuple[OutputDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[OutputDTO | None, list[DatasetSymlinkGroupDTO]]:
         """
         Extract OutputDTO with optional symlinks
         """
         resolved_dataset_dto, symlinks = self.extract_dataset_and_symlinks(dataset)
-        created_at = self.extract_io_created_at(operation, event)
+        if not resolved_dataset_dto:
+            return None, []
 
+        created_at = self.extract_io_created_at(operation, event)
         result = OutputDTO(
             created_at=created_at,
             operation=operation,

@@ -61,6 +61,8 @@ class BatchExtractor:
 
         for input_dataset in event.inputs:
             input_dto, symlink_groups = extractor.extract_input(operation, input_dataset, event)
+            if not input_dto:
+                continue
             self.result.add_input(input_dto)
 
             for symlink_group in symlink_groups:
@@ -68,6 +70,8 @@ class BatchExtractor:
 
         for output_dataset in event.outputs:
             output_dto, symlink_groups = extractor.extract_output(operation, output_dataset, event)
+            if not output_dto:
+                continue
             self.result.add_output(output_dto)
 
             for symlink_group in symlink_groups:

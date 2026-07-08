@@ -25,11 +25,6 @@ from data_rentgen.openlineage.dataset_facets import (
 METASTORE = DatasetSymlinkTypeDTO.METASTORE
 WAREHOUSE = DatasetSymlinkTypeDTO.WAREHOUSE
 
-# https://github.com/OpenLineage/OpenLineage/issues/4496
-# https://github.com/OpenLineage/OpenLineage/issues/4497
-# Fixed in OpenLineage 1.47, but not all users upgraded their ETL scripts
-SCHEMALESS_DATABASES = {"clickhouse", "mysql"}
-
 # OpenLineage namespaces are not necessarily URLs:
 # https://openlineage.io/docs/spec/naming/
 # But Data.Rentgen expects them to be actual URLs.
@@ -43,6 +38,30 @@ LOCATION_REPLACEMENTS = {
     re.compile(r"^postgresql://"): "postgres://",
 }
 
+OPTIONAL_DATABASE_PATTERN = r"([\w\d_\-\.]+\.)?"
+RESERVED_DATASET_NAME_PATTERNS = [
+    r"information_schema\.[\w_.]+",  # common for all databases
+    r"pg_[\w_.]+",  # PostgreSQL
+    r"system\.[\w_.]+",  # Clickhouse
+    r"sys\.[\w_.]+",  # Oracle
+    "dual",
+    r"all_[\w_]+",
+    r"user_[\w_]+",
+    r"dba_[\w_]+",
+    r"v\$[\w_]+",
+    r"v_\$[\w_]+",
+    r"gv_\$[\w_]+",
+]
+RESERVED_DATASET_NAME_PATTERN = re.compile(
+    "^" + OPTIONAL_DATABASE_PATTERN + "(" + "|".join(RESERVED_DATASET_NAME_PATTERNS) + ")$",
+    re.IGNORECASE | re.ASCII,
+)
+
+# https://github.com/OpenLineage/OpenLineage/issues/4496
+# https://github.com/OpenLineage/OpenLineage/issues/4497
+# Fixed in OpenLineage 1.47, but not all users upgraded their ETL scripts
+SCHEMALESS_DATABASES = {"clickhouse", "mysql"}
+
 
 def _get_symlink_role(type_: OpenLineageSymlinkType) -> DatasetSymlinkTypeDTO:
     return METASTORE if type_ == OpenLineageSymlinkType.TABLE else WAREHOUSE
@@ -53,19 +72,23 @@ def _get_opposite_dataset_role(symlink_roles: list[DatasetSymlinkTypeDTO]) -> Da
 
 
 class DatasetExtractorMixin:
-    def extract_dataset(self, dataset: OpenLineageDataset) -> DatasetDTO:
+    def extract_dataset(self, dataset: OpenLineageDataset) -> DatasetDTO | None:
         """
         Extract DatasetDTO from input or output OpenLineageDataset
         """
         dataset_dto = self._extract_dataset_ref(dataset)
+        if not dataset_dto:
+            return None
         return self._enrich_dataset_tags(dataset_dto, dataset)
 
     def _extract_dataset_ref(
         self,
         dataset: OpenLineageDataset | OpenLineageColumnLineageDatasetFacetFieldRef | OpenLineageSymlinkIdentifier,
-    ) -> DatasetDTO:
+    ) -> DatasetDTO | None:
         location = self._extract_dataset_location(dataset)
         name = dataset.name
+        if RESERVED_DATASET_NAME_PATTERN.match(name):
+            return None
         if location.type in SCHEMALESS_DATABASES and name.count(".") == 2:  # noqa: PLR2004
             name = name.split(".", maxsplit=1)[1]
         return DatasetDTO(
@@ -97,7 +120,7 @@ class DatasetExtractorMixin:
     def extract_dataset_and_symlinks(
         self,
         dataset: OpenLineageDataset,
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[DatasetDTO | None, list[DatasetSymlinkGroupDTO]]:
         symlink_identifiers = dataset.facets.symlinks.identifiers if dataset.facets.symlinks else []
         return self._extract_dataset_and_symlinks(dataset, symlink_identifiers)
 
@@ -105,11 +128,14 @@ class DatasetExtractorMixin:
         self,
         dataset: OpenLineageDataset,
         symlink_identifiers: list[OpenLineageSymlinkIdentifier],
-    ) -> tuple[DatasetDTO, list[DatasetSymlinkGroupDTO]]:
+    ) -> tuple[DatasetDTO | None, list[DatasetSymlinkGroupDTO]]:
         dataset_dto = self.extract_dataset(dataset)
+        if not dataset_dto:
+            return None, []
         symlinks = [
-            (self._extract_dataset_ref(symlink_identifier), symlink_identifier.type)
+            (symlink_dataset, symlink_identifier.type)
             for symlink_identifier in symlink_identifiers
+            if (symlink_dataset := self._extract_dataset_ref(symlink_identifier))
         ]
         return dataset_dto, [self._build_dataset_symlink_group(dataset_dto, symlinks)] if symlinks else []
 
