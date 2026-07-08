@@ -33,7 +33,7 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import DatasetDTO, PaginationDTO
 
 fetch_bulk_query = select(Dataset).where(
-    tuple_(Dataset.location_id, func.lower(Dataset.name)).in_(
+    tuple_(Dataset.location_id, Dataset.name_lower).in_(
         select(
             func.unnest(
                 cast(bindparam("location_ids"), ARRAY(Integer())),
@@ -56,7 +56,7 @@ get_one_query = (
     select(Dataset)
     .where(
         Dataset.location_id == bindparam("location_id"),
-        func.lower(Dataset.name) == bindparam("name_lower"),
+        Dataset.name_lower == bindparam("name_lower"),
     )
     .limit(literal(1, literal_execute=True))
 )
@@ -138,7 +138,7 @@ class DatasetRepository(Repository[Dataset]):
             return existing
 
         # Lock to prevent inserting the same rows from multiple workers
-        await self._lock(existing.location_id, existing.name)
+        await self._lock(existing.location_id, existing.name.lower())
         await self._session.execute(
             insert_tag_value_query,
             [
@@ -219,7 +219,7 @@ class DatasetRepository(Repository[Dataset]):
             order_by = [desc("search_rank"), asc("name")]
         else:
             query = select(Dataset).join(Location, location_join_clause).where(*where)
-            order_by = [Dataset.name]
+            order_by = [Dataset.name_lower]
 
         options = [
             selectinload(Dataset.location).selectinload(Location.addresses),

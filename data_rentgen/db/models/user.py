@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 from sqlalchemy import BigInteger, Index, String, column, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, column_property, mapped_column
 
 from data_rentgen.db.models.base import Base
 
@@ -12,3 +12,4 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    name_lower = column_property(func.lower(name), deferred=True)

@@ -1,18 +1,18 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
-from sqlalchemy import any_, bindparam, func, select
+from sqlalchemy import any_, bindparam, select
 
 from data_rentgen.db.models import User
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import UserDTO
 
 fetch_bulk_query = select(User).where(
-    func.lower(User.name) == any_(bindparam("names_lower")),
+    User.name_lower == any_(bindparam("names_lower")),
 )
 
 get_one_by_name_query = select(User).where(
-    func.lower(User.name) == bindparam("name_lower"),
+    User.name_lower == bindparam("name_lower"),
 )
 
 get_one_by_id_query = select(User).where(

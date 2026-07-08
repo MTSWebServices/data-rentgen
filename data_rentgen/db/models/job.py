@@ -42,6 +42,7 @@ class Job(Base):
         nullable=False,
         doc="Job name, e.g. Airflow DAG name + task name, or Spark applicationName",
     )
+    name_lower = column_property(func.lower(name), deferred=True)
 
     type_id: Mapped[int] = mapped_column(
         BigInteger,
