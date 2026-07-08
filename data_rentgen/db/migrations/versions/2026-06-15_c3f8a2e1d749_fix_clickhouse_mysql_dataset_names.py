@@ -142,14 +142,6 @@ def upgrade() -> None:
             """,
         ),
     )
-    op.execute(
-        sa.text(
-            """
-            DELETE FROM dataset_tag_value
-            WHERE dataset_id IN (SELECT old_id FROM dataset_name_migration)
-            """,
-        ),
-    )
 
     # Delete old 3-component datasets
     # Since we remapped all references, ON DELETE CASCADE won't hurt

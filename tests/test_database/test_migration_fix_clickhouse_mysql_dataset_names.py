@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import pytest
@@ -32,7 +31,8 @@ def test_migration_fix_clickhouse_mysql_dataset_names(empty_db_url: str, alembic
                     """
                     INSERT INTO location (id, type, name) VALUES
                         (1, 'clickhouse', 'myhost:8123'),
-                        (2, 'mysql', 'myhost:3306')
+                        (2, 'mysql', 'myhost:3306'),
+                        (3, 'postgres', 'myhost:5432')
                     """,
                 ),
             )
@@ -40,12 +40,13 @@ def test_migration_fix_clickhouse_mysql_dataset_names(empty_db_url: str, alembic
             conn.execute(
                 text(
                     """
-                    INSERT INTO dataset (id, location_id, name) VALUES
-                        (10, 1, 'default.mydb.mytable'),
-                        (11, 2, 'mydb.mydb.mytable'),
+                    INSERT INTO dataset (location_id, name) VALUES
+                        (1, 'mydb.collision'),
+                        (1, 'default.mydb.collision'),
+                        (1, 'default.mydb.mytable'),
 
-                        (12, 1, 'default.mydb.collision'),
-                        (13, 1, 'mydb.collision')
+                        (2, 'mydb.mydb.mytable'),
+                        (3, 'mydb.myschema.mytable')
                     """,
                 ),
             )
@@ -53,15 +54,13 @@ def test_migration_fix_clickhouse_mysql_dataset_names(empty_db_url: str, alembic
         do_run_migrations(alembic_config, Base.metadata, THIS_REVISION)
 
         with engine.connect() as conn:
-            rows = conn.execute(
+            assert conn.execute(
                 text("SELECT location_id, name FROM dataset ORDER BY location_id, name"),
-            ).fetchall()
-
-        names_by_location = defaultdict(list)
-        for location_id, name in rows:
-            names_by_location[location_id].append(name)
-
-        assert names_by_location == {1: ["mydb.collision", "mydb.mytable"], 2: ["mydb.mytable"]}
-
+            ).fetchall() == [
+                (1, "mydb.collision"),
+                (1, "mydb.mytable"),
+                (2, "mydb.mytable"),
+                (3, "mydb.myschema.mytable"),
+            ]
     finally:
         engine.dispose()
