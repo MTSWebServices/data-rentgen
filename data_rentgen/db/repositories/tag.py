@@ -24,8 +24,8 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.dto.tag import TagDTO
 
-fetch_bulk_query = select(Tag).where(func.lower(Tag.name) == any_(bindparam("names")))
-get_one_by_name_query = select(Tag).where(func.lower(Tag.name) == bindparam("name"))
+fetch_bulk_query = select(Tag).where(Tag.name_lower == any_(bindparam("names")))
+get_one_by_name_query = select(Tag).where(Tag.name_lower == bindparam("name"))
 
 
 class TagRepository(Repository[Tag]):
@@ -64,7 +64,7 @@ class TagRepository(Repository[Tag]):
             order_by = [desc("search_rank"), asc("name")]
         else:
             query = select(Tag).where(*where)
-            order_by = [Tag.name]
+            order_by = [Tag.name_lower]
 
         options = [
             selectinload(Tag.tag_values),
@@ -88,12 +88,12 @@ class TagRepository(Repository[Tag]):
                 "names": [item.name.lower() for item in tags_dto],
             },
         )
-        existing = {tag.name: tag for tag in scalars.all()}
-        return [(tag_dto, existing.get(tag_dto.name)) for tag_dto in tags_dto]
+        existing = {tag.name.lower(): tag for tag in scalars.all()}
+        return [(tag_dto, existing.get(tag_dto.name.lower())) for tag_dto in tags_dto]
 
     async def create(self, tag_dto: TagDTO) -> Tag:
         # if another worker already created the same row, just use it. if not - create with holding the lock.
-        await self._lock(tag_dto.name)
+        await self._lock(tag_dto.name.lower())
         return await self._get(tag_dto.name) or await self._create(tag_dto)
 
     async def _get(self, name: str) -> Tag | None:

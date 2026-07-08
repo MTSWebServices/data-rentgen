@@ -3,7 +3,7 @@
 
 from sqlalchemy import BigInteger, Computed, ForeignKey, Index, String, column, func
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from data_rentgen.db.models.base import Base
 from data_rentgen.db.models.tag import Tag
@@ -30,6 +30,7 @@ class TagValue(Base):
         foreign_keys=[tag_id],
     )
     value: Mapped[str] = mapped_column(String(256), nullable=False)
+    value_lower = column_property(func.lower(value), deferred=True)
 
     search_vector: Mapped[str] = mapped_column(
         TSVECTOR,

@@ -19,7 +19,7 @@ from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto.tag import TagValueDTO
 
 fetch_bulk_query = select(TagValue).where(
-    tuple_(TagValue.tag_id, TagValue.value).in_(
+    tuple_(TagValue.tag_id, TagValue.value_lower).in_(
         select(
             func.unnest(
                 cast(bindparam("tag_ids"), ARRAY(Integer())),
@@ -32,7 +32,7 @@ fetch_bulk_query = select(TagValue).where(
 )
 get_one_query = (
     select(TagValue)
-    .where(TagValue.tag_id == bindparam("tag_id"), func.lower(TagValue.value) == bindparam("value"))
+    .where(TagValue.tag_id == bindparam("tag_id"), TagValue.value_lower == bindparam("value"))
     .limit(literal(1, literal_execute=True))
 )
 
@@ -49,15 +49,15 @@ class TagValueRepository(Repository[TagValue]):
                 "values": [item.value for item in tag_values_dto],
             },
         )
-        existing = {(tag_value.tag_id, tag_value.value): tag_value for tag_value in scalars.all()}
+        existing = {(v.tag_id, v.value.lower()): v for v in scalars.all()}
         return [
-            (tag_value_dto, existing.get((tag_value_dto.tag.id, tag_value_dto.value)))  # type: ignore[arg-type]
-            for tag_value_dto in tag_values_dto
+            (v, existing.get((v.tag.id, v.value.lower())))  # type: ignore[arg-type]
+            for v in tag_values_dto
         ]
 
     async def create(self, tag_value_dto: TagValueDTO) -> TagValue:
         # if another worker already created the same row, just use it. if not - create with holding the lock.
-        await self._lock(tag_value_dto.tag.id, tag_value_dto.value)
+        await self._lock(tag_value_dto.tag.id, tag_value_dto.value.lower())
         return (
             await self._get(tag_value_dto.tag.id, tag_value_dto.value)  # type: ignore[arg-type]
             or await self._create(tag_value_dto)

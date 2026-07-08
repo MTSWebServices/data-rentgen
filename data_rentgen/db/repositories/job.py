@@ -33,7 +33,7 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import JobDTO, JobTypeDTO, PaginationDTO
 
 fetch_bulk_query = select(Job).where(
-    tuple_(Job.location_id, func.lower(Job.name)).in_(
+    tuple_(Job.location_id, Job.name_lower).in_(
         select(
             func.unnest(
                 cast(bindparam("location_ids"), ARRAY(Integer())),
@@ -49,7 +49,7 @@ get_one_query = (
     select(Job)
     .where(
         Job.location_id == bindparam("location_id"),
-        func.lower(Job.name) == bindparam("name_lower"),
+        Job.name_lower == bindparam("name_lower"),
     )
     .limit(literal(1, literal_execute=True))
 )
@@ -218,7 +218,7 @@ class JobRepository(Repository[Job]):
             order_by = [desc("search_rank"), asc("name")]
         else:
             query = select(Job).join(Location, location_join_clause).where(*where)
-            order_by = [Job.name]
+            order_by = [Job.name_lower]
 
         options = [
             selectinload(Job.location).selectinload(Location.addresses),
@@ -298,7 +298,7 @@ class JobRepository(Repository[Job]):
             return existing
 
         # Lock to prevent inserting the same rows from multiple workers
-        await self._lock(existing.location_id, existing.name)
+        await self._lock(existing.location_id, existing.name.lower())
         await self._session.execute(
             insert_tag_value_query,
             [

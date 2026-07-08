@@ -226,7 +226,7 @@ class RunRepository(Repository[Run]):
         if started_by_users:
             usernames_lower = [name.lower() for name in started_by_users]
             run = run.join(User, Run.started_by_user_id == User.id)
-            where.append(func.lower(User.name) == any_(usernames_lower))  # type: ignore[arg-type]
+            where.append(User.name_lower == any_(usernames_lower))  # type: ignore[arg-type]
 
         query = run.where(*where)
         order_by: list[ColumnElement] = [desc("id"), desc("created_at")]

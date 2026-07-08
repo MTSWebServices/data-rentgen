@@ -91,7 +91,7 @@ async def test_get_datasets_by_location_type(
         select(Dataset)
         .join(Location, Location.id == Dataset.location_id)
         .where(Location.type == "hdfs")
-        .order_by(Dataset.name)
+        .order_by(Dataset.name_lower)
     )
 
     dataset_scalars = await async_session.scalars(datasets_query)

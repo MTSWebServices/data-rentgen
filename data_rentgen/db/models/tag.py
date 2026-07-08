@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Computed, Index, String, column, func
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from data_rentgen.db.models.base import Base
 
@@ -21,11 +21,13 @@ class Tag(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(32), nullable=False)
+    name_lower = column_property(func.lower(name), deferred=True)
+
     tag_values: Mapped[list["TagValue"]] = relationship(
         "TagValue",
         lazy="noload",
         back_populates="tag",
-        order_by="TagValue.value",
+        order_by="TagValue.value_lower",
     )
     search_vector: Mapped[str] = mapped_column(
         TSVECTOR,

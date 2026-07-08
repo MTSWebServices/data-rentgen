@@ -3,7 +3,7 @@
 
 from sqlalchemy import BigInteger, Column, Computed, ForeignKey, Index, String, Table, column, func
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from data_rentgen.db.models.base import Base
 from data_rentgen.db.models.location import Location
@@ -44,6 +44,7 @@ class Dataset(Base):
         nullable=False,
         doc="Dataset name, e.g. table name or filesystem path",
     )
+    name_lower = column_property(func.lower(name), deferred=True)
 
     tag_values: Mapped[set[TagValue]] = relationship(
         secondary=DatasetTagValue,

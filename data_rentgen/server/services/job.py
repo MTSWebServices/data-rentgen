@@ -49,10 +49,12 @@ class JobServiceResult:
                 TagData(
                     id=tag.id,
                     name=tag.name,
-                    values=[TagValueData(id=tv.id, value=tv.value) for tv in sorted(group, key=lambda tv: tv.value)],
+                    values=[
+                        TagValueData(id=tv.id, value=tv.value) for tv in sorted(group, key=lambda tv: tv.value.lower())
+                    ],
                 )
                 for tag, group in groupby(
-                    sorted(job.tag_values, key=lambda tv: tv.tag.name),
+                    sorted(job.tag_values, key=lambda tv: tv.tag.name.lower()),
                     key=lambda tv: tv.tag,
                 )
             ],

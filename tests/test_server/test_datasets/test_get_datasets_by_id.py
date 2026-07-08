@@ -108,6 +108,6 @@ async def test_get_datasets_by_multiple_ids(
                 "data": dataset_to_json(dataset),
                 "tags": tag_values_to_json(dataset.tag_values) if dataset.tag_values else [],
             }
-            for dataset in sorted(selected_datasets, key=lambda x: x.name)
+            for dataset in sorted(selected_datasets, key=lambda x: x.name.lower())
         ],
     }
