@@ -145,7 +145,7 @@ class OperationRepository(Repository[Operation]):
             ]
 
         query = select(Operation).where(*where)
-        order_by: list[UnaryExpression] = [Operation.created_at.desc(), Operation.id.desc()]
+        order_by: list[UnaryExpression] = [Operation.id.desc(), Operation.created_at.desc()]
         return await self._paginate_by_query(
             query=query,
             order_by=order_by,

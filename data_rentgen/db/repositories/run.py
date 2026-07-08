@@ -229,7 +229,7 @@ class RunRepository(Repository[Run]):
             where.append(func.lower(User.name) == any_(usernames_lower))  # type: ignore[arg-type]
 
         query = run.where(*where)
-        order_by: list[ColumnElement] = [desc("created_at"), desc("id")]
+        order_by: list[ColumnElement] = [desc("id"), desc("created_at")]
         if search_query:
             tsquery = make_tsquery(search_query)
 
@@ -253,7 +253,7 @@ class RunRepository(Repository[Run]):
                 func.max(union_cte.c.search_rank).label("search_rank"),
             ).group_by(*run_columns)
             # place the most recent runs on top
-            order_by = [desc("search_rank"), desc("created_at"), desc("id")]
+            order_by = [desc("search_rank"), desc("id"), desc("created_at")]
 
         options = [
             selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses),
