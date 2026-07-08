@@ -6,7 +6,17 @@ from enum import Enum, IntEnum
 from uuid import UUID
 
 from sqlalchemy import UUID as SQL_UUID
-from sqlalchemy import BigInteger, Column, DateTime, Integer, PrimaryKeyConstraint, SmallInteger, String, select
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    PrimaryKeyConstraint,
+    SmallInteger,
+    String,
+    select,
+)
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 from sqlalchemy_utils import ChoiceType
 
@@ -109,6 +119,7 @@ class Operation(Base):
 
     sql_query_id: Mapped[int | None] = mapped_column(
         BigInteger,
+        ForeignKey("sql_query.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
         doc="Sql query of operation",

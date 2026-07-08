@@ -8,6 +8,7 @@ from sqlalchemy import UUID as SQL_UUID
 from sqlalchemy import (
     BigInteger,
     DateTime,
+    ForeignKey,
     PrimaryKeyConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,7 +21,7 @@ from data_rentgen.db.models.operation import Operation
 from data_rentgen.db.models.run import Run
 
 
-# no foreign keys to avoid scanning all the partitions
+# no foreign keys to partitioned tables
 class ColumnLineage(Base):
     __tablename__ = "column_lineage"
     __table_args__ = (
@@ -64,6 +65,7 @@ class ColumnLineage(Base):
 
     job_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("job.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Parent job of run",
@@ -77,6 +79,7 @@ class ColumnLineage(Base):
 
     source_dataset_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("dataset.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Dataset the data is originated from",
@@ -90,6 +93,7 @@ class ColumnLineage(Base):
 
     target_dataset_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("dataset.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Dataset the data is saved to",

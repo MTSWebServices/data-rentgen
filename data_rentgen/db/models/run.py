@@ -10,6 +10,7 @@ from sqlalchemy import (
     BigInteger,
     Computed,
     DateTime,
+    ForeignKey,
     Index,
     PrimaryKeyConstraint,
     SmallInteger,
@@ -50,7 +51,7 @@ class RunStartReason(str, Enum):
         return str(self.value)
 
 
-# no foreign keys to avoid scanning all the partitions
+# no foreign keys to partitioned tables
 class Run(Base):
     __tablename__ = "run"
     __table_args__ = (
@@ -69,6 +70,7 @@ class Run(Base):
 
     job_id: Mapped[int] = mapped_column(
         BigInteger,
+        ForeignKey("job.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
         doc="Job the run is associated with",
