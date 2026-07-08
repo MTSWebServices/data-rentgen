@@ -230,21 +230,6 @@ def test_extractors_extract_dataset_postgres(namespace: str):
         name="mydb.myschema.mytable",
     )
     assert symlinks_dto == []
-    dataset = OpenLineageDataset(
-        namespace="postgres://192.168.1.1:5432",
-        name="mydb.myschema.mytable",
-    )
-
-    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
-    assert dataset_dto == DatasetDTO(
-        location=LocationDTO(
-            type="postgres",
-            name="192.168.1.1:5432",
-            addresses={"postgres://192.168.1.1:5432"},
-        ),
-        name="mydb.myschema.mytable",
-    )
-    assert symlinks_dto == []
 
 
 @pytest.mark.parametrize(
@@ -266,21 +251,6 @@ def test_extractors_extract_dataset_sqlserver(namespace: str):
             type="sqlserver",
             name="192.168.1.1:1433",
             addresses={"sqlserver://192.168.1.1:1433"},
-        ),
-        name="mydb.myschema.mytable",
-    )
-    assert symlinks_dto == []
-    dataset = OpenLineageDataset(
-        namespace="postgres://192.168.1.1:5432",
-        name="mydb.myschema.mytable",
-    )
-
-    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
-    assert dataset_dto == DatasetDTO(
-        location=LocationDTO(
-            type="postgres",
-            name="192.168.1.1:5432",
-            addresses={"postgres://192.168.1.1:5432"},
         ),
         name="mydb.myschema.mytable",
     )
@@ -391,7 +361,7 @@ def test_extractors_extract_dataset_kafka_with_flink2_legacy_symlinks():
     assert symlinks_dto == []
 
 
-def test_extractors_extract_dataset_dbt_none():
+def test_extractors_extract_dataset_dbt_none_database():
     dataset = OpenLineageDataset(
         namespace="some-namespace",
         name="None.some.name",
