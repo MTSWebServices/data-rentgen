@@ -214,9 +214,10 @@ class DatabaseSaver:
             await self.unit_of_work.output.create_or_update_bulk(data.outputs())
 
     async def create_column_lineage(self, data: BatchExtractionResult):
+        column_lineage = data.column_lineage()
         async with self.unit_of_work:
             self.logger.debug("Creating dataset column relations")
-            await self.unit_of_work.dataset_column_relation.create_bulk_for_column_lineage(data.column_lineage())
+            await self.unit_of_work.dataset_column_relation.create_bulk_for_column_lineage(column_lineage)
 
             self.logger.debug("Creating column lineage")
-            await self.unit_of_work.column_lineage.create_bulk(data.column_lineage())
+            await self.unit_of_work.column_lineage.create_bulk(column_lineage)
