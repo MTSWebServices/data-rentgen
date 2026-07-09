@@ -122,7 +122,7 @@ test = [
 dev = [
   "prek~=0.4.5",
   "ruff~=0.15.18",
-  "mypy~=2.1.0",
+  "mypy>=2.1,<2.3",
   "sqlalchemy[mypy]~=2.0.51",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
@@ -140,7 +140,7 @@ mddocs = [
   "mkdocs-literate-nav~=0.6.1",
   "mkdocs-towncrier~=0.1.5",
   "towncrier~=25.8.0",
-  "setuptools<82",
+  "setuptools<84",
 ]
 
 [tool.uv]
