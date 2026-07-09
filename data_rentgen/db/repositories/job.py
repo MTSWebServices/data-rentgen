@@ -254,13 +254,9 @@ class JobRepository(Repository[Job]):
         ]
 
     async def create_or_update(self, job: JobDTO) -> Job:
+        # if another worker already created the same row, just use it. if not - create with holding the lock.
+        await self._lock(job.location.id, job.name.lower())
         result = await self._get(job)
-        if not result:
-            # try one more time, but with lock acquired.
-            # if another worker already created the same row, just use it. if not - create with holding the lock.
-            await self._lock(job.location.id, job.name.lower())
-            result = await self._get(job)
-
         if not result:
             result = await self._create(job)
         return await self.update(result, job)

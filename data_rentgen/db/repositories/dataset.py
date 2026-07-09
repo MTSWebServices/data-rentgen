@@ -106,13 +106,9 @@ class DatasetRepository(Repository[Dataset]):
         ]
 
     async def create_or_update(self, dataset: DatasetDTO) -> Dataset:
+        # if another worker already created the same row, just use it. if not - create with holding the lock.
+        await self._lock(dataset.location.id, dataset.name.lower())
         result = await self._get(dataset)
-        if not result:
-            # try one more time, but with lock acquired.
-            # if another worker already created the same row, just use it. if not - create with holding the lock.
-            await self._lock(dataset.location.id, dataset.name.lower())
-            result = await self._get(dataset)
-
         if not result:
             result = await self._create(dataset)
         return await self.update(result, dataset)
