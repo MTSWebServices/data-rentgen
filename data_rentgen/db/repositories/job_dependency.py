@@ -10,6 +10,7 @@ from sqlalchemy import (
     and_,
     any_,
     bindparam,
+    func,
     literal,
     or_,
     select,
@@ -56,20 +57,23 @@ def _symlink_connected_cte():
     return cte.union(recursive_part)
 
 
-insert_statement = insert(JobDependency).on_conflict_do_nothing(
+insert_statement = insert(JobDependency)
+inserted_row = insert_statement.excluded
+insert_statement = insert_statement.on_conflict_do_update(
     index_elements=[JobDependency.from_job_id, JobDependency.to_job_id],
+    set_={"type": func.coalesce(inserted_row.type, JobDependency.type)},
 )
 
 
 class JobDependencyRepository(Repository[JobDependency]):
-    async def create_bulk(self, job_dependencies: list[JobDependencyDTO]) -> None:
+    async def create_or_update_bulk(self, job_dependencies: list[JobDependencyDTO]) -> None:
         if not job_dependencies:
             return
 
         type_by_key: dict[tuple[int, int], str | None] = {}
         for item in job_dependencies:
             key = (item.from_job.id, item.to_job.id)
-            if key not in type_by_key:
+            if key not in type_by_key or item.type is not None:
                 type_by_key[key] = item.type  # type: ignore[index]
         await self._session.execute(
             insert_statement,
