@@ -89,7 +89,7 @@ async def test_runs_handler_hive(
         "openlineage_adapter.version": "1.35.0",
     }
 
-    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_query = select(JobDependency).order_by(JobDependency.from_job_id, JobDependency.to_job_id)
     job_dependency_scalars = await async_session.scalars(job_dependency_query)
     job_dependencies = job_dependency_scalars.all()
     assert not job_dependencies

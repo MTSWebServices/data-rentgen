@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from data_rentgen.db.models.base import Base
@@ -11,13 +11,11 @@ from data_rentgen.db.models.job import Job
 
 class JobDependency(Base):
     __tablename__ = "job_dependency"
-    __table_args__ = (UniqueConstraint("from_job_id", "to_job_id"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     from_job_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("job.id", ondelete="CASCADE"),
-        index=True,
+        primary_key=True,
         nullable=False,
         doc="From job id",
     )
@@ -30,6 +28,7 @@ class JobDependency(Base):
     to_job_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("job.id", ondelete="CASCADE"),
+        primary_key=True,
         index=True,
         nullable=False,
         doc="To job id",

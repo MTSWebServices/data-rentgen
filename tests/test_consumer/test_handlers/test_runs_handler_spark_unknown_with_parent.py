@@ -116,7 +116,7 @@ async def test_runs_handler_spark_unknown_with_parent(
     assert jobs[4].location.addresses[0].url == "local://some.host.name"
     assert not jobs[0].tag_values
 
-    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_query = select(JobDependency).order_by(JobDependency.from_job_id, JobDependency.to_job_id)
     job_dependency_scalars = await async_session.scalars(job_dependency_query)
     job_dependencies = job_dependency_scalars.all()
     assert not job_dependencies

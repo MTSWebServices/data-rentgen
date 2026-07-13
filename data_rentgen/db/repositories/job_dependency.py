@@ -4,21 +4,17 @@ from datetime import datetime
 from typing import Literal
 
 from sqlalchemy import (
-    ARRAY,
     CompoundSelect,
     DateTime,
-    Integer,
     Select,
     and_,
     any_,
     bindparam,
-    cast,
-    func,
     literal,
     or_,
     select,
-    tuple_,
 )
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
 from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
@@ -60,76 +56,28 @@ def _symlink_connected_cte():
     return cte.union(recursive_part)
 
 
-fetch_bulk_query = select(JobDependency).where(
-    tuple_(JobDependency.from_job_id, JobDependency.to_job_id).in_(
-        select(
-            func.unnest(
-                cast(bindparam("from_job_ids"), ARRAY(Integer())),
-                cast(bindparam("to_job_ids"), ARRAY(Integer())),
-            )
-            .table_valued("from_job_ids", "to_job_ids")
-            .render_derived(),
-        ),
-    ),
-)
-
-get_one_query = (
-    select(JobDependency)
-    .where(
-        JobDependency.from_job_id == bindparam("from_job_id"),
-        JobDependency.to_job_id == bindparam("to_job_id"),
-    )
-    .limit(literal(1, literal_execute=True))
+insert_statement = insert(JobDependency).on_conflict_do_nothing(
+    index_elements=[JobDependency.from_job_id, JobDependency.to_job_id],
 )
 
 
 class JobDependencyRepository(Repository[JobDependency]):
-    async def fetch_bulk(
-        self,
-        job_dependencies_dto: list[JobDependencyDTO],
-    ) -> list[tuple[JobDependencyDTO, JobDependency | None]]:
-        if not job_dependencies_dto:
-            return []
+    async def create_bulk(self, job_dependencies: list[JobDependencyDTO]) -> None:
+        if not job_dependencies:
+            return
 
-        scalars = await self._session.scalars(
-            fetch_bulk_query,
-            {
-                "from_job_ids": [item.from_job.id for item in job_dependencies_dto],
-                "to_job_ids": [item.to_job.id for item in job_dependencies_dto],
-            },
+        type_by_key: dict[tuple[int, int], str | None] = {}
+        for item in job_dependencies:
+            key = (item.from_job.id, item.to_job.id)
+            if key not in type_by_key:
+                type_by_key[key] = item.type  # type: ignore[index]
+        await self._session.execute(
+            insert_statement,
+            [
+                {"from_job_id": from_job_id, "to_job_id": to_job_id, "type": dependency_type}
+                for (from_job_id, to_job_id), dependency_type in sorted(type_by_key.items())  # avoid deadlocks
+            ],
         )
-        existing = {(item.from_job_id, item.to_job_id): item for item in scalars.all()}
-        return [
-            (
-                dto,
-                existing.get((dto.from_job.id, dto.to_job.id)),  # type: ignore[arg-type]
-            )
-            for dto in job_dependencies_dto
-        ]
-
-    async def create(self, job_dependency: JobDependencyDTO) -> JobDependency:
-        # if another worker already created the same row, just use it. if not - create with holding the lock.
-        await self._lock(job_dependency.from_job.id, job_dependency.to_job.id)
-        return await self._get(job_dependency) or await self._create(job_dependency)
-
-    async def _get(self, job_dependency: JobDependencyDTO) -> JobDependency | None:
-        return await self._session.scalar(
-            get_one_query,
-            {
-                "from_job_id": job_dependency.from_job.id,
-                "to_job_id": job_dependency.to_job.id,
-            },
-        )
-
-    async def _create(self, job_dependency: JobDependencyDTO) -> JobDependency:
-        result = JobDependency(
-            from_job_id=job_dependency.from_job.id,
-            to_job_id=job_dependency.to_job.id,
-            type=job_dependency.type,
-        )
-        self._session.add(result)
-        await self._session.flush([result])
-        return result
 
     async def get_dependencies(
         self,

@@ -86,7 +86,7 @@ async def test_runs_handler_unknown(
     assert job.location.addresses[0].url == "unknown://unknown"
     assert {tv.tag.name: tv.value for tv in jobs[0].tag_values} == {}
 
-    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_query = select(JobDependency).order_by(JobDependency.from_job_id, JobDependency.to_job_id)
     job_dependency_scalars = await async_session.scalars(job_dependency_query)
     job_dependencies = job_dependency_scalars.all()
     assert not job_dependencies
