@@ -84,7 +84,7 @@ async def test_runs_handler_starrocks(
     assert jobs[0].location.addresses[0].url == "starrocks://some-starrocks:9030"
     assert not jobs[0].tag_values
 
-    job_dependency_query = select(JobDependency).order_by(JobDependency.id)
+    job_dependency_query = select(JobDependency).order_by(JobDependency.from_job_id, JobDependency.to_job_id)
     job_dependency_scalars = await async_session.scalars(job_dependency_query)
     job_dependencies = job_dependency_scalars.all()
     assert not job_dependencies

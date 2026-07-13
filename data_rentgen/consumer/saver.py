@@ -112,12 +112,8 @@ class DatabaseSaver:
 
     async def create_job_dependencies(self, data: BatchExtractionResult):
         self.logger.debug("Creating job dependencies")
-        job_dependency_pairs = await self.unit_of_work.job_dependency.fetch_bulk(data.job_dependencies())
-        for job_dependency_dto, job_dependency in job_dependency_pairs:
-            if not job_dependency:
-                async with self.unit_of_work:
-                    job_dependency = await self.unit_of_work.job_dependency.create(job_dependency_dto)  # noqa: PLW2901
-            job_dependency_dto.id = job_dependency.id
+        async with self.unit_of_work:
+            await self.unit_of_work.job_dependency.create_bulk(data.job_dependencies())
 
     async def create_users(self, data: BatchExtractionResult):
         self.logger.debug("Creating users")
