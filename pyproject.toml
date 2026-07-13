@@ -70,7 +70,8 @@ server = [
   "fastapi~=0.136.3",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
-  "uvicorn~=0.49",
+  # uvicorn 0.51.0 breaks faststream
+  "uvicorn~=0.50.1",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=5.0.0",
   "pyjwt~=2.13.0",
@@ -88,7 +89,8 @@ http2kafka = [
   "fastapi~=0.136.3",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
-  "uvicorn~=0.49",
+  # uvicorn 0.51.0 breaks faststream
+  "uvicorn~=0.50.1",
   "starlette-exporter~=0.23.0",
   "asgi-correlation-id~=5.0.0",
   "faststream[kafka,cli]~=0.7.1",
