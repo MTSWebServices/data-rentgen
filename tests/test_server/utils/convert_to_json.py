@@ -80,7 +80,7 @@ def job_ancestor_to_json(job: Job):
 
 def jobs_ancestors_to_json(jobs: list[Job]):
     results = [job_ancestor_to_json(job) for job in jobs if job.parent_job_id]
-    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
+    return sorted(results, key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])))
 
 
 def symlink_to_json(symlink: DatasetSymlink):
