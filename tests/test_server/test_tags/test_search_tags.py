@@ -43,7 +43,7 @@ async def test_search_tags_by_name(
                 "id": tag.id,
                 "data": tag_to_json(tag),
             }
-            for tag in sorted(tags, key=lambda tag: tag.name)
+            for tag in sorted(tags, key=lambda tag: tag.name.lower())
         ],
     }
 
@@ -79,7 +79,7 @@ async def test_search_tags_by_value(
                 "id": tag.id,
                 "data": tag_to_json(tag),
             }
-            for tag in sorted(tags, key=lambda tag: tag.name)
+            for tag in sorted(tags, key=lambda tag: tag.name.lower())
         ],
     }
 

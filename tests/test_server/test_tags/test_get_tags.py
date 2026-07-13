@@ -39,7 +39,7 @@ async def test_get_tags_no_filters(
                 "id": tag.id,
                 "data": tag_to_json(tag),
             }
-            for tag in sorted(tags, key=lambda tag: tag.name)
+            for tag in sorted(tags, key=lambda tag: tag.name.lower())
         ],
     }
 

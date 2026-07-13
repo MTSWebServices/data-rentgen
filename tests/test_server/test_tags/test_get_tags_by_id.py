@@ -102,6 +102,6 @@ async def test_get_tags_by_multiple_ids(
                 "id": tag.id,
                 "data": tag_to_json(tag),
             }
-            for tag in sorted(selected_tags, key=lambda tag: tag.name)
+            for tag in sorted(selected_tags, key=lambda tag: tag.name.lower())
         ],
     }
