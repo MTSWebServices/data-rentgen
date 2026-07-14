@@ -11,6 +11,7 @@ from sqlalchemy import (
     Select,
     SQLColumnExpression,
     String,
+    and_,
     any_,
     asc,
     bindparam,
@@ -98,7 +99,13 @@ ancestors_by_job_base_part = (
         parent_job.id.label("parent_job_id"),
     )
     .select_from(child_job)
-    .join(parent_job, child_job.parent_job_id == parent_job.id)
+    .join(
+        parent_job,
+        and_(
+            child_job.parent_job_id == parent_job.id,
+            child_job.id != parent_job.id,
+        ),
+    )
     .where(
         child_job.id == any_(bindparam("job_ids")),
     )
@@ -111,7 +118,13 @@ ancestors_by_job_recursive_part = (
         parent_job.id.label("parent_job_id"),
     )
     .select_from(child_job)
-    .join(parent_job, child_job.parent_job_id == parent_job.id)
+    .join(
+        parent_job,
+        and_(
+            child_job.parent_job_id == parent_job.id,
+            child_job.id != parent_job.id,
+        ),
+    )
     .where(
         child_job.id == ancestors_by_job_cte.c.parent_job_id,
     )
@@ -124,7 +137,13 @@ descendants_by_job_base_part = (
         child_job.id.label("child_job_id"),
     )
     .select_from(parent_job)
-    .join(child_job, child_job.parent_job_id == parent_job.id)
+    .join(
+        child_job,
+        and_(
+            child_job.parent_job_id == parent_job.id,
+            child_job.id != parent_job.id,
+        ),
+    )
     .where(
         parent_job.id == any_(bindparam("job_ids")),
     )
@@ -137,7 +156,13 @@ descendants_by_job_recursive_part = (
         child_job.id.label("child_job_id"),
     )
     .select_from(parent_job)
-    .join(child_job, child_job.parent_job_id == parent_job.id)
+    .join(
+        child_job,
+        and_(
+            child_job.parent_job_id == parent_job.id,
+            child_job.id != parent_job.id,
+        ),
+    )
     .where(
         parent_job.id == descendants_by_job_cte.c.child_job_id,
     )
