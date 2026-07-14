@@ -3,7 +3,7 @@
 
 from collections.abc import Collection
 
-from sqlalchemy import ARRAY, BigInteger, any_, bindparam, func, select
+from sqlalchemy import ARRAY, BigInteger, and_, any_, bindparam, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
@@ -31,7 +31,13 @@ closure_recursive_part = (
     select(neighbour_group_member.dataset_id.label("dataset_id"))
     .select_from(closure_cte)
     .join(group_member, group_member.dataset_id == closure_cte.c.dataset_id)
-    .join(neighbour_group_member, neighbour_group_member.fingerprint == group_member.fingerprint)
+    .join(
+        neighbour_group_member,
+        and_(
+            neighbour_group_member.fingerprint == group_member.fingerprint,
+            neighbour_group_member.dataset_id != closure_cte.c.dataset_id,
+        ),
+    )
 )
 closure_cte = closure_cte.union(closure_recursive_part)
 

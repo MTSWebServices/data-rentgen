@@ -43,16 +43,22 @@ def _symlink_connected_cte():
         .distinct()
     )
     cte = base_part.cte("symlink_connected", recursive=True)
-    reached_group = aliased(DatasetSymlinkGroup, name="connected_reached_group")
-    next_group = aliased(DatasetSymlinkGroup, name="connected_next_group")
+    group_member = aliased(DatasetSymlinkGroup, name="group_member")
+    neighbour_group_member = aliased(DatasetSymlinkGroup, name="neighbour_group_member")
     recursive_part = (
         select(
             cte.c.original_dataset_id.label("original_dataset_id"),
-            next_group.dataset_id.label("dataset_id_via_symlink"),
+            neighbour_group_member.dataset_id.label("dataset_id_via_symlink"),
         )
         .select_from(cte)
-        .join(reached_group, reached_group.dataset_id == cte.c.dataset_id_via_symlink)
-        .join(next_group, next_group.fingerprint == reached_group.fingerprint)
+        .join(group_member, group_member.dataset_id == cte.c.dataset_id_via_symlink)
+        .join(
+            neighbour_group_member,
+            and_(
+                neighbour_group_member.fingerprint == group_member.fingerprint,
+                neighbour_group_member.dataset_id != group_member.dataset_id,
+            ),
+        )
     )
     return cte.union(recursive_part)
 
