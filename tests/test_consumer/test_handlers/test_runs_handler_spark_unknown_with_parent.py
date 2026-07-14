@@ -387,7 +387,7 @@ async def test_runs_handler_spark_unknown_with_parent(
 
     # Indirect relation
     customer_id_indirect_relation = dataset_column_relation[6]
-    assert customer_id_indirect_relation.target_column is None
+    assert customer_id_indirect_relation.target_column == ""
     assert customer_id_indirect_relation.source_column == "customer_id"
     assert customer_id_indirect_relation.type == DatasetColumnRelationType.JOIN.value
     assert customer_id_indirect_relation.fingerprint is not None

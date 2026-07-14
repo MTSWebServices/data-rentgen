@@ -4,7 +4,7 @@
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import any_, bindparam, select, text
+from sqlalchemy import any_, bindparam, select
 from sqlalchemy.dialects.postgresql import insert
 
 from data_rentgen.db.models import (
@@ -47,7 +47,7 @@ class DatasetColumnRelationRepository(Repository[DatasetColumnRelation]):
             index_elements=[
                 DatasetColumnRelation.fingerprint,
                 DatasetColumnRelation.source_column,
-                text("coalesce(target_column, '')"),
+                DatasetColumnRelation.target_column,
             ],
         )
 
@@ -62,10 +62,9 @@ class DatasetColumnRelationRepository(Repository[DatasetColumnRelation]):
             insert_statement,
             [
                 {
-                    # id is autoincremental
                     "fingerprint": fingerprint,
                     "source_column": relation.source_column,
-                    "target_column": relation.target_column,
+                    "target_column": relation.target_column or "",
                     "type": DatasetColumnRelationType(relation.type).value,
                 }
                 for (fingerprint, *_), relations in to_insert.items()

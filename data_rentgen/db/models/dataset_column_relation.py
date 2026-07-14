@@ -6,12 +6,8 @@ from uuid import UUID
 
 from sqlalchemy import UUID as SQL_UUID
 from sqlalchemy import (
-    BigInteger,
-    Column,
-    Index,
     SmallInteger,
     String,
-    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -42,21 +38,10 @@ class DatasetColumnRelationType(Flag):
 # no foreign keys to partitioned tables
 class DatasetColumnRelation(Base):
     __tablename__ = "dataset_column_relation"
-    __table_args__ = (
-        Index(
-            None,
-            Column("fingerprint"),
-            Column("source_column"),
-            # NULLs are distinct by default, we have to convert them to something else.
-            # This is mostly for compatibility with PG <15, there is no `NULLS NOT DISTINCT` option
-            func.coalesce(Column("target_column"), ""),
-            unique=True,
-        ),
-    )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     fingerprint: Mapped[UUID] = mapped_column(
         SQL_UUID,
+        primary_key=True,
         index=False,
         nullable=False,
         doc="Schema SHA-1 digest based used for grouping relations together. Currently this is in form of UUID",
@@ -64,17 +49,20 @@ class DatasetColumnRelation(Base):
 
     source_column: Mapped[str] = mapped_column(
         String(length=255),
+        primary_key=True,
         index=False,
         nullable=False,
         doc="Source dataset column the data is originated from",
     )
 
-    target_column: Mapped[str | None] = mapped_column(
+    target_column: Mapped[str] = mapped_column(
         String(length=255),
+        primary_key=True,
         index=False,
-        nullable=True,
+        nullable=False,
         doc=(
-            "Target dataset column the data is saved to. NULL means the entire target dataset depends on source column"
+            "Target dataset column the data is saved to. Empty value means the entire target dataset depends on source "
+            "column"
         ),
     )
 

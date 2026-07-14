@@ -122,10 +122,9 @@ erDiagram
     }
 
     dataset_column_relation {
-        bigint id UK
-        uuid(v5) fingerprint UK
-        varchar(255) source_column UK
-        varchar(255) target_column UK
+        uuid(v5) fingerprint PK
+        varchar(255) source_column PK
+        varchar(255) target_column PK
         smallint type
     }
 

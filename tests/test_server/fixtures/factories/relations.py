@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 def column_relation_factory(**kwargs) -> DatasetColumnRelation:
     data = {
-        "id": randint(0, 10000000),
         "source_column": random_string(10),
         "target_column": random_string(10),
         "type": choice(list(DatasetColumnRelationType)),
@@ -35,14 +34,18 @@ async def create_column_relation(
 ) -> DatasetColumnRelation:
     column_relation_kwargs = column_relation_kwargs or {}
     column_relation_kwargs["fingerprint"] = fingerprint
+    column_relation_kwargs["target_column"] = column_relation_kwargs.get("target_column") or ""
 
     column_relation = column_relation_factory(**column_relation_kwargs)
-    del column_relation.id
     async_session.add(column_relation)
     await async_session.commit()
 
-    query = select(DatasetColumnRelation).where(DatasetColumnRelation.id == column_relation.id)
-    return await async_session.scalar(query)
+    query = select(DatasetColumnRelation).where(
+        DatasetColumnRelation.fingerprint == column_relation.fingerprint,
+        DatasetColumnRelation.source_column == column_relation.source_column,
+        DatasetColumnRelation.target_column == column_relation.target_column,
+    )
+    return (await async_session.scalars(query)).one()
 
 
 def column_lineage_factory(**kwargs) -> ColumnLineage:

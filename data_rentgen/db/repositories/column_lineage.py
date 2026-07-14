@@ -21,7 +21,7 @@ class ColumnLineageRow(NamedTuple):
     source_dataset_id: int
     target_dataset_id: int
     source_column: str
-    target_column: str
+    target_column: str | None
     types_combined: int
     last_used_at: datetime
 
@@ -157,7 +157,7 @@ class ColumnLineageRepository(Repository[ColumnLineage]):
                 ColumnLineage.source_dataset_id,
                 ColumnLineage.target_dataset_id,
                 DatasetColumnRelation.source_column,
-                DatasetColumnRelation.target_column,
+                func.nullif(DatasetColumnRelation.target_column, "").label("target_column"),
                 func.bit_or(DatasetColumnRelation.type).label("types_combined"),
                 func.max(ColumnLineage.created_at).label("last_used_at"),
             )
