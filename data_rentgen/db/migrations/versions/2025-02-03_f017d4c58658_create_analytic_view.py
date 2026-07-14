@@ -74,7 +74,7 @@ def get_statement(base_table: str, depth: str, suffix: str) -> str:
                 , agr.sum_files
             FROM aggregates agr
             JOIN dataset d ON agr.dataset_id = d.id
-            LEFT JOIN location l ON d.location_id = l.id
+            JOIN location l ON d.location_id = l.id
         )
         WITH NO DATA
     """
