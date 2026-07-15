@@ -37,7 +37,7 @@ def run_factory(**kwargs):
         "persistent_log_url": random_string(32),
         "running_log_url": random_string(32),
         "started_at": random_datetime(),
-        "started_by_user_id": randint(0, 10000000),
+        "started_by_user_id": None,
         "start_reason": choice(list(RunStartReason)),
         "ended_at": random_datetime(),
         "end_reason": random_string(8),

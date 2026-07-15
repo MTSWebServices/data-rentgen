@@ -58,6 +58,7 @@ class Run(Base):
         # in most cases we filter rows by id, and sometimes by created_at
         PrimaryKeyConstraint("id", "created_at"),
         Index("ix__run__search_vector", "search_vector", postgresql_using="gin"),
+        Index("ix__run__started_by_user_id", "started_by_user_id", postgresql_where="started_by_user_id IS NOT NULL"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
 
@@ -130,6 +131,7 @@ class Run(Base):
     )
     started_by_user_id: Mapped[int | None] = mapped_column(
         BigInteger,
+        ForeignKey("user.id", ondelete="SET NULL"),
         nullable=True,
         doc="User who started the run",
     )
