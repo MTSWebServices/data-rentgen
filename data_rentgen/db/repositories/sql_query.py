@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from sqlalchemy import any_, bindparam, select
+from sqlalchemy import any_, bindparam, literal, select
 
 from data_rentgen.db.models.sql_query import SQLQuery
 from data_rentgen.db.repositories.base import Repository
@@ -13,7 +13,9 @@ fetch_bulk_query = select(SQLQuery.fingerprint, SQLQuery.id).where(
     SQLQuery.fingerprint == any_(bindparam("fingerprints")),
 )
 
-get_one_by_fingerprint_query = select(SQLQuery).where(SQLQuery.fingerprint == bindparam("fingerprint"))
+get_one_by_fingerprint_query = (
+    select(SQLQuery).where(SQLQuery.fingerprint == bindparam("fingerprint")).limit(literal(1, literal_execute=True))
+)
 
 
 class SQLQueryRepository(Repository[SQLQuery]):

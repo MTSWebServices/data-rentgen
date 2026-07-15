@@ -3,7 +3,7 @@
 
 from collections.abc import Collection
 
-from sqlalchemy import any_, bindparam, select
+from sqlalchemy import any_, bindparam, literal, select
 
 from data_rentgen.db.models import Schema
 from data_rentgen.db.repositories.base import Repository
@@ -15,7 +15,9 @@ fetch_bulk_query = select(Schema.digest, Schema.id).where(
 )
 
 get_list_by_ids_query = select(Schema).where(Schema.id == any_(bindparam("schema_ids")))
-get_one_by_digest_query = select(Schema).where(Schema.digest == bindparam("digest"))
+get_one_by_digest_query = (
+    select(Schema).where(Schema.digest == bindparam("digest")).limit(literal(1, literal_execute=True))
+)
 
 
 class SchemaRepository(Repository[Schema]):
