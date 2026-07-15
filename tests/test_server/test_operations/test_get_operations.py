@@ -3,12 +3,27 @@ from http import HTTPStatus
 
 import pytest
 from httpx import AsyncClient
-from uuid6 import uuid7
 
+from data_rentgen.db.models import Run
 from data_rentgen.utils.uuid import generate_new_uuid
 from tests.fixtures.mocks import MockedUser
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
+
+EMPTY_STATS = {
+    "inputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+    "outputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+}
 
 
 async def test_get_operations_missing_fields(test_client: AsyncClient, mocked_user: MockedUser):
@@ -42,6 +57,7 @@ async def test_get_operations_missing_fields(test_client: AsyncClient, mocked_us
 
 async def test_get_operations_until_less_than_since(
     test_client: AsyncClient,
+    new_run: Run,
     mocked_user: MockedUser,
 ):
     since = datetime.now(tz=timezone.utc)
@@ -52,7 +68,7 @@ async def test_get_operations_until_less_than_since(
         params={
             "since": since.isoformat(),
             "until": until.isoformat(),
-            "run_id": str(uuid7()),
+            "run_id": str(new_run.id),
         },
     )
 

@@ -11,6 +11,21 @@ from tests.test_server.utils.lineage_result import LineageResult
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
 
+EMPTY_STATS = {
+    "inputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+    "outputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+}
+
 
 async def test_get_operations_by_unknown_id(
     test_client: AsyncClient,
@@ -66,20 +81,7 @@ async def test_get_operations_by_one_id(
             {
                 "id": str(operation.id),
                 "data": operation_to_json(operation),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             },
         ],
     }
@@ -117,20 +119,7 @@ async def test_get_operations_by_multiple_ids(
             {
                 "id": str(operation.id),
                 "data": operation_to_json(operation),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for operation in sorted(selected_operations, key=lambda x: (x.created_at, x.id.int), reverse=True)
         ],
@@ -241,20 +230,7 @@ async def test_get_operations_by_one_id_with_sql_query(
             {
                 "id": str(operation_with_sql_query.id),
                 "data": operation_to_json(operation_with_sql_query),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             },
         ],
     }
