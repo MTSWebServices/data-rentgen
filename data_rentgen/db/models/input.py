@@ -5,7 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import UUID as SQL_UUID
-from sqlalchemy import BigInteger, DateTime, ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from data_rentgen.db.models.base import Base
@@ -22,6 +22,7 @@ class Input(Base):
     __table_args__ = (
         # in most cases we filter rows by created_at, and never by id
         PrimaryKeyConstraint("created_at", "id"),
+        Index("ix__input__schema_id", "schema_id", postgresql_where="schema_id IS NOT NULL"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
 
@@ -89,7 +90,6 @@ class Input(Base):
     schema_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("schema.id", ondelete="SET NULL"),
-        index=True,
         nullable=True,
         doc="Schema the input is performed with, if any",
     )

@@ -6,7 +6,7 @@ from enum import IntFlag
 from uuid import UUID
 
 from sqlalchemy import UUID as SQL_UUID
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, PrimaryKeyConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Integer, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy_utils import ChoiceType
 
@@ -43,6 +43,7 @@ class Output(Base):
     __table_args__ = (
         # in most cases we filter rows by created_at, and never by id
         PrimaryKeyConstraint("created_at", "id"),
+        Index("ix__output__schema_id", "schema_id", postgresql_where="schema_id IS NOT NULL"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
 
@@ -117,7 +118,6 @@ class Output(Base):
     schema_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("schema.id", ondelete="SET NULL"),
-        index=True,
         nullable=True,
         doc="Schema the output is performed with, if any",
     )

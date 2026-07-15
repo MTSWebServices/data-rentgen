@@ -42,7 +42,6 @@ class DatasetColumnRelation(Base):
     fingerprint: Mapped[UUID] = mapped_column(
         SQL_UUID,
         primary_key=True,
-        index=False,
         nullable=False,
         doc="Schema SHA-1 digest based used for grouping relations together. Currently this is in form of UUID",
     )
@@ -50,7 +49,6 @@ class DatasetColumnRelation(Base):
     source_column: Mapped[str] = mapped_column(
         String(length=255),
         primary_key=True,
-        index=False,
         nullable=False,
         doc="Source dataset column the data is originated from",
     )
@@ -58,7 +56,6 @@ class DatasetColumnRelation(Base):
     target_column: Mapped[str] = mapped_column(
         String(length=255),
         primary_key=True,
-        index=False,
         nullable=False,
         doc=(
             "Target dataset column the data is saved to. Empty value means the entire target dataset depends on source "
@@ -68,7 +65,6 @@ class DatasetColumnRelation(Base):
 
     type: Mapped[DatasetColumnRelationType] = mapped_column(
         SmallInteger(),
-        index=False,
         nullable=False,
         doc="Column transformation type",
     )

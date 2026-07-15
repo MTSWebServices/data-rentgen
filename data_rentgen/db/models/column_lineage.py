@@ -107,7 +107,6 @@ class ColumnLineage(Base):
 
     fingerprint: Mapped[UUID] = mapped_column(
         SQL_UUID,
-        index=False,
         nullable=False,
         doc="Dataset column relation fingerprint",
     )

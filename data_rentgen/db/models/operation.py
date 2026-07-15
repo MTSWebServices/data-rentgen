@@ -11,6 +11,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     PrimaryKeyConstraint,
     SmallInteger,
@@ -55,6 +56,7 @@ class Operation(Base):
     __table_args__ = (
         # in most cases we filter rows by id, and sometimes by created_at
         PrimaryKeyConstraint("id", "created_at"),
+        Index("ix__operation__sql_query_id", "sql_query_id", postgresql_where="sql_query_id IS NOT NULL"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
 
@@ -120,7 +122,6 @@ class Operation(Base):
     sql_query_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("sql_query.id", ondelete="SET NULL"),
-        index=True,
         nullable=True,
         doc="Sql query of operation",
     )

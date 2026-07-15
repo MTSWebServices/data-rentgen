@@ -58,6 +58,7 @@ class Run(Base):
         # in most cases we filter rows by id, and sometimes by created_at
         PrimaryKeyConstraint("id", "created_at"),
         Index("ix__run__search_vector", "search_vector", postgresql_using="gin"),
+        Index("ix__run__parent_run_id", "parent_run_id", postgresql_where="parent_run_id IS NOT NULL"),
         Index("ix__run__started_by_user_id", "started_by_user_id", postgresql_where="started_by_user_id IS NOT NULL"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
@@ -85,7 +86,6 @@ class Run(Base):
 
     parent_run_id: Mapped[UUID | None] = mapped_column(
         SQL_UUID,
-        index=True,
         nullable=True,
         doc="Parent of current run, e.g. Airflow task run which started Spark application",
     )

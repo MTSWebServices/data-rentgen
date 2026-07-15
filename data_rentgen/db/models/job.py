@@ -24,6 +24,7 @@ class Job(Base):
     __tablename__ = "job"
     __table_args__ = (
         Index("ix__job__location_id_name_lower", "location_id", func.lower(column("name")), unique=True),
+        Index("ix__job__parent_job_id", "parent_job_id", postgresql_where="parent_job_id IS NOT NULL"),
         Index("ix__job__search_vector", "search_vector", postgresql_using="gin"),
     )
 
@@ -55,7 +56,6 @@ class Job(Base):
     parent_job_id: Mapped[int | None] = mapped_column(
         BigInteger,
         ForeignKey("job.id"),
-        index=True,
         nullable=True,
         doc="Parent job id",
     )
