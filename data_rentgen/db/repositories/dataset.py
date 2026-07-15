@@ -32,17 +32,21 @@ from data_rentgen.db.repositories.base import Repository
 from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto import DatasetDTO, PaginationDTO
 
-fetch_bulk_query = select(Dataset).where(
-    tuple_(Dataset.location_id, Dataset.name_lower).in_(
-        select(
-            func.unnest(
-                cast(bindparam("location_ids"), ARRAY(Integer())),
-                cast(bindparam("names_lower"), ARRAY(String())),
-            )
-            .table_valued("location_id", "name_lower")
-            .render_derived(),
+fetch_bulk_query = (
+    select(Dataset)
+    .where(
+        tuple_(Dataset.location_id, Dataset.name_lower).in_(
+            select(
+                func.unnest(
+                    cast(bindparam("location_ids"), ARRAY(Integer())),
+                    cast(bindparam("names_lower"), ARRAY(String())),
+                )
+                .table_valued("location_id", "name_lower")
+                .render_derived(),
+            ),
         ),
-    ),
+    )
+    .limit(bindparam("limit"))
 )
 
 get_list_query = (
@@ -94,6 +98,7 @@ class DatasetRepository(Repository[Dataset]):
             {
                 "location_ids": [item.location.id for item in datasets_dto],
                 "names_lower": [item.name.lower() for item in datasets_dto],
+                "limit": len(datasets_dto),
             },
         )
         existing = {(dataset.location_id, dataset.name.lower()): dataset for dataset in scalars.all()}

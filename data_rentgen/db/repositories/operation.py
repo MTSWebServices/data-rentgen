@@ -19,10 +19,14 @@ update_statement = update(Operation)
 # Do not use `tuple_(Operation.id, Operation.created_at).in_(...),
 # as this is too complex filter for Postgres to make an optimal query plan.
 # Primary key starts with id already, and created_at filter is used to select specific partitions
-get_list_by_ids = select(Operation).where(
-    Operation.created_at >= bindparam("since"),
-    Operation.created_at <= bindparam("until"),
-    Operation.id == any_(bindparam("operation_ids")),
+get_list_by_ids = (
+    select(Operation)
+    .where(
+        Operation.created_at >= bindparam("since"),
+        Operation.created_at <= bindparam("until"),
+        Operation.id == any_(bindparam("operation_ids")),
+    )
+    .limit(bindparam("limit"))
 )
 
 get_stats_by_run_ids = (
@@ -157,6 +161,7 @@ class OperationRepository(Repository[Operation]):
                 "since": extract_timestamp_from_uuid(min(operation_ids)),
                 "until": extract_timestamp_from_uuid(max(operation_ids)),
                 "operation_ids": list(operation_ids),
+                "limit": len(operation_ids),
             },
         )
         return list(result.all())

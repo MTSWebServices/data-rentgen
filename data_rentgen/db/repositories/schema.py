@@ -10,11 +10,15 @@ from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import SchemaDTO
 
 # schema JSON can be heavy, avoid loading it if not needed
-fetch_bulk_query = select(Schema.digest, Schema.id).where(
-    Schema.digest == any_(bindparam("digests")),
+fetch_bulk_query = (
+    select(Schema.digest, Schema.id)
+    .where(
+        Schema.digest == any_(bindparam("digests")),
+    )
+    .limit(bindparam("limit"))
 )
 
-get_list_by_ids_query = select(Schema).where(Schema.id == any_(bindparam("schema_ids")))
+get_list_by_ids_query = select(Schema).where(Schema.id == any_(bindparam("schema_ids"))).limit(bindparam("limit"))
 get_one_by_digest_query = (
     select(Schema).where(Schema.digest == bindparam("digest")).limit(literal(1, literal_execute=True))
 )
@@ -25,17 +29,22 @@ class SchemaRepository(Repository[Schema]):
         if not schema_ids:
             return []
 
-        result = await self._session.scalars(get_list_by_ids_query, {"schema_ids": list(schema_ids)})
+        result = await self._session.scalars(
+            get_list_by_ids_query,
+            {"schema_ids": list(schema_ids), "limit": len(schema_ids)},
+        )
         return list(result.all())
 
     async def fetch_known_ids(self, schemas_dto: list[SchemaDTO]) -> list[tuple[SchemaDTO, int | None]]:
         if not schemas_dto:
             return []
 
+        new_digests = {item.digest for item in schemas_dto}
         existing = await self._session.execute(
             fetch_bulk_query,
             {
-                "digests": [item.digest for item in schemas_dto],
+                "digests": list(new_digests),
+                "limit": len(new_digests),
             },
         )
         known_ids = {item.digest: item.id for item in existing.all()}

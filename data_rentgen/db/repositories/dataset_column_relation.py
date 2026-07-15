@@ -14,8 +14,10 @@ from data_rentgen.db.models import (
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import ColumnLineageDTO
 
-get_fingerprints_query = select(DatasetColumnRelation.fingerprint.distinct()).where(
-    DatasetColumnRelation.fingerprint == any_(bindparam("fingerprints"))
+get_fingerprints_query = (
+    select(DatasetColumnRelation.fingerprint.distinct())
+    .where(DatasetColumnRelation.fingerprint == any_(bindparam("fingerprints")))
+    .limit(bindparam("limit"))
 )
 
 
@@ -27,18 +29,18 @@ class DatasetColumnRelationRepository(Repository[DatasetColumnRelation]):
         # small optimization to avoid creating the same relations over and over.
         # although we're using ON CONFLICT DO NOTHING, PG still has to perform index scans
         # and to get next sequence value for each row
-        fingerprints_to_create = await self._get_missing_fingerprints([item.fingerprint for item in items])
+        fingerprints_to_create = await self._get_missing_fingerprints({item.fingerprint for item in items})
         relations_to_create = [item for item in items if item.fingerprint in fingerprints_to_create]
 
         if relations_to_create:
             await self._create_dataset_column_relations_bulk(relations_to_create)
 
-    async def _get_missing_fingerprints(self, fingerprints: list[UUID]) -> set[UUID]:
-        existing = await self._session.execute(
+    async def _get_missing_fingerprints(self, fingerprints: set[UUID]) -> set[UUID]:
+        existing = await self._session.scalars(
             get_fingerprints_query,
-            {"fingerprints": fingerprints},
+            {"fingerprints": list(fingerprints), "limit": len(fingerprints)},
         )
-        return set(fingerprints) - set(existing.scalars().all())
+        return fingerprints - set(existing.all())
 
     async def _create_dataset_column_relations_bulk(self, items: list[ColumnLineageDTO]):
         # we don't have to return anything, so there is no need to use on_conflict_update.

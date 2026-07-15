@@ -7,8 +7,12 @@ from data_rentgen.db.models import User
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import UserDTO
 
-fetch_bulk_query = select(User).where(
-    User.name_lower == any_(bindparam("names_lower")),
+fetch_bulk_query = (
+    select(User)
+    .where(
+        User.name_lower == any_(bindparam("names_lower")),
+    )
+    .limit(bindparam("limit"))
 )
 
 get_one_by_name_query = (
@@ -37,6 +41,7 @@ class UserRepository(Repository[User]):
             fetch_bulk_query,
             {
                 "names_lower": [item.name.lower() for item in users_dto],
+                "limit": len(users_dto),
             },
         )
         existing = {user.name.lower(): user for user in scalars.all()}

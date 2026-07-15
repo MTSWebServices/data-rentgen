@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Collection
+from uuid import UUID
 
 from sqlalchemy import ARRAY, BigInteger, and_, any_, bindparam, func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -12,8 +13,12 @@ from data_rentgen.db.models.dataset_symlink_group import DatasetSymlinkGroup
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import DatasetSymlinkGroupDTO
 
-fetch_bulk_query = select(DatasetSymlinkGroup.fingerprint).where(
-    DatasetSymlinkGroup.fingerprint == any_(bindparam("fingerprints")),
+get_fingerprints_query = (
+    select(DatasetSymlinkGroup.fingerprint.distinct())
+    .where(
+        DatasetSymlinkGroup.fingerprint == any_(bindparam("fingerprints")),
+    )
+    .limit(bindparam("limit"))
 )
 
 insert_group_query = insert(DatasetSymlinkGroup).on_conflict_do_nothing(
@@ -53,14 +58,8 @@ class DatasetSymlinkRepository(Repository[DatasetSymlinkGroup]):
             return
 
         # skip inserting existing symlink groups
-        existing = await self._session.execute(
-            fetch_bulk_query,
-            {
-                "fingerprints": [item.fingerprint for item in items],
-            },
-        )
-        known_fingerprints = {item.fingerprint for item in existing.all()}
-        to_insert = [item for item in items if item.fingerprint not in known_fingerprints]
+        missing_fingerprints = await self._get_missing_fingerprints({item.fingerprint for item in items})
+        to_insert = [item for item in items if item.fingerprint in missing_fingerprints]
         if not to_insert:
             return
 
@@ -76,6 +75,13 @@ class DatasetSymlinkRepository(Repository[DatasetSymlinkGroup]):
                 for dataset, type_ in item.members
             ],
         )
+
+    async def _get_missing_fingerprints(self, fingerprints: set[UUID]) -> set[UUID]:
+        existing = await self._session.scalars(
+            get_fingerprints_query,
+            {"fingerprints": list(fingerprints), "limit": len(fingerprints)},
+        )
+        return fingerprints - set(existing.all())
 
     async def get_symlink_groups(self, dataset_ids: Collection[int]) -> list[DatasetSymlinkGroup]:
         if not dataset_ids:

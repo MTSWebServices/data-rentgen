@@ -9,8 +9,12 @@ from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import SQLQueryDTO
 
 # SQLQuery text can be heavy, avoid loading it if not needed
-fetch_bulk_query = select(SQLQuery.fingerprint, SQLQuery.id).where(
-    SQLQuery.fingerprint == any_(bindparam("fingerprints")),
+fetch_bulk_query = (
+    select(SQLQuery.fingerprint, SQLQuery.id)
+    .where(
+        SQLQuery.fingerprint == any_(bindparam("fingerprints")),
+    )
+    .limit(bindparam("limit"))
 )
 
 get_one_by_fingerprint_query = (
@@ -23,10 +27,12 @@ class SQLQueryRepository(Repository[SQLQuery]):
         if not sql_queries_dto:
             return []
 
+        new_fingerprints = {item.fingerprint for item in sql_queries_dto}
         existing = await self._session.execute(
             fetch_bulk_query,
             {
-                "fingerprints": [item.fingerprint for item in sql_queries_dto],
+                "fingerprints": list(new_fingerprints),
+                "limit": len(new_fingerprints),
             },
         )
         known_ids = {item.fingerprint: item.id for item in existing.all()}
