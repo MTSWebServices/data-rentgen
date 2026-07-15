@@ -27,6 +27,7 @@
             * [Consumer-specific settings](reference/consumer/configuration/consumer-specific.md)
             * [Producer-specific settings](reference/consumer/configuration/producer-specific.md)
             * [Logging settings](reference/consumer/configuration/logging.md)
+            * [Setup monitoring](reference/consumer/configuration/monitoring.md)
     * [REST API Server](reference/server/index.md)
         * [Authentication and Authorization](reference/server/auth/index.md)
             * [Dummy Auth provider](reference/server/auth/dummy.md)
