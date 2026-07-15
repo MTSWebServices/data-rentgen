@@ -8,7 +8,7 @@ import pytest_asyncio
 
 from data_rentgen.db.models import Job, Run, RunStartReason, RunStatus, User
 from data_rentgen.utils.uuid import extract_timestamp_from_uuid, generate_new_uuid
-from tests.test_server.fixtures.factories.base import random_datetime, random_string
+from tests.test_server.fixtures.factories.base import random_string
 from tests.test_server.fixtures.factories.job import create_job
 from tests.test_server.fixtures.factories.job_type import create_job_type
 from tests.test_server.fixtures.factories.location import create_location
@@ -26,8 +26,9 @@ if TYPE_CHECKING:
 def run_factory(**kwargs):
     created_at = kwargs.pop("created_at", None)
     run_id = generate_new_uuid(created_at)
+    created_at = extract_timestamp_from_uuid(run_id)
     data = {
-        "created_at": extract_timestamp_from_uuid(run_id),
+        "created_at": created_at,
         "id": run_id,
         "job_id": randint(0, 10000000),
         "parent_run_id": generate_new_uuid(),
@@ -36,12 +37,13 @@ def run_factory(**kwargs):
         "attempt": random_string(16),
         "persistent_log_url": random_string(32),
         "running_log_url": random_string(32),
-        "started_at": random_datetime(),
+        "started_at": created_at + timedelta(seconds=randint(1, 10)),
         "started_by_user_id": None,
         "start_reason": choice(list(RunStartReason)),
-        "ended_at": random_datetime(),
+        "ended_at": created_at + timedelta(seconds=randint(10, 3600)),
         "end_reason": random_string(8),
-        "expected_start_at": random_datetime(),
+        "expected_start_at": created_at,
+        "expected_end_at": created_at + timedelta(seconds=10),
     }
     data.update(kwargs)
     return Run(**data)
