@@ -1219,7 +1219,7 @@ async def test_get_run_lineage_for_long_running_operations(
     }
 
 
-async def test_get_run_lineage_run_with_ancestor_relations(
+async def test_get_run_lineage_with_ancestor_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,
@@ -1266,7 +1266,7 @@ async def test_get_run_lineage_run_with_ancestor_relations(
     }
 
 
-async def test_runs_with_granularity_operation_and_ancestor_relations(
+async def test_get_run_lineage_with_granularity_operation_and_ancestor_relations(
     test_client: AsyncClient,
     async_session: AsyncSession,
     lineage_with_parent_run_relations: LineageResult,

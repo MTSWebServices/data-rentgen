@@ -51,7 +51,8 @@ async def create_run(
     async_session: AsyncSession,
     run_kwargs: dict | None = None,
 ) -> Run:
-    run_kwargs = run_kwargs or {}
+    run_kwargs = dict(run_kwargs or {})
+    run_kwargs.setdefault("parent_run_id", None)
     run = run_factory(**run_kwargs)
     async_session.add(run)
     await async_session.commit()
