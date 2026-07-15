@@ -243,7 +243,7 @@ docstring_style = "sphinx"
 
 [tool.codespell]
 exclude-file="uv.lock"
-ignore-words-list = "selectin"
+ignore-words-list = "selectin, brin"
 
 [tool.towncrier]
 name = "Data.Rentgen"

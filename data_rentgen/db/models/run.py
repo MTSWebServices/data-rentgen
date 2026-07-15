@@ -59,6 +59,8 @@ class Run(Base):
         PrimaryKeyConstraint("id", "created_at"),
         Index("ix__run__search_vector", "search_vector", postgresql_using="gin"),
         Index("ix__run__parent_run_id", "parent_run_id", postgresql_where="parent_run_id IS NOT NULL"),
+        Index("ix__run__started_at", "started_at", postgresql_where="started_at IS NOT NULL", postgresql_using="brin"),
+        Index("ix__run__ended_at", "ended_at", postgresql_where="ended_at IS NOT NULL", postgresql_using="brin"),
         Index("ix__run__started_by_user_id", "started_by_user_id", postgresql_where="started_by_user_id IS NOT NULL"),
         {"postgresql_partition_by": "RANGE (created_at)"},
     )
