@@ -14,7 +14,6 @@ from pydantic import (
     ValidationInfo,
     field_serializer,
     field_validator,
-    model_validator,
 )
 
 from data_rentgen.server.schemas.v1.job_response import JobResponseV1
@@ -224,19 +223,3 @@ class RunsPaginateQueryV1(PaginateQueryV1):
             msg = "'since' should be less than 'until'"
             raise ValueError(msg)
         return value
-
-    @model_validator(mode="after")
-    def _check_fields(self):
-        if not any([self.since, self.run_id, self.job_id, self.parent_run_id, self.search_query]):
-            msg = "input should contain either 'since', 'run_id', 'job_id', 'parent_run_id' or 'search_query' field"
-            raise ValueError(msg)
-        if self.job_id and not self.since:
-            msg = "'job_id' can be passed only with 'since'"
-            raise ValueError(msg)
-        if self.parent_run_id and not self.since:
-            msg = "'parent_run_id' can be passed only with 'since'"
-            raise ValueError(msg)
-        if self.search_query and not self.since:
-            msg = "'search_query' can be passed only with 'since'"
-            raise ValueError(msg)
-        return self

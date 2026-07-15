@@ -14,42 +14,23 @@ from tests.test_server.utils.enrich import enrich_runs
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
 
-
-async def test_get_runs_missing_fields(
-    test_client: AsyncClient,
-    mocked_user: MockedUser,
-):
-    response = await test_client.get(
-        "v1/runs",
-        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
-    )
-
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-    assert response.json() == {
-        "error": {
-            "code": "invalid_request",
-            "message": "Invalid request",
-            "details": [
-                {
-                    "location": ["query"],
-                    "code": "value_error",
-                    "message": "Value error, input should contain either 'since', 'run_id', 'job_id', 'parent_run_id' or 'search_query' field",
-                    "context": {},
-                    "input": {
-                        "job_id": [],
-                        "job_location_id": [],
-                        "job_type": [],
-                        "page_size": 20,
-                        "page": 1,
-                        "parent_run_id": [],
-                        "run_id": [],
-                        "started_by_user": [],
-                        "status": [],
-                    },
-                },
-            ],
-        },
-    }
+EMPTY_STATS = {
+    "inputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+    "outputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+    "operations": {
+        "total_operations": 0,
+    },
+}
 
 
 async def test_get_runs_by_run_id_until_less_than_since(
@@ -83,6 +64,107 @@ async def test_get_runs_by_run_id_until_less_than_since(
                 },
             ],
         },
+    }
+
+
+async def test_get_runs_no_filters(
+    test_client: AsyncClient,
+    runs: list[Run],
+    mocked_user: MockedUser,
+    async_session: AsyncSession,
+):
+    runs = await enrich_runs(runs, async_session)
+
+    response = await test_client.get(
+        "v1/runs",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "meta": {
+            "page": 1,
+            "page_size": 20,
+            "total_count": len(runs),
+            "pages_count": 1,
+            "has_next": False,
+            "has_previous": False,
+            "next_page": None,
+            "previous_page": None,
+        },
+        "items": [
+            {
+                "id": str(run.id),
+                "data": run_to_json(run),
+                "job": job_to_json(run.job),
+                "statistics": EMPTY_STATS,
+            }
+            for run in sorted(runs, key=lambda x: (x.id, x.created_at), reverse=True)
+        ],
+    }
+
+    response = await test_client.get(
+        "v1/runs",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "page": 1,
+            "page_size": 2,
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "meta": {
+            "page": 1,
+            "page_size": 2,
+            "total_count": len(runs),
+            "pages_count": len(runs) // 2,
+            "has_next": True,
+            "has_previous": False,
+            "next_page": 2,
+            "previous_page": None,
+        },
+        "items": [
+            {
+                "id": str(run.id),
+                "data": run_to_json(run),
+                "job": job_to_json(run.job),
+                "statistics": EMPTY_STATS,
+            }
+            for run in sorted(runs, key=lambda x: (x.id, x.created_at), reverse=True)[:2]
+        ],
+    }
+
+    response = await test_client.get(
+        "v1/runs",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "page": 2,
+            "page_size": 2,
+        },
+    )
+
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "meta": {
+            "page": 2,
+            "page_size": 2,
+            "total_count": len(runs),
+            "pages_count": len(runs) // 2,
+            "has_next": True,
+            "has_previous": True,
+            "next_page": 3,
+            "previous_page": 1,
+        },
+        "items": [
+            {
+                "id": str(run.id),
+                "data": run_to_json(run),
+                "job": job_to_json(run.job),
+                "statistics": EMPTY_STATS,
+            }
+            for run in sorted(runs, key=lambda x: (x.id, x.created_at), reverse=True)[2:4]
+        ],
     }
 
 
@@ -120,25 +202,9 @@ async def test_get_runs_with_since(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
-            for run in sorted(runs, key=lambda x: (x.created_at, x.id), reverse=True)
+            for run in sorted(runs, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }
 
@@ -152,14 +218,13 @@ async def test_get_runs_with_until(
     since = min(run.created_at for run in runs)
     until = since + timedelta(seconds=1)
 
-    selected_runs = [run for run in runs if since <= run.created_at <= until]
-    selected_runs = await enrich_runs(selected_runs, async_session)
+    selected_runs = [run for run in runs if run.created_at <= until]
+    runs = await enrich_runs(selected_runs, async_session)
 
     response = await test_client.get(
         "v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "until": until.isoformat(),
         },
     )
@@ -169,7 +234,7 @@ async def test_get_runs_with_until(
         "meta": {
             "page": 1,
             "page_size": 20,
-            "total_count": len(selected_runs),
+            "total_count": len(runs),
             "pages_count": 1,
             "has_next": False,
             "has_previous": False,
@@ -181,25 +246,9 @@ async def test_get_runs_with_until(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
-            for run in sorted(selected_runs, key=lambda x: (x.created_at, x.id), reverse=True)
+            for run in sorted(runs, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }
 
@@ -218,13 +267,11 @@ async def test_get_runs_with_job_type(
         ],
         async_session,
     )
-    since = min(run.created_at for run in runs)
 
     response = await test_client.get(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "job_type": "SPARK_APPLICATION",
         },
     )
@@ -239,30 +286,14 @@ async def test_get_runs_with_job_type(
             "page_size": 20,
             "pages_count": 1,
             "previous_page": None,
-            "total_count": 2,
+            "total_count": len(runs),
         },
         "items": [
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs
         ],
@@ -272,7 +303,6 @@ async def test_get_runs_with_job_type(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "job_type": ["SPARK_APPLICATION"],
             # multiple filters
             "search_query": "0002",
@@ -296,23 +326,7 @@ async def test_get_runs_with_job_type(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs[:1]
         ],
@@ -333,13 +347,11 @@ async def test_get_runs_with_status(
         ],
         async_session,
     )
-    since = min(run.created_at for run in runs)
 
     response = await test_client.get(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "status": ["SUCCEEDED", "STARTED"],
         },
     )
@@ -354,30 +366,14 @@ async def test_get_runs_with_status(
             "page_size": 20,
             "pages_count": 1,
             "previous_page": None,
-            "total_count": 2,
+            "total_count": len(runs),
         },
         "items": [
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs
         ],
@@ -387,7 +383,6 @@ async def test_get_runs_with_status(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "status": ["SUCCEEDED", "STARTED"],
             "search_query": "dag",
         },
@@ -410,23 +405,7 @@ async def test_get_runs_with_status(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs[:1]
         ],
@@ -453,7 +432,6 @@ async def test_get_runs_with_started_at(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": runs[0].created_at.isoformat(),
             "started_since": runs[1].started_at.isoformat(),
             "started_until": runs[2].started_at.isoformat(),
         },
@@ -476,23 +454,7 @@ async def test_get_runs_with_started_at(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             # runs sorted by id in descending order
             for run in [runs[2], runs[1]]
@@ -520,7 +482,6 @@ async def test_get_runs_with_ended_at(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": runs[0].created_at.isoformat(),
             "ended_since": runs[1].ended_at.isoformat(),
             "ended_until": runs[3].ended_at.isoformat(),
         },
@@ -543,23 +504,7 @@ async def test_get_runs_with_ended_at(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             # runs sorted by id in descending order
             for run in [runs[3], runs[1]]
@@ -581,14 +526,12 @@ async def test_get_runs_with_location_id(
         ],
         async_session,
     )
-    since = min(run.created_at for run in runs)
     job = runs[0].job
 
     response = await test_client.get(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "job_location_id": job.location_id,
         },
     )
@@ -603,30 +546,14 @@ async def test_get_runs_with_location_id(
             "page_size": 20,
             "pages_count": 1,
             "previous_page": None,
-            "total_count": 2,
+            "total_count": len(runs),
         },
         "items": [
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs
         ],
@@ -636,7 +563,6 @@ async def test_get_runs_with_location_id(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "job_location_id": [job.location_id],
             # test multiple filters
             "search_query": "0002",
@@ -660,23 +586,7 @@ async def test_get_runs_with_location_id(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs[:1]
         ],
@@ -697,14 +607,12 @@ async def test_get_runs_with_started_by_user(
         ],
         async_session,
     )
-    since = min(run.created_at for run in runs)
     started_by_user = runs[0].started_by_user
 
     response = await test_client.get(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "started_by_user": started_by_user.name,
         },
     )
@@ -719,30 +627,14 @@ async def test_get_runs_with_started_by_user(
             "page_size": 20,
             "pages_count": 1,
             "previous_page": None,
-            "total_count": 2,
+            "total_count": len(runs),
         },
         "items": [
             {
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs
         ],
@@ -752,7 +644,6 @@ async def test_get_runs_with_started_by_user(
         "/v1/runs",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
         params={
-            "since": since.isoformat(),
             "started_by_user": [started_by_user.name],
             # test multiple filters
             "search_query": "0002",
@@ -776,23 +667,7 @@ async def test_get_runs_with_started_by_user(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in runs[:1]
         ],

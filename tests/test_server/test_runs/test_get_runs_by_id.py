@@ -13,6 +13,24 @@ from tests.test_server.utils.lineage_result import LineageResult
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
 
+EMPTY_STATS = {
+    "inputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+    "outputs": {
+        "total_datasets": 0,
+        "total_bytes": 0,
+        "total_rows": 0,
+        "total_files": 0,
+    },
+    "operations": {
+        "total_operations": 0,
+    },
+}
+
 
 async def test_get_runs_by_unknown_id(
     test_client: AsyncClient,
@@ -72,23 +90,7 @@ async def test_get_runs_by_one_id(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             },
         ],
     }
@@ -126,23 +128,7 @@ async def test_get_runs_by_multiple_ids(
                 "id": str(run.id),
                 "data": run_to_json(run),
                 "job": job_to_json(run.job),
-                "statistics": {
-                    "inputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "outputs": {
-                        "total_datasets": 0,
-                        "total_bytes": 0,
-                        "total_rows": 0,
-                        "total_files": 0,
-                    },
-                    "operations": {
-                        "total_operations": 0,
-                    },
-                },
+                "statistics": EMPTY_STATS,
             }
             for run in sorted(selected_runs, key=lambda x: (x.created_at, x.id), reverse=True)
         ],
