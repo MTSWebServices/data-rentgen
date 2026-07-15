@@ -39,6 +39,7 @@ class PersonalTokenRepository(Repository[PersonalToken]):
 
         if personal_token_ids:
             where.append(PersonalToken.id == any_(list(personal_token_ids)))  # type: ignore[arg-type]
+            page_size = min(page_size, len(personal_token_ids))
 
         query = select(PersonalToken).distinct(PersonalToken.name).where(*where)
 

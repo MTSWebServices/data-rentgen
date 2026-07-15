@@ -148,6 +148,7 @@ class JobRepository(Repository[Job]):
         location_join_clause = Location.id == Job.location_id
         if job_ids:
             where.append(Job.id == any_(list(job_ids)))  # type: ignore[arg-type]
+            page_size = min(page_size, len(job_ids))
         if parent_job_ids:
             where.append(Job.parent_job_id == any_(list(parent_job_ids)))  # type: ignore[arg-type]
         if job_types:

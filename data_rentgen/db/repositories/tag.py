@@ -40,6 +40,7 @@ class TagRepository(Repository[Tag]):
         where = []
         if tag_ids:
             where.append(Tag.id == any_(list(tag_ids)))  # type: ignore[arg-type]
+            page_size = min(page_size, len(tag_ids))
 
         query: Select | CompoundSelect
         order_by: list[ColumnElement | SQLColumnExpression]

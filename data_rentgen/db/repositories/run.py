@@ -175,6 +175,7 @@ class RunRepository(Repository[Run]):
                 Run.created_at <= max_created_at,
                 Run.id == any_(list(run_ids)),  # type: ignore[arg-type]
             ]
+            page_size = min(page_size, len(run_ids))
         else:
             if since:
                 where = [

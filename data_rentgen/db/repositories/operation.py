@@ -115,6 +115,7 @@ class OperationRepository(Repository[Operation]):
                 Operation.created_at <= max_created_at,
                 Operation.id == any_(list(operation_ids)),  # type: ignore[arg-type]
             ]
+            page_size = min(page_size, len(operation_ids))
 
         elif run_ids:
             run_created_at = extract_timestamp_from_uuid(min(run_ids))

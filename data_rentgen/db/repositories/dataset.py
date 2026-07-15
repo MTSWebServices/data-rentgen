@@ -163,6 +163,7 @@ class DatasetRepository(Repository[Dataset]):
         location_join_clause = Location.id == Dataset.location_id
         if dataset_ids:
             where.append(Dataset.id == any_(list(dataset_ids)))  # type: ignore[arg-type]
+            page_size = min(page_size, len(dataset_ids))
         if location_ids:
             where.append(Dataset.location_id == any_(list(location_ids)))  # type: ignore[arg-type]
         if location_types:
