@@ -25,7 +25,7 @@ from data_rentgen.db.utils.search import make_tsquery, ts_match, ts_rank
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.dto.tag import TagDTO
 
-fetch_bulk_query = select(Tag).where(Tag.name_lower == any_(bindparam("names")))
+fetch_bulk_query = select(Tag).where(Tag.name_lower == any_(bindparam("names"))).limit(bindparam("limit"))
 get_one_by_name_query = select(Tag).where(Tag.name_lower == bindparam("name")).limit(literal(1, literal_execute=True))
 
 
@@ -87,6 +87,7 @@ class TagRepository(Repository[Tag]):
             fetch_bulk_query,
             {
                 "names": [item.name.lower() for item in tags_dto],
+                "limit": len(tags_dto),
             },
         )
         existing = {tag.name.lower(): tag for tag in scalars.all()}

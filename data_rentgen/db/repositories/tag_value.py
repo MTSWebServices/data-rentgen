@@ -18,18 +18,23 @@ from data_rentgen.db.models.tag_value import TagValue
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto.tag import TagValueDTO
 
-fetch_bulk_query = select(TagValue).where(
-    tuple_(TagValue.tag_id, TagValue.value_lower).in_(
-        select(
-            func.unnest(
-                cast(bindparam("tag_ids"), ARRAY(Integer())),
-                cast(bindparam("values"), ARRAY(String())),
-            )
-            .table_valued("tag_ids", "values")
-            .render_derived(),
+fetch_bulk_query = (
+    select(TagValue)
+    .where(
+        tuple_(TagValue.tag_id, TagValue.value_lower).in_(
+            select(
+                func.unnest(
+                    cast(bindparam("tag_ids"), ARRAY(Integer())),
+                    cast(bindparam("values"), ARRAY(String())),
+                )
+                .table_valued("tag_ids", "values")
+                .render_derived(),
+            ),
         ),
-    ),
+    )
+    .limit(bindparam("limit"))
 )
+
 get_one_query = (
     select(TagValue)
     .where(TagValue.tag_id == bindparam("tag_id"), TagValue.value_lower == bindparam("value"))
@@ -47,6 +52,7 @@ class TagValueRepository(Repository[TagValue]):
             {
                 "tag_ids": [item.tag.id for item in tag_values_dto],
                 "values": [item.value for item in tag_values_dto],
+                "limit": len(tag_values_dto),
             },
         )
         existing = {(v.tag_id, v.value.lower()): v for v in scalars.all()}

@@ -14,8 +14,12 @@ from data_rentgen.db.models import JobType
 from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto import JobTypeDTO
 
-fetch_bulk_query = select(JobType).where(
-    JobType.type == any_(bindparam("types")),
+fetch_bulk_query = (
+    select(JobType)
+    .where(
+        JobType.type == any_(bindparam("types")),
+    )
+    .limit(bindparam("limit"))
 )
 
 get_one_query = (
@@ -39,6 +43,7 @@ class JobTypeRepository(Repository[JobType]):
             fetch_bulk_query,
             {
                 "types": [job_type_dto.type for job_type_dto in job_types_dto],
+                "limit": len(job_types_dto),
             },
         )
         existing = {job.type: job for job in scalars.all()}

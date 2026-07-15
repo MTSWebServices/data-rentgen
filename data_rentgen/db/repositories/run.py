@@ -34,6 +34,7 @@ get_list_by_id_query = (
         Run.created_at <= bindparam("until"),
         Run.id == any_(bindparam("run_ids")),
     )
+    .limit(bindparam("limit"))
     .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
@@ -49,9 +50,14 @@ get_list_by_job_ids_query = (
     .options(selectinload(Run.started_by_user))
 )
 
-fetch_bulk_query = select(Run).where(
-    Run.created_at >= bindparam("since"),
-    Run.id == any_(bindparam("run_ids")),
+fetch_bulk_query = (
+    select(Run)
+    .where(
+        Run.created_at >= bindparam("since"),
+        Run.created_at <= bindparam("until"),
+        Run.id == any_(bindparam("run_ids")),
+    )
+    .limit(bindparam("limit"))
 )
 
 insert_statement = insert(Run).values(
@@ -267,6 +273,7 @@ class RunRepository(Repository[Run]):
                 "since": extract_timestamp_from_uuid(min(run_ids)),
                 "until": extract_timestamp_from_uuid(max(run_ids)),
                 "run_ids": list(run_ids),
+                "limit": len(run_ids),
             },
         )
         return list(result.all())
@@ -299,7 +306,9 @@ class RunRepository(Repository[Run]):
             fetch_bulk_query,
             {
                 "since": extract_timestamp_from_uuid(min(ids)),
+                "until": extract_timestamp_from_uuid(max(ids)),
                 "run_ids": ids,
+                "limit": len(ids),
             },
         )
         existing = {run.id: run for run in scalars.all()}
