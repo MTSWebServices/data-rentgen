@@ -5,7 +5,7 @@ from collections.abc import Collection
 from datetime import UTC, date, datetime
 from uuid import UUID
 
-from sqlalchemy import any_, bindparam, select
+from sqlalchemy import any_, bindparam, literal, select
 from sqlalchemy.exc import IntegrityError
 
 from data_rentgen.db.models import PersonalToken
@@ -13,10 +13,14 @@ from data_rentgen.db.repositories.base import Repository
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.exceptions.entity import EntityAlreadyExistsError, EntityNotFoundError
 
-get_by_id_query = select(PersonalToken).where(
-    PersonalToken.user_id == bindparam("user_id"),
-    PersonalToken.id == bindparam("token_id"),
-    PersonalToken.revoked_at.is_(None),
+get_by_id_query = (
+    select(PersonalToken)
+    .where(
+        PersonalToken.user_id == bindparam("user_id"),
+        PersonalToken.id == bindparam("token_id"),
+        PersonalToken.revoked_at.is_(None),
+    )
+    .limit(literal(1, literal_execute=True))
 )
 
 

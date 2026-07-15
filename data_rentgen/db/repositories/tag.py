@@ -14,6 +14,7 @@ from sqlalchemy import (
     bindparam,
     desc,
     func,
+    literal,
     select,
 )
 from sqlalchemy.orm import selectinload
@@ -25,7 +26,7 @@ from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.dto.tag import TagDTO
 
 fetch_bulk_query = select(Tag).where(Tag.name_lower == any_(bindparam("names")))
-get_one_by_name_query = select(Tag).where(Tag.name_lower == bindparam("name"))
+get_one_by_name_query = select(Tag).where(Tag.name_lower == bindparam("name")).limit(literal(1, literal_execute=True))
 
 
 class TagRepository(Repository[Tag]):
