@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-from collections.abc import Collection
-
 from sqlalchemy import (
     ColumnElement,
     CompoundSelect,
@@ -34,12 +32,17 @@ class TagRepository(Repository[Tag]):
         self,
         page: int,
         page_size: int,
-        tag_ids: Collection[int],
+        tag_ids: list[int],
         search_query: str | None,
     ) -> PaginationDTO[Tag]:
         where = []
-        if tag_ids:
+        limit = 0
+        if len(tag_ids) == 1:
+            where.append(Tag.id == tag_ids[0])
+            limit = 1
+        elif tag_ids:
             where.append(Tag.id == any_(list(tag_ids)))  # type: ignore[arg-type]
+            limit = len(tag_ids)
 
         query: Select | CompoundSelect
         order_by: list[ColumnElement | SQLColumnExpression]
@@ -77,6 +80,7 @@ class TagRepository(Repository[Tag]):
             options=options,
             page=page,
             page_size=page_size,
+            override_limit=limit,
         )
 
     async def fetch_bulk(self, tags_dto: list[TagDTO]) -> list[tuple[TagDTO, Tag | None]]:

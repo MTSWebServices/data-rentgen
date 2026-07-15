@@ -144,13 +144,13 @@ class RunRepository(Repository[Run]):
         page_size: int,
         since: datetime | None,
         until: datetime | None,
-        run_ids: Collection[UUID],
-        parent_run_ids: Collection[UUID],
-        job_ids: Collection[int],
-        job_types: Collection[str],
-        job_location_ids: Collection[int],
-        statuses: Collection[RunStatus],
-        started_by_users: Collection[str],
+        run_ids: list[UUID],
+        parent_run_ids: list[UUID],
+        job_ids: list[int],
+        job_types: list[str],
+        job_location_ids: list[int],
+        statuses: list[RunStatus],
+        started_by_users: list[str],
         started_since: datetime | None,
         started_until: datetime | None,
         ended_since: datetime | None,
@@ -160,11 +160,21 @@ class RunRepository(Repository[Run]):
         # do not use `tuple_(Run.id, Run.created_at).in_(...),
         # as this is too complex filter for Postgres to make an optimal query plan
         where = []
+        limit = 0
 
         # created_at and id are always correlated,
         # and primary key starts with id, so we need to apply filter on both
         # to get the most optimal query plan
-        if run_ids:
+        if len(run_ids) == 1:
+            run_id = run_ids[0]
+            created_at = extract_timestamp_from_uuid(run_id)
+            where = [
+                Run.id == run_id,
+                Run.created_at == created_at,
+            ]
+            limit = 1
+
+        elif run_ids:
             min_run_created_at = extract_timestamp_from_uuid(min(run_ids))
             max_run_created_at = extract_timestamp_from_uuid(max(run_ids))
             # narrow created_at range
@@ -175,6 +185,7 @@ class RunRepository(Repository[Run]):
                 Run.created_at <= max_created_at,
                 Run.id == any_(list(run_ids)),  # type: ignore[arg-type]
             ]
+            limit = len(run_ids)
         else:
             if since:
                 where = [
@@ -255,6 +266,7 @@ class RunRepository(Repository[Run]):
             options=options,
             page=page,
             page_size=page_size,
+            override_limit=limit,
         )
 
     async def list_by_ids(self, run_ids: Collection[UUID]) -> list[Run]:

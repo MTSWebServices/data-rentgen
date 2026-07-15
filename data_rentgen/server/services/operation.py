@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Collection
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated
@@ -61,8 +60,8 @@ class OperationService:
         page_size: int,
         since: datetime | None,
         until: datetime | None,
-        operation_ids: Collection[UUID],
-        run_ids: Collection[UUID],
+        operation_ids: list[UUID],
+        run_ids: list[UUID],
     ) -> OperationServicePaginatedResult:
         pagination = await self._uow.operation.paginate(
             page=page,

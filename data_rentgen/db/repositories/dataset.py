@@ -153,18 +153,23 @@ class DatasetRepository(Repository[Dataset]):
         self,
         page: int,
         page_size: int,
-        dataset_ids: Collection[int],
-        tag_value_ids: Collection[int],
-        location_ids: Collection[int],
-        location_types: Collection[str],
+        dataset_ids: list[int],
+        tag_value_ids: list[int],
+        location_ids: list[int],
+        location_types: list[str],
         search_query: str | None,
     ) -> PaginationDTO[Dataset]:
         where = []
-        location_join_clause = Location.id == Dataset.location_id
-        if dataset_ids:
-            where.append(Dataset.id == any_(list(dataset_ids)))  # type: ignore[arg-type]
+        limit = 0
+        if len(dataset_ids) == 1:
+            where.append(Dataset.id == dataset_ids[0])
+            limit = 1
+        elif dataset_ids:
+            where.append(Dataset.id == any_(dataset_ids))  # type: ignore[arg-type]
+            limit = len(dataset_ids)
+
         if location_ids:
-            where.append(Dataset.location_id == any_(list(location_ids)))  # type: ignore[arg-type]
+            where.append(Dataset.location_id == any_(location_ids))  # type: ignore[arg-type]
         if location_types:
             location_type_lower = [location_type.lower() for location_type in location_types]
             where.append(Location.type == any_(location_type_lower))  # type: ignore[arg-type]
@@ -183,6 +188,7 @@ class DatasetRepository(Repository[Dataset]):
 
         query: Select | CompoundSelect
         order_by: list[ColumnElement | SQLColumnExpression]
+        location_join_clause = Location.id == Dataset.location_id
         if search_query:
             tsquery = make_tsquery(search_query)
 
@@ -227,6 +233,7 @@ class DatasetRepository(Repository[Dataset]):
             options=options,
             page=page,
             page_size=page_size,
+            override_limit=limit,
         )
 
     async def list_by_ids(self, dataset_ids: Collection[int]) -> list[Dataset]:
