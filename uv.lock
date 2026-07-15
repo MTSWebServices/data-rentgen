@@ -622,7 +622,7 @@ dependencies = [
 [package.optional-dependencies]
 consumer = [
     { name = "cramjam" },
-    { name = "faststream", extra = ["cli", "kafka"] },
+    { name = "faststream", extra = ["cli", "kafka", "prometheus"] },
 ]
 gssapi = [
     { name = "gssapi" },
@@ -707,8 +707,8 @@ requires-dist = [
     { name = "faker", marker = "extra == 'seed'", specifier = ">=40.21,<40.29" },
     { name = "fastapi", marker = "extra == 'http2kafka'", specifier = "~=0.136.3" },
     { name = "fastapi", marker = "extra == 'server'", specifier = "~=0.136.3" },
-    { name = "faststream", extras = ["cli", "kafka"], marker = "extra == 'consumer'", specifier = "~=0.7.1" },
     { name = "faststream", extras = ["cli", "kafka"], marker = "extra == 'http2kafka'", specifier = "~=0.7.1" },
+    { name = "faststream", extras = ["cli", "kafka", "prometheus"], marker = "extra == 'consumer'", specifier = "~=0.7.1" },
     { name = "greenlet", specifier = "~=3.5.2" },
     { name = "gssapi", marker = "extra == 'gssapi'", specifier = "~=1.11.1" },
     { name = "itsdangerous", marker = "extra == 'server'", specifier = "~=2.2.0" },
@@ -871,6 +871,9 @@ cli = [
 ]
 kafka = [
     { name = "aiokafka" },
+]
+prometheus = [
+    { name = "prometheus-client" },
 ]
 
 [[package]]

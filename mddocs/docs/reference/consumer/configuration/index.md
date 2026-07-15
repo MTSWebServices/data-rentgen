@@ -9,3 +9,4 @@
             - kafka
             - consumer
             - producer
+            - monitoring

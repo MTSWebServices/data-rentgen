@@ -6,6 +6,8 @@ pytest_plugins = [
     "tests.test_database.fixtures.alembic",
     "tests.test_consumer.fixtures.consumer_app_settings",
     "tests.test_consumer.fixtures.test_broker",
+    "tests.test_consumer.fixtures.test_consumer_app",
+    "tests.test_consumer.fixtures.consumer_client",
     "tests.test_consumer.test_extractors.fixtures.io_raw",
     "tests.test_consumer.test_extractors.fixtures.io_dto",
     "tests.test_consumer.test_extractors.fixtures.dbt_raw",

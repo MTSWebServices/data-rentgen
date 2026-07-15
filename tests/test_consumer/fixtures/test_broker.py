@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest_asyncio
 from faststream.kafka import KafkaBroker, KafkaMessage, TestKafkaBroker
+from prometheus_client import CollectorRegistry
 
 from data_rentgen.consumer import broker_factory
 
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
 @pytest_asyncio.fixture
 async def broker(consumer_app_settings: ConsumerApplicationSettings) -> KafkaBroker:
-    return broker_factory(settings=consumer_app_settings)
+    return broker_factory(settings=consumer_app_settings, registry=CollectorRegistry())
 
 
 @pytest_asyncio.fixture

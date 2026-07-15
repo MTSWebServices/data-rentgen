@@ -10,10 +10,13 @@ from fast_depends import dependency_provider
 from faststream import ContextRepo, FastStream
 from faststream._internal._compat import ExceptionGroup
 from faststream.asgi import AsgiFastStream, AsgiResponse, get
+from faststream.asgi.types import ASGIApp
 from faststream.kafka import KafkaBroker
+from faststream.kafka.prometheus import KafkaPrometheusMiddleware
 from faststream.kafka.publisher import DefaultPublisher
 from faststream.kafka.subscriber.usecase import BatchSubscriber
 from faststream.specification.asyncapi import AsyncAPI
+from prometheus_client import CollectorRegistry, make_asgi_app
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import data_rentgen
@@ -37,13 +40,18 @@ async def liveness(scope: dict[str, Any]) -> AsgiResponse:
     return AsgiResponse(b"", status_code=204)
 
 
-def broker_factory(settings: ConsumerApplicationSettings) -> KafkaBroker:
+def broker_factory(settings: ConsumerApplicationSettings, registry: CollectorRegistry | None = None) -> KafkaBroker:
+    middlewares = []
+    if registry is not None:
+        middlewares.append(KafkaPrometheusMiddleware(registry=registry, app_name=settings.monitoring.app_name))
+
     broker = KafkaBroker(
         bootstrap_servers=settings.kafka.bootstrap_servers,
         security=settings.kafka.security.to_security(),
         compression_type=settings.kafka.compression.value if settings.kafka.compression else None,
         client_id=f"data-rentgen-{data_rentgen.__version__}",
         logger=logger,
+        middlewares=middlewares,
         **settings.kafka.security.extra_broker_kwargs(),
         **settings.kafka.model_dump(exclude={"bootstrap_servers", "security", "compression"}),
         **settings.producer.model_dump(exclude={"main_topic", "malformed_topic"}),
@@ -99,8 +107,13 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
             for exception in e.exceptions:  # type: ignore[attr-defined]
                 raise exception from None
 
+    registry = CollectorRegistry() if settings.monitoring.enabled else None
+    asgi_routes: list[tuple[str, ASGIApp]] = [("/monitoring/ping", liveness)]
+    if registry is not None:
+        asgi_routes.append(("/monitoring/metrics", make_asgi_app(registry)))
+
     return FastStream(
-        broker_factory(settings),
+        broker_factory(settings, registry),
         lifespan=security_lifespan,
         specification=AsyncAPI(
             title="Data.Rentgen",
@@ -108,7 +121,7 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
             version=data_rentgen.__version__,
         ),
         logger=logger,
-    ).as_asgi(asgi_routes=[("/monitoring/ping", liveness)])
+    ).as_asgi(asgi_routes=asgi_routes)
 
 
 def get_application():
