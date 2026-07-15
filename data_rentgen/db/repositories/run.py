@@ -12,6 +12,7 @@ from sqlalchemy import (
     desc,
     func,
     select,
+    text,
     union,
 )
 from sqlalchemy.dialects.postgresql import insert
@@ -87,64 +88,53 @@ insert_statement = insert_statement.on_conflict_do_update(
 )
 
 
-child_run = aliased(Run, name="child")
-parent_run = aliased(Run, name="parent")
+ancestors_by_run_query = text(
+    """
+    WITH RECURSIVE ancestors_by_run AS (
+        SELECT run.parent_run_id AS parent_run_id, run.id AS child_run_id
+        FROM run
+        WHERE
+            run.id = ANY(:run_ids)
+        AND run.created_at >= :since
+        AND run.created_at <= :until
+        AND run.parent_run_id IS NOT NULL
 
-ancestors_by_run_base_part = (
-    select(
-        child_run.id.label("child_run_id"),
-        parent_run.id.label("parent_run_id"),
-    )
-    .select_from(child_run)
-    .join(parent_run, child_run.parent_run_id == parent_run.id)
-    .where(
-        child_run.id == any_(bindparam("run_ids")),
-        child_run.created_at >= bindparam("since"),
-        child_run.created_at <= bindparam("until"),
-    )
-)
-ancestors_by_run_cte = ancestors_by_run_base_part.cte("ancestors_by_run", recursive=True)
+        UNION
 
-ancestors_by_run_recursive_part = (
-    select(
-        child_run.id.label("child_run_id"),
-        parent_run.id.label("parent_run_id"),
+        SELECT parent.parent_run_id, parent.id
+        FROM run AS parent
+        JOIN ancestors_by_run ON parent.id = ancestors_by_run.parent_run_id
+        WHERE parent.parent_run_id IS NOT NULL
+        -- run ids (UUIDv7) are generated using host time, and parent/child runs may start on different hosts.
+        -- so parent run_id/created_at is not necessarily less than child run_id/created_at
     )
-    .select_from(child_run)
-    .join(parent_run, child_run.parent_run_id == parent_run.id)
-    .where(
-        child_run.id == ancestors_by_run_cte.c.parent_run_id,
-    )
+    SELECT parent_run_id, child_run_id
+    FROM ancestors_by_run
+    ORDER BY parent_run_id, child_run_id
+    """
 )
-ancestors_by_run_cte = ancestors_by_run_cte.union(ancestors_by_run_recursive_part)
 
-descendants_by_run_base_part = (
-    select(
-        parent_run.id.label("parent_run_id"),
-        child_run.id.label("child_run_id"),
-    )
-    .select_from(parent_run)
-    .join(child_run, child_run.parent_run_id == parent_run.id)
-    .where(
-        parent_run.id == any_(bindparam("run_ids")),
-        parent_run.created_at >= bindparam("since"),
-        parent_run.created_at <= bindparam("until"),
-    )
-)
-descendants_by_run_cte = descendants_by_run_base_part.cte("descendants_by_run", recursive=True)
 
-descendants_by_run_recursive_part = (
-    select(
-        parent_run.id.label("parent_run_id"),
-        child_run.id.label("child_run_id"),
+descendants_by_run_query = text(
+    """
+    WITH RECURSIVE descendants_by_run AS (
+        SELECT run.id AS child_run_id, run.parent_run_id AS parent_run_id
+        FROM run
+        WHERE run.parent_run_id = ANY(:run_ids)
+        -- run ids (UUIDv7) are generated using host time, and parent/child runs may start on different hosts.
+        -- so parent run_id/created_at is not necessarily less than child run_id/created_at
+
+        UNION
+
+        SELECT child.id, child.parent_run_id
+        FROM run AS child
+        JOIN descendants_by_run ON child.parent_run_id = descendants_by_run.child_run_id
     )
-    .select_from(parent_run)
-    .join(child_run, child_run.parent_run_id == parent_run.id)
-    .where(
-        parent_run.id == descendants_by_run_cte.c.child_run_id,
-    )
+    SELECT parent_run_id, child_run_id
+    FROM descendants_by_run
+    ORDER BY parent_run_id, child_run_id
+    """
 )
-descendants_by_run_cte = descendants_by_run_cte.union(descendants_by_run_recursive_part)
 
 
 class RunRepository(Repository[Run]):
@@ -410,31 +400,21 @@ class RunRepository(Repository[Run]):
     async def list_ancestor_relations(self, run_ids: Collection[UUID]):
         if not run_ids:
             return []
-        stmt = select(
-            ancestors_by_run_cte.c.parent_run_id,
-            ancestors_by_run_cte.c.child_run_id,
-        )
         result = await self._session.execute(
-            stmt,
+            ancestors_by_run_query,
             {
                 "since": extract_timestamp_from_uuid(min(run_ids)),
                 "until": extract_timestamp_from_uuid(max(run_ids)),
                 "run_ids": list(run_ids),
             },
         )
-        return list(result.fetchall())
+        return list(result.all())
 
     async def list_descendant_relations(self, run_ids: Collection[UUID]):
-        stmt = select(
-            descendants_by_run_cte.c.parent_run_id,
-            descendants_by_run_cte.c.child_run_id,
-        )
         result = await self._session.execute(
-            stmt,
+            descendants_by_run_query,
             {
-                "since": extract_timestamp_from_uuid(min(run_ids)),
-                "until": extract_timestamp_from_uuid(max(run_ids)),
                 "run_ids": list(run_ids),
             },
         )
-        return list(result.fetchall())
+        return list(result.all())

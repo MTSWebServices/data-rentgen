@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.server, pytest.mark.asyncio]
 
 async def test_get_jobs_by_parent_job_id_unknown(
     test_client: AsyncClient,
-    new_job: Job,
+    jobs_with_same_parent_job: list[Job],
     mocked_user: MockedUser,
 ) -> None:
 

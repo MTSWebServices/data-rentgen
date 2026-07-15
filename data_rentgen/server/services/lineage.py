@@ -334,7 +334,7 @@ class LineageService:
         # Include child runs
         if level == 0:
             run_relations = await self._uow.run.list_descendant_relations(start_node_ids)
-            child_runs_ids = {c_id for _, c_id in run_relations}
+            child_runs_ids = {child_run_id for _, child_run_id in run_relations}
             child_runs = await self._uow.run.list_by_ids(child_runs_ids)
             runs.extend(child_runs)
             child_runs_by_id = {run.id: run for run in child_runs}
@@ -1359,13 +1359,13 @@ class LineageService:
         match granularity:
             case "RUN" | "OPERATION":
                 run_relations = await self._uow.run.list_ancestor_relations(result.runs.keys())
-                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
                 parents_run_ids = {p_id for p_id, _ in run_relations}
                 runs = await self._uow.run.list_by_ids(parents_run_ids)
                 runs_by_id = {run.id: run for run in runs}
                 job_ids = {run.job_id for run in runs}
                 jobs = await self._uow.job.list_by_ids(job_ids)
                 jobs_by_id = {job.id: job for job in jobs}
+                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys() | job_ids)
                 return LineageServiceResult(
                     run_ancestor_relations={tuple(r) for r in run_relations},
                     job_ancestor_relations={tuple(r) for r in job_relations},

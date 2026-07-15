@@ -57,6 +57,7 @@ async def test_get_runs_by_parent_run_id_missing_since(
 async def test_get_runs_by_parent_run_id_unknown(
     test_client: AsyncClient,
     new_run: Run,
+    runs_with_same_parent: list[Run],
     mocked_user: MockedUser,
 ) -> None:
     since = new_run.created_at

@@ -145,8 +145,8 @@ class JobService:
         descendant_relations = await self._uow.job.list_descendant_relations(start_node_ids)
         job_ids = (
             start_node_ids
-            | {r.parent_job_id for r in ancestor_relations}
-            | {r.child_job_id for r in descendant_relations}
+            | {parent_job_id for parent_job_id, _ in ancestor_relations}
+            | {child_job_id for _, child_job_id in descendant_relations}
         )
         result = JobHierarchyResult()
         result.parents.update(ancestor_relations)
