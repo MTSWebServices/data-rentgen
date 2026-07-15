@@ -50,11 +50,13 @@ class Repository(ABC, Generic[Model]):
         order_by: Sequence[ColumnElement | SQLColumnExpression],
         page: int,
         page_size: int,
+        override_limit: int = 0,
         options: Sequence[ExecutableOption] | None = None,
     ) -> PaginationDTO[Model]:
         model_type = self.model_type()
+        limit = min(page_size, override_limit) if override_limit else page_size
         items_query = select(model_type).from_statement(
-            query.order_by(*order_by).limit(page_size).offset((page - 1) * page_size),
+            query.order_by(*order_by).limit(limit).offset((page - 1) * page_size),
         )
         if options:
             items_query = items_query.options(*options)

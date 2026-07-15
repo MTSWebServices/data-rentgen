@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2025-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Collection
 from datetime import UTC, date, datetime
 from uuid import UUID
 
@@ -30,15 +29,20 @@ class PersonalTokenRepository(Repository[PersonalToken]):
         page: int,
         page_size: int,
         user_id: int,
-        personal_token_ids: Collection[UUID],
+        personal_token_ids: list[UUID],
     ) -> PaginationDTO[PersonalToken]:
         where = [
             PersonalToken.user_id == user_id,
             PersonalToken.revoked_at.is_(None),
         ]
+        limit = 0
 
-        if personal_token_ids:
+        if len(personal_token_ids) == 1:
+            where.append(PersonalToken.id == personal_token_ids[0])
+            limit = 1
+        elif personal_token_ids:
             where.append(PersonalToken.id == any_(list(personal_token_ids)))  # type: ignore[arg-type]
+            limit = len(personal_token_ids)
 
         query = select(PersonalToken).distinct(PersonalToken.name).where(*where)
 
@@ -47,6 +51,7 @@ class PersonalTokenRepository(Repository[PersonalToken]):
             order_by=[PersonalToken.name, PersonalToken.since.desc()],
             page=page,
             page_size=page_size,
+            override_limit=limit,
         )
 
     async def get_by_id(

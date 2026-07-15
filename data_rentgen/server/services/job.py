@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from itertools import groupby
@@ -86,12 +86,12 @@ class JobService:
         self,
         page: int,
         page_size: int,
-        job_ids: Collection[int],
-        parent_job_ids: Collection[int],
-        job_types: Collection[str],
-        tag_value_ids: Collection[int],
-        location_ids: Collection[int],
-        location_types: Collection[str],
+        job_ids: list[int],
+        parent_job_ids: list[int],
+        job_types: list[str],
+        tag_value_ids: list[int],
+        location_ids: list[int],
+        location_types: list[str],
         search_query: str | None,
     ) -> JobServicePaginatedResult:
         pagination = await self._uow.job.paginate(

@@ -96,29 +96,39 @@ class OperationRepository(Repository[Operation]):
         self,
         page: int,
         page_size: int,
-        operation_ids: Collection[UUID],
+        operation_ids: list[UUID],
         since: datetime | None,
         until: datetime | None,
-        run_ids: Collection[UUID],
+        run_ids: list[UUID],
     ) -> PaginationDTO[Operation]:
         # do not use `tuple_(Operation.id, Operation.created_at).in_(...),
         # as this is too complex filter for Postgres to make an optimal query plan
         where = []
+        limit = 0
 
         # created_at and id are always correlated,
         # and primary key starts with id, so we need to apply filter on both
         # to get the most optimal query plan
-        if operation_ids:
+        if len(operation_ids) == 1:
+            operation_id = operation_ids[0]
+            created_at = extract_timestamp_from_uuid(operation_id)
+            where = [
+                Operation.id == operation_id,
+                Operation.created_at == created_at,
+            ]
+            limit = 1
+        elif operation_ids:
             min_operation_created_at = extract_timestamp_from_uuid(min(operation_ids))
             max_operation_created_at = extract_timestamp_from_uuid(max(operation_ids))
             # narrow created_at range
             min_created_at = max(filter(None, [since, min_operation_created_at]))
             max_created_at = min(filter(None, [until, max_operation_created_at]))
             where = [
+                Operation.id == any_(list(operation_ids)),  # type: ignore[arg-type]
                 Operation.created_at >= min_created_at,
                 Operation.created_at <= max_created_at,
-                Operation.id == any_(list(operation_ids)),  # type: ignore[arg-type]
             ]
+            limit = len(operation_ids)
 
         elif run_ids:
             run_created_at = extract_timestamp_from_uuid(min(run_ids))
@@ -149,6 +159,7 @@ class OperationRepository(Repository[Operation]):
             order_by=order_by,
             page=page,
             page_size=page_size,
+            override_limit=limit,
         )
 
     async def list_by_ids(self, operation_ids: Collection[UUID]) -> list[Operation]:

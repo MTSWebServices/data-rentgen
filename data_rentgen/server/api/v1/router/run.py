@@ -41,7 +41,7 @@ async def runs(
         job_types=query_args.job_type,
         job_location_ids=query_args.job_location_id,
         search_query=query_args.search_query,
-        statuses=query_args.status,
+        statuses=query_args.status,  # type: ignore[arg-type]
         started_by_users=query_args.started_by_user,
         started_since=query_args.started_since,
         started_until=query_args.started_until,

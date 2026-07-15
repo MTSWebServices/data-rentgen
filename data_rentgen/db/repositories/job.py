@@ -140,18 +140,23 @@ class JobRepository(Repository[Job]):
         self,
         page: int,
         page_size: int,
-        job_ids: Collection[int],
-        parent_job_ids: Collection[int],
-        job_types: Collection[str],
-        tag_value_ids: Collection[int],
-        location_ids: Collection[int],
-        location_types: Collection[str],
+        job_ids: list[int],
+        parent_job_ids: list[int],
+        job_types: list[str],
+        tag_value_ids: list[int],
+        location_ids: list[int],
+        location_types: list[str],
         search_query: str | None,
     ) -> PaginationDTO[Job]:
         where = []
-        location_join_clause = Location.id == Job.location_id
-        if job_ids:
+        limit = 0
+        if len(job_ids) == 1:
+            where.append(Job.id == job_ids[0])  # type: ignore[arg-type]
+            limit = 1
+        elif job_ids:
             where.append(Job.id == any_(list(job_ids)))  # type: ignore[arg-type]
+            limit = len(job_ids)
+
         if parent_job_ids:
             where.append(Job.parent_job_id == any_(list(parent_job_ids)))  # type: ignore[arg-type]
         if job_types:
@@ -176,6 +181,7 @@ class JobRepository(Repository[Job]):
 
         query: Select | CompoundSelect
         order_by: list[ColumnElement | SQLColumnExpression]
+        location_join_clause = Location.id == Job.location_id
         if search_query:
             tsquery = make_tsquery(search_query)
 
@@ -221,6 +227,7 @@ class JobRepository(Repository[Job]):
             options=options,
             page=page,
             page_size=page_size,
+            override_limit=limit,
         )
 
     async def fetch_bulk(self, jobs_dto: list[JobDTO]) -> list[tuple[JobDTO, Job | None]]:

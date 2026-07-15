@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import Collection
 from dataclasses import dataclass
 from itertools import groupby
 from typing import Annotated
@@ -41,10 +40,10 @@ class DatasetService:
         self,
         page: int,
         page_size: int,
-        dataset_ids: Collection[int],
-        tag_value_ids: Collection[int],
-        location_ids: Collection[int],
-        location_types: Collection[str],
+        dataset_ids: list[int],
+        tag_value_ids: list[int],
+        location_ids: list[int],
+        location_types: list[str],
         search_query: str | None,
     ) -> DatasetServicePaginatedResult:
         pagination = await self._uow.dataset.paginate(
