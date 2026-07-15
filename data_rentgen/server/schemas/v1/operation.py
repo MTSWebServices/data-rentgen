@@ -137,7 +137,4 @@ class OperationQueryV1(PaginateQueryV1):
         if not any([self.operation_id, self.run_id]):
             msg = "input should contain either 'run_id' or 'operation_id' field"
             raise ValueError(msg)
-        if self.run_id and not self.since:
-            msg = "'run_id' can be passed only with 'since'"
-            raise ValueError(msg)
         return self
