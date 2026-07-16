@@ -103,7 +103,7 @@ gssapi = [
   "gssapi~=1.11.1",
 ]
 seed = [
-  "faker>=40.21,<40.29",
+  "faker>=40.21,<40.32",
 ]
 
 [dependency-groups]
@@ -125,7 +125,7 @@ test = [
 dev = [
   "prek~=0.4.5",
   "ruff~=0.15.18",
-  "mypy>=2.1,<2.3",
+  "mypy>=2.1,<2.4",
   "sqlalchemy[mypy]~=2.0.51",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
