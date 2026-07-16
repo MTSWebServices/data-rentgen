@@ -56,7 +56,7 @@ def broker_factory(settings: Http2KafkaApplicationSettings) -> KafkaBroker:
         bootstrap_servers=settings.kafka.bootstrap_servers,
         security=settings.kafka.security.to_security(),
         compression_type=settings.kafka.compression.value if settings.kafka.compression else None,
-        client_id=f"data-rentgen-{data_rentgen.__version__}",
+        client_id=f"data-rentgen-http2kafka:{data_rentgen.__version__}",
         logger=logger,
         **settings.kafka.security.extra_broker_kwargs(),
         **settings.kafka.model_dump(exclude={"bootstrap_servers", "security", "compression"}),
