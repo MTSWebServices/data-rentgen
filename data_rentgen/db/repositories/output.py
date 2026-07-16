@@ -8,6 +8,7 @@ from uuid import UUID
 
 from sqlalchemy import ColumnElement, Row, Select, any_, func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import InstrumentedAttribute
 
 from data_rentgen.db.models import Output, OutputType, Schema
 from data_rentgen.db.repositories.base import Repository
@@ -153,30 +154,38 @@ class OutputRepository(Repository[Output]):
 
     def _get_base_query(
         self,
+        return_columns: Collection[InstrumentedAttribute],
         where: Collection[ColumnElement],
     ) -> Select:
-        # For operation.type=STREAMING, there can be multiple outputs for same operation+dataset+schema,
-        # so we also need deduplication here
-        unique_ids = [Output.job_id, Output.run_id, Output.operation_id, Output.dataset_id]
-        order_by = [Output.created_at, Output.schema_id]
+        # For operation.type=STREAMING or long-running operation.type=BATCH,
+        # there can be multiple outputs for same operation+dataset+schema,
+        # so we need to get latest output for each operation before applying sum on it
+
+        partition_columns = list(return_columns)
+        if Output.operation_id not in partition_columns:
+            partition_columns.append(Output.operation_id)
 
         # Avoid sorting multiple times by different keys for performance reason,
         # instead reuse the same window expression
-        def window(expr, order_by=None):
-            return expr.over(partition_by=unique_ids, order_by=order_by)
+        def window(expr):
+            return expr.over(
+                partition_by=partition_columns,
+                order_by=[Output.created_at, Output.schema_id],
+                range_=(None, None),  # important
+            )
 
         return (
             select(
-                *unique_ids,
-                window(func.max(Output.created_at)).label("created_at"),
-                window(func.max(Output.num_bytes)).label("num_bytes"),
-                window(func.max(Output.num_rows)).label("num_rows"),
-                window(func.max(Output.num_files)).label("num_files"),
+                *return_columns,
+                window(func.last_value(Output.created_at)).label("created_at"),
+                window(func.last_value(Output.num_bytes)).label("num_bytes"),
+                window(func.last_value(Output.num_rows)).label("num_rows"),
+                window(func.last_value(Output.num_files)).label("num_files"),
                 window(func.bit_or(Output.type)).label("type"),
-                window(func.first_value(Output.schema_id), order_by).label("oldest_schema_id"),
-                window(func.last_value(Output.schema_id), order_by).label("newest_schema_id"),
+                window(func.first_value(Output.schema_id)).label("oldest_schema_id"),
+                window(func.last_value(Output.schema_id)).label("newest_schema_id"),
             )
-            .distinct(*unique_ids)
+            .distinct(*partition_columns)
             .where(*where)
         )
 
@@ -185,8 +194,15 @@ class OutputRepository(Repository[Output]):
         where: Collection[ColumnElement],
         granularity: Literal["JOB", "RUN", "OPERATION"],
     ) -> list[OutputRow]:
-        base_query = self._get_base_query(where).subquery()
         if granularity == "OPERATION":
+            return_columns = [
+                # same order as in GROUP BY
+                Output.operation_id,
+                Output.run_id,
+                Output.job_id,
+                Output.dataset_id,
+            ]
+            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 base_query.c.operation_id,
@@ -206,6 +222,13 @@ class OutputRepository(Repository[Output]):
                 base_query.c.dataset_id,
             )
         elif granularity == "RUN":
+            return_columns = [
+                # same order as in GROUP BY
+                Output.run_id,
+                Output.job_id,
+                Output.dataset_id,
+            ]
+            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 literal_column("NULL").label("operation_id"),
@@ -224,6 +247,12 @@ class OutputRepository(Repository[Output]):
                 base_query.c.dataset_id,
             )
         else:
+            return_columns = [
+                # same order as in GROUP BY
+                Output.job_id,
+                Output.dataset_id,
+            ]
+            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 literal_column("NULL").label("operation_id"),
@@ -276,7 +305,12 @@ class OutputRepository(Repository[Output]):
             Output.operation_id == any_(list(operation_ids)),  # type: ignore[arg-type]
         ]
 
-        base_query = self._get_base_query(where).subquery()
+        return_columns = [
+            # same order as in GROUP BY
+            Output.operation_id,
+            Output.dataset_id,
+        ]
+        base_query = self._get_base_query(return_columns, where).subquery()
         query = select(
             base_query.c.operation_id.label("operation_id"),
             func.count(base_query.c.dataset_id.distinct()).label("total_datasets"),
@@ -298,7 +332,12 @@ class OutputRepository(Repository[Output]):
             Output.run_id == any_(list(run_ids)),  # type: ignore[arg-type]
         ]
 
-        base_query = self._get_base_query(where).subquery()
+        return_columns = [
+            # same order as in GROUP BY
+            Output.run_id,
+            Output.dataset_id,
+        ]
+        base_query = self._get_base_query(return_columns, where).subquery()
         query = select(
             base_query.c.run_id.label("run_id"),
             func.count(base_query.c.dataset_id.distinct()).label("total_datasets"),

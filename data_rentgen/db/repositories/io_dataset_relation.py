@@ -47,30 +47,34 @@ class IODatasetRelationRepository:
         if until:
             where.extend([Output.created_at <= until, Input.created_at <= until])
 
-        unique_ids = [Output.dataset_id, Input.dataset_id]
-        order_by = [Output.created_at, Input.created_at, Output.schema_id, Input.schema_id]
-
         # Avoid sorting multiple times by different keys for performance reason,
         # instead reuse the same window expression
-        def window(expr, order_by=None):
-            return expr.over(partition_by=unique_ids, order_by=order_by)
+        distinct_columns = [Output.dataset_id, Input.dataset_id]
+
+        def window(expr):
+            return expr.over(
+                partition_by=distinct_columns,
+                order_by=[Output.created_at, Input.created_at, Output.schema_id, Input.schema_id],
+                range_=(None, None),  # important
+            )
 
         # there is no need in GROUP BY, as we already select distinct values
         query = (
             select(
                 Input.dataset_id.label("in_dataset_id"),
                 Output.dataset_id.label("out_dataset_id"),
-                window(func.max(Output.created_at)).label("max_created_at"),
-                window(func.first_value(Output.schema_id), order_by).label("oldest_output_schema_id"),
-                window(func.last_value(Output.schema_id), order_by).label("newest_output_schema_id"),
-                window(func.first_value(Input.schema_id), order_by).label("oldest_input_schema_id"),
-                window(func.last_value(Input.schema_id), order_by).label("newest_input_schema_id"),
+                window(func.last_value(Output.created_at)).label("max_created_at"),
+                window(func.first_value(Output.schema_id)).label("oldest_output_schema_id"),
+                window(func.last_value(Output.schema_id)).label("newest_output_schema_id"),
+                window(func.first_value(Input.schema_id)).label("oldest_input_schema_id"),
+                window(func.last_value(Input.schema_id)).label("newest_input_schema_id"),
             )
-            .distinct(*unique_ids)
+            .distinct(*distinct_columns)
             .join(
                 Input,
                 and_(
                     Output.operation_id == Input.operation_id,
+                    Output.created_at >= Input.created_at,
                     # Avoid returning table1 -> table1 relations.
                     # TODO: cover case with self-reference via symlink
                     Output.dataset_id != Input.dataset_id,

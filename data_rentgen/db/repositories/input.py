@@ -8,6 +8,7 @@ from uuid import UUID
 
 from sqlalchemy import ColumnElement, Row, Select, any_, func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import InstrumentedAttribute
 
 from data_rentgen.db.models import Input, Schema
 from data_rentgen.db.repositories.base import Repository
@@ -150,29 +151,37 @@ class InputRepository(Repository[Input]):
 
     def _get_base_query(
         self,
+        return_columns: Collection[InstrumentedAttribute],
         where: Collection[ColumnElement],
     ) -> Select:
-        # For operation.type=STREAMING, there can be multiple inputs for same operation+dataset+schema,
-        # so we also need deduplication here
-        unique_ids = [Input.job_id, Input.run_id, Input.operation_id, Input.dataset_id]
-        order_by = [Input.created_at, Input.schema_id]
+        # For operation.type=STREAMING or long-running operation.type=BATCH,
+        # there can be multiple inputs for same operation+dataset+schema,
+        # so we need to get latest input for each operation before applying sum on it
+
+        partition_columns = list(return_columns)
+        if Input.operation_id not in partition_columns:
+            partition_columns.append(Input.operation_id)
 
         # Avoid sorting multiple times by different keys for performance reason,
         # instead reuse the same window expression
-        def window(expr, order_by=None):
-            return expr.over(partition_by=unique_ids, order_by=order_by)
+        def window(expr):
+            return expr.over(
+                partition_by=partition_columns,
+                order_by=[Input.created_at, Input.schema_id],
+                range_=(None, None),  # important
+            )
 
         return (
             select(
-                *unique_ids,
-                window(func.max(Input.created_at)).label("created_at"),
-                window(func.max(Input.num_bytes)).label("num_bytes"),
-                window(func.max(Input.num_rows)).label("num_rows"),
-                window(func.max(Input.num_files)).label("num_files"),
-                window(func.first_value(Input.schema_id), order_by).label("oldest_schema_id"),
-                window(func.last_value(Input.schema_id), order_by).label("newest_schema_id"),
+                *return_columns,
+                window(func.last_value(Input.created_at)).label("created_at"),
+                window(func.last_value(Input.num_bytes)).label("num_bytes"),
+                window(func.last_value(Input.num_rows)).label("num_rows"),
+                window(func.last_value(Input.num_files)).label("num_files"),
+                window(func.first_value(Input.schema_id)).label("oldest_schema_id"),
+                window(func.last_value(Input.schema_id)).label("newest_schema_id"),
             )
-            .distinct(*unique_ids)
+            .distinct(*partition_columns)
             .where(*where)
         )
 
@@ -181,8 +190,15 @@ class InputRepository(Repository[Input]):
         where: Collection[ColumnElement],
         granularity: Literal["JOB", "RUN", "OPERATION"],
     ) -> list[InputRow]:
-        base_query = self._get_base_query(where).subquery()
         if granularity == "OPERATION":
+            return_columns = [
+                # same order as in GROUP BY
+                Input.operation_id,
+                Input.run_id,
+                Input.job_id,
+                Input.dataset_id,
+            ]
+            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 base_query.c.operation_id,
@@ -201,6 +217,13 @@ class InputRepository(Repository[Input]):
                 base_query.c.dataset_id,
             )
         elif granularity == "RUN":
+            return_columns = [
+                # same order as in GROUP BY
+                Input.run_id,
+                Input.job_id,
+                Input.dataset_id,
+            ]
+            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 literal_column("NULL").label("operation_id"),
@@ -218,6 +241,12 @@ class InputRepository(Repository[Input]):
                 base_query.c.dataset_id,
             )
         else:
+            return_columns = [
+                # same order as in GROUP BY
+                Input.job_id,
+                Input.dataset_id,
+            ]
+            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 literal_column("NULL").label("operation_id"),
@@ -270,7 +299,12 @@ class InputRepository(Repository[Input]):
             Input.operation_id == any_(list(operation_ids)),  # type: ignore[arg-type]
         ]
 
-        base_query = self._get_base_query(where).subquery()
+        return_columns = [
+            # same order as in GROUP BY
+            Input.operation_id,
+            Input.dataset_id,
+        ]
+        base_query = self._get_base_query(return_columns, where).subquery()
         query = select(
             base_query.c.operation_id.label("operation_id"),
             func.count(base_query.c.dataset_id.distinct()).label("total_datasets"),
@@ -292,7 +326,12 @@ class InputRepository(Repository[Input]):
             Input.run_id == any_(list(run_ids)),  # type: ignore[arg-type]
         ]
 
-        base_query = self._get_base_query(where).subquery()
+        return_columns = [
+            # same order as in GROUP BY
+            Input.run_id,
+            Input.dataset_id,
+        ]
+        base_query = self._get_base_query(return_columns, where).subquery()
         query = select(
             base_query.c.run_id.label("run_id"),
             func.count(base_query.c.dataset_id.distinct()).label("total_datasets"),

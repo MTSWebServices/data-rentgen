@@ -1400,7 +1400,6 @@ async def lineage_with_different_dataset_interactions(
                 key=f"different_dataset_interactions_operation_{i}",
                 run=run,
                 operation_kwargs={
-                    "run_id": run.id,
                     "created_at": run.created_at + timedelta(seconds=0.2),
                 },
             )
@@ -1418,12 +1417,6 @@ async def lineage_with_different_dataset_interactions(
                 schema=schema,
                 output_kwargs={
                     "created_at": operation.created_at,
-                    "operation_id": operation.id,
-                    "run_id": operation.run_id,
-                    "job_id": job.id,
-                    "dataset_id": dataset.id,
-                    "type": type_,
-                    "schema_id": schema.id,
                 },
             )
             for i, (operation, type_) in enumerate(
@@ -1518,11 +1511,6 @@ async def lineage_for_long_running_operations(
                     schema=schema,
                     input_kwargs={
                         "created_at": operation.created_at + timedelta(hours=io),
-                        "operation_id": operation.id,
-                        "run_id": run.id,
-                        "job_id": job.id,
-                        "dataset_id": datasets[i].id,
-                        "schema_id": schema.id,
                         "num_files": io,
                         "num_rows": io,
                         "num_bytes": io,
@@ -1539,12 +1527,6 @@ async def lineage_for_long_running_operations(
                     schema=schema,
                     output_kwargs={
                         "created_at": operation.created_at + timedelta(hours=io),
-                        "operation_id": operation.id,
-                        "run_id": run.id,
-                        "job_id": job.id,
-                        "dataset_id": datasets[i + 1].id,
-                        "type": OutputType.APPEND,
-                        "schema_id": schema.id,
                         "num_files": io,
                         "num_rows": io,
                         "num_bytes": io,
