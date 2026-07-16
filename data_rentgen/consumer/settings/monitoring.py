@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MonitoringSettings(BaseModel):
@@ -20,7 +20,14 @@ class MonitoringSettings(BaseModel):
     """
 
     enabled: bool = Field(default=True, description="Set to `True` to enable middleware")
-    app_name: str = Field(
-        default="data-rentgen-consumer",
-        description="Application name, added to all metrics as `app_name` label",
+    labels: dict[str, str] = Field(
+        default_factory=dict,
+        description="""Custom labels added to all metrics, e.g. `{"instance": "production"}`""",
+        serialization_alias="custom_labels",
     )
+    received_messages_size_buckets: list[float] = Field(
+        default_factory=list,
+        description="List of buckets for received messages size histogram",
+    )
+
+    model_config = ConfigDict(extra="ignore")

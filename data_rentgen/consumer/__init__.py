@@ -43,13 +43,19 @@ async def liveness(scope: dict[str, Any]) -> AsgiResponse:
 def broker_factory(settings: ConsumerApplicationSettings, registry: CollectorRegistry | None = None) -> KafkaBroker:
     middlewares = []
     if registry is not None:
-        middlewares.append(KafkaPrometheusMiddleware(registry=registry, app_name=settings.monitoring.app_name))
+        middlewares.append(
+            KafkaPrometheusMiddleware(
+                registry=registry,
+                app_name="data-rentgen-consumer",
+                **settings.monitoring.model_dump(exclude_unset=True, by_alias=True),
+            ),
+        )
 
     broker = KafkaBroker(
         bootstrap_servers=settings.kafka.bootstrap_servers,
         security=settings.kafka.security.to_security(),
         compression_type=settings.kafka.compression.value if settings.kafka.compression else None,
-        client_id=f"data-rentgen-{data_rentgen.__version__}",
+        client_id=f"data-rentgen-consumer:{data_rentgen.__version__}",
         logger=logger,
         middlewares=middlewares,
         **settings.kafka.security.extra_broker_kwargs(),
@@ -116,7 +122,7 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
         broker_factory(settings, registry),
         lifespan=security_lifespan,
         specification=AsyncAPI(
-            title="Data.Rentgen",
+            title="Data.Rentgen Consumer",
             description="Data.Rentgen is a nextgen DataLineage service",
             version=data_rentgen.__version__,
         ),
