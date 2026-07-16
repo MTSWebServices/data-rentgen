@@ -11,7 +11,7 @@ from fast_depends import dependency_provider
 from faststream import ContextRepo, FastStream
 from faststream._internal._compat import ExceptionGroup
 from faststream.asgi import AsgiFastStream, AsgiResponse, get
-from faststream.asgi.types import ASGIApp
+from faststream.asgi.types import ASGIApp, Receive, Scope, Send
 from faststream.kafka import KafkaBroker
 from faststream.kafka.prometheus import KafkaPrometheusMiddleware
 from faststream.kafka.publisher import DefaultPublisher
@@ -40,6 +40,18 @@ logger = logging.getLogger(__name__)
 @get  # type: ignore[arg-type]
 async def liveness(scope: dict[str, Any]) -> AsgiResponse:
     return AsgiResponse(b"", status_code=204)
+
+
+def make_asgi_app_multiprocess(registry) -> ASGIApp:
+    asgi_app = make_asgi_app(registry)
+    if "prometheus_multiproc_dir" not in os.environ and "PROMETHEUS_MULTIPROC_DIR" not in os.environ:
+        return asgi_app
+
+    async def app(scope: Scope, receive: Receive, send: Send):
+        MultiProcessCollector(registry)
+        await asgi_app(scope, receive, send)
+
+    return app
 
 
 def broker_factory(settings: ConsumerApplicationSettings, registry: CollectorRegistry | None = None) -> KafkaBroker:
@@ -120,10 +132,7 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
     registry = CollectorRegistry() if settings.monitoring.enabled else None
     asgi_routes: list[tuple[str, ASGIApp]] = [("/monitoring/ping", liveness)]
     if registry is not None:
-        if "prometheus_multiproc_dir" in os.environ or "PROMETHEUS_MULTIPROC_DIR" in os.environ:
-            MultiProcessCollector(registry)
-
-        asgi_routes.append(("/monitoring/metrics", make_asgi_app(registry)))
+        asgi_routes.append(("/monitoring/metrics", make_asgi_app_multiprocess(registry)))
 
     return FastStream(
         broker_factory(settings, registry),
