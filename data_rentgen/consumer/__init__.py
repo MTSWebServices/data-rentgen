@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -17,6 +18,7 @@ from faststream.kafka.publisher import DefaultPublisher
 from faststream.kafka.subscriber.usecase import BatchSubscriber
 from faststream.specification.asyncapi import AsyncAPI
 from prometheus_client import CollectorRegistry, make_asgi_app
+from prometheus_client.multiprocess import MultiProcessCollector
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import data_rentgen
@@ -118,6 +120,9 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
     registry = CollectorRegistry() if settings.monitoring.enabled else None
     asgi_routes: list[tuple[str, ASGIApp]] = [("/monitoring/ping", liveness)]
     if registry is not None:
+        if "prometheus_multiproc_dir" in os.environ or "PROMETHEUS_MULTIPROC_DIR" in os.environ:
+            MultiProcessCollector(registry)
+
         asgi_routes.append(("/monitoring/metrics", make_asgi_app(registry)))
 
     return FastStream(

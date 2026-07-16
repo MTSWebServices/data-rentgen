@@ -124,6 +124,13 @@ services:
     env_file: .env.docker
     ports:
       - 8001:8000
+    # PROMETHEUS_MULTIPROC_DIR is required for multiple workers, see:
+    # https://prometheus.github.io/client_python/multiprocess/
+    environment:
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus-metrics
+    # tmpfs dir is cleaned up each container restart
+    tmpfs:
+      - /tmp/prometheus-metrics:mode=1777
     healthcheck:
       test: [CMD-SHELL, curl -f http://localhost:8000/monitoring/ping]
       interval: 30s
