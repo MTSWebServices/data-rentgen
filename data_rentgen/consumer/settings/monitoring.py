@@ -15,7 +15,7 @@ class MonitoringSettings(BaseModel):
 
     ```bash
     DATA_RENTGEN__MONITORING__ENABLED=True
-    DATA_RENTGEN__MONITORING__APP_NAME=data-rentgen-consumer
+    DATA_RENTGEN__MONITORING__LABELS={"instance": "production"}
     ```
     """
 
