@@ -43,11 +43,13 @@ async def liveness(scope: dict[str, Any]) -> AsgiResponse:
 def broker_factory(settings: ConsumerApplicationSettings, registry: CollectorRegistry | None = None) -> KafkaBroker:
     middlewares = []
     if registry is not None:
+        monitoring_settings = settings.monitoring.model_dump(exclude_unset=True, by_alias=True)
+        app_name = monitoring_settings.get("custom_labels", {}).pop("app_name", "data-rentgen-consumer")
         middlewares.append(
             KafkaPrometheusMiddleware(
                 registry=registry,
-                app_name="data-rentgen-consumer",
-                **settings.monitoring.model_dump(exclude_unset=True, by_alias=True),
+                app_name=app_name,
+                **monitoring_settings,
             ),
         )
 
