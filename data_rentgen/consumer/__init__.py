@@ -17,7 +17,7 @@ from faststream.kafka.prometheus import KafkaPrometheusMiddleware
 from faststream.kafka.publisher import DefaultPublisher
 from faststream.kafka.subscriber.usecase import BatchSubscriber
 from faststream.specification.asyncapi import AsyncAPI
-from prometheus_client import CollectorRegistry, make_asgi_app
+from prometheus_client import REGISTRY, CollectorRegistry, make_asgi_app
 from prometheus_client.multiprocess import MultiProcessCollector
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,9 +42,9 @@ async def liveness(scope: dict[str, Any]) -> AsgiResponse:
     return AsgiResponse(b"", status_code=204)
 
 
-def make_asgi_app_multiprocess(registry) -> ASGIApp:
+def make_asgi_app_multiprocess() -> ASGIApp:
     if "prometheus_multiproc_dir" not in os.environ and "PROMETHEUS_MULTIPROC_DIR" not in os.environ:
-        return make_asgi_app(registry)
+        return make_asgi_app(REGISTRY)
 
     async def app(scope: Scope, receive: Receive, send: Send):
         registry = CollectorRegistry()
@@ -55,14 +55,14 @@ def make_asgi_app_multiprocess(registry) -> ASGIApp:
     return app
 
 
-def broker_factory(settings: ConsumerApplicationSettings, registry: CollectorRegistry | None = None) -> KafkaBroker:
+def broker_factory(settings: ConsumerApplicationSettings) -> KafkaBroker:
     middlewares = []
-    if registry is not None:
+    if settings.monitoring.enabled:
         monitoring_settings = settings.monitoring.model_dump(exclude_unset=True, by_alias=True)
         app_name = monitoring_settings.get("custom_labels", {}).pop("app_name", "data-rentgen-consumer")
         middlewares.append(
             KafkaPrometheusMiddleware(
-                registry=registry,
+                registry=REGISTRY,
                 app_name=app_name,
                 **monitoring_settings,
             ),
@@ -130,13 +130,12 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
             for exception in e.exceptions:  # type: ignore[attr-defined]
                 raise exception from None
 
-    registry = CollectorRegistry() if settings.monitoring.enabled else None
     asgi_routes: list[tuple[str, ASGIApp]] = [("/monitoring/ping", liveness)]
-    if registry is not None:
-        asgi_routes.append(("/monitoring/metrics", make_asgi_app_multiprocess(registry)))
+    if settings.monitoring.enabled:
+        asgi_routes.append(("/monitoring/metrics", make_asgi_app_multiprocess()))
 
     return FastStream(
-        broker_factory(settings, registry),
+        broker_factory(settings),
         lifespan=security_lifespan,
         specification=AsyncAPI(
             title="Data.Rentgen Consumer",
