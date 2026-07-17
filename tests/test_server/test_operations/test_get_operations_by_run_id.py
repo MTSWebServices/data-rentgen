@@ -94,7 +94,7 @@ async def test_get_operations_by_run_id(
                 "data": operation_to_json(operation),
                 "statistics": EMPTY_STATS,
             }
-            for operation in sorted(selected_operations, key=lambda x: (x.created_at, x.id), reverse=True)
+            for operation in sorted(selected_operations, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }
 
@@ -134,7 +134,7 @@ async def test_get_operations_by_run_id_with_since(
                 "data": operation_to_json(operation),
                 "statistics": EMPTY_STATS,
             }
-            for operation in sorted(selected_operations, key=lambda x: (x.created_at, x.id), reverse=True)
+            for operation in sorted(selected_operations, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }
 
@@ -174,6 +174,6 @@ async def test_get_operations_by_run_id_with_until(
                 "data": operation_to_json(operation),
                 "statistics": EMPTY_STATS,
             }
-            for operation in sorted(selected_operations, key=lambda x: (x.created_at, x.id), reverse=True)
+            for operation in sorted(selected_operations, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }

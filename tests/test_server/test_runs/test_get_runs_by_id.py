@@ -130,7 +130,7 @@ async def test_get_runs_by_multiple_ids(
                 "job": job_to_json(run.job),
                 "statistics": EMPTY_STATS,
             }
-            for run in sorted(selected_runs, key=lambda x: (x.created_at, x.id), reverse=True)
+            for run in sorted(selected_runs, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }
 
@@ -217,6 +217,6 @@ async def test_get_runs_by_multiple_ids_with_stats(
                     "operations": operation_stats[run.id],
                 },
             }
-            for run in sorted(runs, key=lambda x: (x.created_at, x.id), reverse=True)
+            for run in sorted(runs, key=lambda x: (x.id, x.created_at), reverse=True)
         ],
     }
