@@ -43,12 +43,13 @@ async def liveness(scope: dict[str, Any]) -> AsgiResponse:
 
 
 def make_asgi_app_multiprocess(registry) -> ASGIApp:
-    asgi_app = make_asgi_app(registry)
     if "prometheus_multiproc_dir" not in os.environ and "PROMETHEUS_MULTIPROC_DIR" not in os.environ:
-        return asgi_app
+        return make_asgi_app(registry)
 
     async def app(scope: Scope, receive: Receive, send: Send):
+        registry = CollectorRegistry()
         MultiProcessCollector(registry)
+        asgi_app = make_asgi_app(registry)
         await asgi_app(scope, receive, send)
 
     return app
