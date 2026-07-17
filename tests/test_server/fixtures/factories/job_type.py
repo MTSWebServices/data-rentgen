@@ -4,7 +4,7 @@ from random import choice, randint
 from typing import TYPE_CHECKING
 
 import pytest_asyncio
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from data_rentgen.db.models import JobType
 from tests.test_server.utils.delete import clean_db
@@ -79,6 +79,8 @@ async def job_types(
     size, params = request.param
 
     async with async_session_maker() as async_session:
+        await async_session.execute(delete(JobType))
+
         items = []
         for _ in range(size):
             item = await create_job_type(async_session, **params)

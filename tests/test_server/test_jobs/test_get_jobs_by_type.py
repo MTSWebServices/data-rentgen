@@ -17,14 +17,13 @@ async def test_get_job_types(
     job_types: list[JobType],
     mocked_user: MockedUser,
 ) -> None:
-    unique_job_type = {item.type for item in job_types}
     response = await test_client.get(
         "/v1/jobs/types",
         headers={"Authorization": f"Bearer {mocked_user.access_token}"},
     )
 
     assert response.status_code == HTTPStatus.OK, response.json()
-    assert response.json() == {"job_types": sorted(unique_job_type)}
+    assert response.json() == {"job_types": sorted({item.type for item in job_types})}
 
 
 async def test_get_jobs_by_job_type(
