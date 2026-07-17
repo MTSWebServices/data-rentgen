@@ -42,7 +42,7 @@ class DatasetSymlinkGroupDTO:
         return compute_symlink_fingerprint(self.members)
 
     @property
-    def unique_key(self) -> UUID:
+    def unique_key(self):
         return self.fingerprint
 
     def merge(self, new: DatasetSymlinkGroupDTO) -> DatasetSymlinkGroupDTO:

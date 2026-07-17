@@ -45,7 +45,7 @@ class OutputDTO:
     num_files: int | None = None
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (
             self.operation.unique_key,
             self.dataset.unique_key,

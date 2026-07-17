@@ -12,8 +12,8 @@ class UserDTO:
     id: int | None = field(default=None, compare=False)
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.name.lower(),)
+    def unique_key(self):
+        return self.name.lower()
 
     def merge(self, new: UserDTO) -> UserDTO:
         self.id = new.id or self.id

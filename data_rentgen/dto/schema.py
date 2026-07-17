@@ -20,8 +20,8 @@ class SchemaDTO:
         self.digest = generate_static_uuid(json.dumps(self.fields, sort_keys=True))
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.digest,)
+    def unique_key(self):
+        return self.digest
 
     def merge(self, new: SchemaDTO) -> SchemaDTO:
         self.id = new.id or self.id

@@ -53,8 +53,8 @@ class RunDTO:
         self.created_at = extract_timestamp_from_uuid(self.id)
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.id,)
+    def unique_key(self):
+        return self.id
 
     def merge(self, new: RunDTO) -> RunDTO:
         if new.job.unique_key == self.job.unique_key:

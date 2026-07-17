@@ -15,8 +15,8 @@ class JobTypeDTO:
     UNKNOWN: ClassVar[JobTypeDTO]
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.type,)
+    def unique_key(self):
+        return self.type
 
     def merge(self, new: JobTypeDTO) -> JobTypeDTO:
         self.id = new.id or self.id

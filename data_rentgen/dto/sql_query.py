@@ -18,8 +18,8 @@ class SQLQueryDTO:
         self.fingerprint = generate_static_uuid(self.query)
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.fingerprint,)
+    def unique_key(self):
+        return self.fingerprint
 
     def merge(self, new: SQLQueryDTO) -> SQLQueryDTO:
         self.id = new.id or self.id

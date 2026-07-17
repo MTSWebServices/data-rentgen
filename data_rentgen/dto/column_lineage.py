@@ -44,7 +44,7 @@ class ColumnLineageDTO:
         return bool(self._dataset_column_relations)
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (self.operation.unique_key, self.source_dataset.unique_key, self.target_dataset.unique_key)
 
     def generate_id(self) -> UUID:

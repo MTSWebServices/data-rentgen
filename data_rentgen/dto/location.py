@@ -13,7 +13,7 @@ class LocationDTO:
     id: int | None = field(default=None, compare=False)
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (self.type, self.name)
 
     def merge(self, new: LocationDTO) -> LocationDTO:

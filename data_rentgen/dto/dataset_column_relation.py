@@ -36,7 +36,7 @@ class DatasetColumnRelationDTO:
     # id is generated using other ids combination
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (
             self.source_column,
             self.target_column or "",

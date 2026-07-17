@@ -20,7 +20,7 @@ class JobDTO:
     id: int | None = field(default=None, compare=False)
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (self.location.unique_key, self.name.lower())
 
     def merge(self, new: JobDTO) -> JobDTO:

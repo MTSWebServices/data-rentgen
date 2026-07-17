@@ -15,7 +15,7 @@ class JobDependencyDTO:
     type: str | None = None
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (self.from_job.unique_key, self.to_job.unique_key, self.type)
 
     def merge(self, new: JobDependencyDTO) -> JobDependencyDTO:

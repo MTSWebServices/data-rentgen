@@ -12,8 +12,8 @@ class TagDTO:
     id: int | None = field(default=None, compare=False)
 
     @property
-    def unique_key(self) -> tuple:
-        return (self.name.lower(),)
+    def unique_key(self):
+        return self.name.lower()
 
     def __hash__(self):
         return hash(self.unique_key)
@@ -30,7 +30,7 @@ class TagValueDTO:
     id: int | None = field(default=None, compare=False)
 
     @property
-    def unique_key(self) -> tuple:
+    def unique_key(self):
         return (self.tag.unique_key, self.value.lower())
 
     def __hash__(self):
