@@ -49,8 +49,8 @@ async def get_operations_lineage(
     lineage_service: Annotated[LineageService, Depends()],
     current_user: Annotated[User, Depends(get_user())],
 ) -> LineageResponseV1:
-    lineage = await lineage_service.get_lineage_by_operations(
-        start_node_ids=[query_args.start_node_id],
+    lineage = await lineage_service.get_lineage_by_operation(
+        operation_id=query_args.start_node_id,
         direction=query_args.direction,
         since=query_args.since,
         until=query_args.until,

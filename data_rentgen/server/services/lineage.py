@@ -3,7 +3,6 @@
 
 import logging
 from collections import defaultdict
-from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Annotated, Literal, NamedTuple
@@ -54,6 +53,27 @@ def _reconstruct_symlink_pairs(symlink_groups: list[DatasetSymlinkGroup]) -> lis
 
 
 @dataclass
+class LineageServiceIntermediateResult:
+    job_ids: set[int] = field(default_factory=set)
+    run_ids: set[UUID] = field(default_factory=set)
+    operation_ids: set[UUID] = field(default_factory=set)
+    dataset_ids: set[int] = field(default_factory=set)
+    symlink_groups: list[DatasetSymlinkGroup] = field(default_factory=list)
+    inputs: list[InputRow] = field(default_factory=list)
+    outputs: list[OutputRow] = field(default_factory=list)
+
+    def merge(self, other: "LineageServiceIntermediateResult") -> "LineageServiceIntermediateResult":
+        self.job_ids |= other.job_ids
+        self.run_ids |= other.run_ids
+        self.operation_ids |= other.operation_ids
+        self.dataset_ids |= other.dataset_ids
+        self.symlink_groups.extend(other.symlink_groups)
+        self.inputs.extend(other.inputs)
+        self.outputs.extend(other.outputs)
+        return self
+
+
+@dataclass
 class LineageServiceResult:
     jobs: dict[int, Job] = field(default_factory=dict)
     runs: dict[UUID, Run] = field(default_factory=dict)
@@ -67,227 +87,98 @@ class LineageServiceResult:
     run_ancestor_relations: set[tuple[UUID, UUID]] = field(default_factory=set)
     job_ancestor_relations: set[tuple[int, int]] = field(default_factory=set)
 
-    def merge(self, other: "LineageServiceResult") -> "LineageServiceResult":
-        self.jobs.update(other.jobs)
-        self.runs.update(other.runs)
-        self.operations.update(other.operations)
-        self.datasets.update(other.datasets)
-        self.dataset_symlinks.update(other.dataset_symlinks)
-        self.inputs.update(other.inputs)
-        self.outputs.update(other.outputs)
-        self.column_lineage.update(other.column_lineage)
-        self.io_dataset_relations.update(other.io_dataset_relations)
-        self.run_ancestor_relations.update(other.run_ancestor_relations)
-        self.job_ancestor_relations.update(other.job_ancestor_relations)
-        return self
-
-
-@dataclass
-class IdsToSkip:
-    jobs: set[int] = field(default_factory=set)
-    runs: set[UUID] = field(default_factory=set)
-    operations: set[UUID] = field(default_factory=set)
-    datasets: set[int] = field(default_factory=set)
-
-    @classmethod
-    def from_result(cls, result: LineageServiceResult) -> "IdsToSkip":
-        return cls(
-            jobs=set(result.jobs.keys()),
-            runs=set(result.runs.keys()),
-            operations=set(result.operations.keys()),
-            datasets=set(result.datasets.keys()),
-        )
-
-    def merge(self, other: "IdsToSkip") -> "IdsToSkip":
-        self.jobs.update(other.jobs)
-        self.runs.update(other.runs)
-        self.operations.update(other.operations)
-        self.datasets.update(other.datasets)
-        return self
-
 
 class LineageService:
     def __init__(self, uow: Annotated[UnitOfWork, Depends()]):
         self._uow = uow
 
-    async def get_lineage_by_jobs(  # noqa: C901, PLR0912, PLR0915
+    async def get_lineage_by_job(
         self,
-        start_node_ids: Collection[int],
+        *,
+        job_id: int,
         direction: LineageDirectionV1,
         granularity: Literal["JOB", "RUN", "OPERATION"],
         since: datetime,
         until: datetime | None,
         depth: int,
-        include_column_lineage: bool = False,  # noqa: FBT001, FBT002
-        ids_to_skip: IdsToSkip | None = None,
-        level: int = 0,
+        include_column_lineage: bool = False,
     ) -> LineageServiceResult:
-        if not start_node_ids:
-            return LineageServiceResult()
-
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(
-                "[Level %d] Get lineage by runs %r, with direction %s, since %s, until %s",
-                level,
-                sorted(start_node_ids),
-                direction,
-                since,
-                until,
-            )
-
-        jobs = await self._uow.job.list_by_ids(start_node_ids)
-        if not jobs:
-            logger.info("[Level %d] No jobs found", level)
-            return LineageServiceResult()
-
-        # Always include all requested jobs.
-        jobs_by_id = {job.id: job for job in jobs}
-        if level == 0:
-            relations = await self._uow.job.list_descendant_relations(start_node_ids)
-            child_jobs_ids = {c_id for _, c_id in relations}
-            child_jobs = await self._uow.job.list_by_ids(child_jobs_ids)
-            jobs.extend(child_jobs)
-            child_jobs_by_id = {job.id: job for job in child_jobs}
-            jobs_by_id |= child_jobs_by_id
-
-        inputs: list[InputRow] = []
-        outputs: list[OutputRow] = []
-        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
-            outputs.extend(
-                await self._uow.output.list_by_job_ids(
-                    jobs_by_id,
-                    since=since,
-                    until=until,
-                    granularity=granularity,
-                ),
-            )
-            if granularity != "JOB":
-                # include sum over all runs
-                outputs.extend(
-                    await self._uow.output.list_by_job_ids(
-                        jobs_by_id,
-                        since=since,
-                        until=until,
-                        granularity="JOB",
-                    ),
-                )
-
         if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
-            inputs.extend(
-                await self._uow.input.list_by_job_ids(
-                    jobs_by_id,
-                    since=since,
-                    until=until,
-                    granularity=granularity,
-                ),
+            upstream = await self._get_lineage_by_jobs_recursive(
+                job_ids={job_id},
+                seen=LineageServiceIntermediateResult(),
+                direction=LineageDirectionV1.UPSTREAM,
+                granularity=granularity,
+                since=since,
+                until=until,
+                depth=depth,
             )
-            if granularity != "JOB":
-                # include sum over all runs
-                inputs.extend(
-                    await self._uow.input.list_by_job_ids(
-                        jobs_by_id,
-                        since=since,
-                        until=until,
-                        granularity="JOB",
-                    ),
-                )
+            seen = upstream
 
-        input_schema_ids = {input_.schema_id for input_ in inputs if input_.schema_id is not None}
-        output_schema_ids = {output.schema_id for output in outputs if output.schema_id is not None}
-        schemas = await self._uow.schema.list_by_ids(input_schema_ids | output_schema_ids)
-        schemas_by_id = {schema.id: schema for schema in schemas}
+        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
+            downstream = await self._get_lineage_by_jobs_recursive(
+                job_ids={job_id},
+                seen=LineageServiceIntermediateResult(),
+                direction=LineageDirectionV1.DOWNSTREAM,
+                granularity=granularity,
+                since=since,
+                until=until,
+                depth=depth,
+            )
+            seen = downstream
 
-        for input_ in inputs:
-            if input_.schema_id is not None:
-                input_.schema = schemas_by_id.get(input_.schema_id)
-        for output in outputs:
-            if output.schema_id is not None:
-                output.schema = schemas_by_id.get(output.schema_id)
+        if direction == LineageDirectionV1.BOTH:
+            seen = upstream.merge(downstream)
 
-        # Include only runs which have at least one input or output.
-        # In case granularity == "JOB", all run_id are None.
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        input_run_ids = {input_.run_id for input_ in inputs if input_.run_id is not None}
-        output_run_ids = {output.run_id for output in outputs if output.run_id is not None}
-        run_ids = input_run_ids | output_run_ids - ids_to_skip.runs
-        runs = await self._uow.run.list_by_ids(run_ids)
-        runs_by_id = {run.id: run for run in runs}
+        operations = await self._uow.operation.list_by_ids(seen.operation_ids)
+
+        seen.run_ids |= {operation.run_id for operation in operations}
+        run_ancestors = await self._uow.run.list_ancestor_relations(seen.run_ids)
+        runs = await self._uow.run.list_by_ids(seen.run_ids | {p_id for p_id, _ in run_ancestors})
+
+        seen.job_ids |= {run.job_id for run in runs}
+        job_ancestors = await self._uow.job.list_ancestor_relations(seen.job_ids)
+        jobs = await self._uow.job.list_by_ids(seen.job_ids | {p_id for p_id, _ in job_ancestors})
+
+        datasets = await self._uow.dataset.list_by_ids(seen.dataset_ids)
+        await self._fill_input_output_schemas(seen)
+
+        if include_column_lineage:
+            column_lineage = await self._uow.column_lineage.list_by_job_ids(
+                job_ids=seen.job_ids,
+                since=since,
+                until=until,
+                source_dataset_ids=[input_.dataset_id for input_ in seen.inputs],
+                target_dataset_ids=[output.dataset_id for output in seen.outputs],
+            )
+        else:
+            column_lineage = []
 
         result = LineageServiceResult(
-            jobs=jobs_by_id,
-            runs=runs_by_id,
+            jobs={job.id: job for job in jobs},
+            runs={run.id: run for run in runs},
+            operations={operation.id: operation for operation in operations},
+            datasets={dataset.id: dataset for dataset in datasets},
+            dataset_symlinks={
+                (pair.from_dataset_id, pair.to_dataset_id): pair
+                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
+            },
             inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in inputs
+                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
             },
             outputs={
                 (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in outputs
+                for output in seen.outputs
             },
+            column_lineage=self._build_column_lineage(column_lineage),
+            run_ancestor_relations=run_ancestors,
+            job_ancestor_relations=job_ancestors,
         )
-        if level == 0:
-            result.job_ancestor_relations.update({tuple(r) for r in relations})
-
-        upstream_dataset_ids = {input_.dataset_id for input_ in inputs} - ids_to_skip.datasets
-        downstream_dataset_ids = {output.dataset_id for output in outputs} - ids_to_skip.datasets
-        ids_to_skip = ids_to_skip.merge(IdsToSkip.from_result(result))
-
-        if depth > 1:
-            # If we passed direction=BOTH, return only relations like `dataset1 -> current_job -> dataset2``,
-            # but do not include relations like `another_job -> dataset2`.
-            # Also datasets and symlinks will be populated by nested calls.
-            result.merge(
-                await self.get_lineage_by_datasets(
-                    start_node_ids=upstream_dataset_ids,
-                    direction=LineageDirectionV1.UPSTREAM,
-                    granularity=granularity,
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-            result.merge(
-                await self.get_lineage_by_datasets(
-                    start_node_ids=downstream_dataset_ids,
-                    direction=LineageDirectionV1.DOWNSTREAM,
-                    granularity=granularity,
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-        else:
-            # datasets and symlinks will be populated by nested call
-            dataset_ids = upstream_dataset_ids | downstream_dataset_ids
-            extra_dataset_ids, dataset_symlinks = await self._resolve_dataset_ids_via_symlink(dataset_ids, ids_to_skip)
-            datasets = await self._uow.dataset.list_by_ids(dataset_ids | extra_dataset_ids)
-
-            result.datasets = {dataset.id: dataset for dataset in datasets}
-            result.dataset_symlinks = {
-                (dataset_symlink.from_dataset_id, dataset_symlink.to_dataset_id): dataset_symlink
-                for dataset_symlink in dataset_symlinks
-            }
-
-        if level == 0:
-            result.merge(await self._populate_parents(result, granularity=granularity))
-            if include_column_lineage:
-                result.column_lineage.update(
-                    await self._get_column_lineage(
-                        current_result=result,
-                        since=since,
-                        until=until,
-                        granularity="JOB",
-                    ),
-                )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Level %d] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
                 "%d inputs, %d outputs, %d column lineage",
-                level,
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
@@ -299,205 +190,211 @@ class LineageService:
             )
         return result
 
-    async def get_lineage_by_runs(  # noqa: C901, PLR0915, PLR0912
+    async def _get_lineage_by_jobs_recursive(  # noqa: C901
         self,
-        start_node_ids: Collection[UUID],
+        job_ids: set[int],
+        seen: LineageServiceIntermediateResult,
         direction: LineageDirectionV1,
-        granularity: Literal["OPERATION", "RUN"],
+        granularity: Literal["JOB", "RUN", "OPERATION"],
         since: datetime,
         until: datetime | None,
         depth: int,
-        include_column_lineage: bool = False,  # noqa: FBT001, FBT002
-        ids_to_skip: IdsToSkip | None = None,
-        level: int = 0,
-    ) -> LineageServiceResult:
-        if not start_node_ids:
-            return LineageServiceResult()
-
+        level: int = 1,
+    ) -> LineageServiceIntermediateResult:
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Level %d] Get lineage by runs %r, with direction %s, since %s, until %s",
+                "[Level %d] Get lineage by jobs %r, with direction %s, since %s, until %s",
                 level,
-                sorted(start_node_ids),
+                sorted(job_ids),
                 direction,
                 since,
                 until,
             )
 
-        runs = await self._uow.run.list_by_ids(start_node_ids)
-        if not runs:
-            logger.info("[Level %d] No runs found", level)
-            return LineageServiceResult()
-
-        # Always include all requested runs.
-        runs_by_id = {run.id: run for run in runs}
-        # Include child runs
-        if level == 0:
-            run_relations = await self._uow.run.list_descendant_relations(start_node_ids)
-            child_runs_ids = {child_run_id for _, child_run_id in run_relations}
-            child_runs = await self._uow.run.list_by_ids(child_runs_ids)
-            runs.extend(child_runs)
-            child_runs_by_id = {run.id: run for run in child_runs}
-            runs_by_id |= child_runs_by_id
+        # include all child jobs
+        child_jobs = await self._uow.job.list_descendant_relations(job_ids)
+        if child_jobs and logger.isEnabledFor(logging.INFO):
+            logger.info("[Level %d] Including %d child jobs", level, len(child_jobs))
+        job_ids |= {c_id for _, c_id in child_jobs}
 
         inputs: list[InputRow] = []
+        if direction == LineageDirectionV1.UPSTREAM:
+            inputs = await self._uow.input.list_by_job_ids(
+                job_ids=job_ids - seen.job_ids,
+                since=since,
+                until=until,
+                granularity=granularity,
+            )
+
+            if granularity == "OPERATION":
+                inputs += await self._uow.input.list_by_job_ids(
+                    job_ids=job_ids - seen.job_ids,
+                    since=since,
+                    until=until,
+                    granularity="RUN",
+                )
+            if granularity in {"RUN", "OPERATION"}:
+                inputs += await self._uow.input.list_by_job_ids(
+                    job_ids=job_ids - seen.job_ids,
+                    since=since,
+                    until=until,
+                    granularity="JOB",
+                )
+
         outputs: list[OutputRow] = []
-        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
-            outputs.extend(
-                await self._uow.output.list_by_run_ids(
-                    runs_by_id,
+        if direction == LineageDirectionV1.DOWNSTREAM:
+            outputs = await self._uow.output.list_by_job_ids(
+                job_ids=job_ids - seen.job_ids,
+                since=since,
+                until=until,
+                granularity=granularity,
+            )
+            if granularity == "OPERATION":
+                outputs += await self._uow.output.list_by_job_ids(
+                    job_ids=job_ids - seen.job_ids,
                     since=since,
                     until=until,
-                    granularity=granularity,
-                ),
-            )
-            if granularity != "RUN":
-                # include sum over all operation
-                outputs.extend(
-                    await self._uow.output.list_by_run_ids(
-                        runs_by_id,
-                        since=since,
-                        until=until,
-                        granularity="RUN",
-                    ),
+                    granularity="RUN",
                 )
-            # include sum over all runs
-            outputs.extend(
-                await self._uow.output.list_by_run_ids(
-                    runs_by_id,
+            if granularity in {"RUN", "OPERATION"}:
+                outputs += await self._uow.output.list_by_job_ids(
+                    job_ids=job_ids - seen.job_ids,
                     since=since,
                     until=until,
                     granularity="JOB",
-                ),
-            )
-
-        if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
-            inputs.extend(
-                await self._uow.input.list_by_run_ids(
-                    runs_by_id,
-                    since=since,
-                    until=until,
-                    granularity=granularity,
-                ),
-            )
-            if granularity != "RUN":
-                # include sum over all operation
-                inputs.extend(
-                    await self._uow.input.list_by_run_ids(
-                        runs_by_id,
-                        since=since,
-                        until=until,
-                        granularity="RUN",
-                    ),
                 )
-            # include sum over all runs
-            inputs.extend(
-                await self._uow.input.list_by_run_ids(
-                    runs_by_id,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                ),
-            )
 
-        input_schema_ids = {input_.schema_id for input_ in inputs if input_.schema_id is not None}
-        output_schema_ids = {output.schema_id for output in outputs if output.schema_id is not None}
-        schemas = await self._uow.schema.list_by_ids(input_schema_ids | output_schema_ids)
-        schemas_by_id = {schema.id: schema for schema in schemas}
+        seen.job_ids |= job_ids
+        seen.run_ids |= {input_.run_id for input_ in inputs if input_.run_id is not None} | {
+            output.run_id for output in outputs if output.run_id is not None
+        }
+        seen.operation_ids |= {input_.operation_id for input_ in inputs if input_.operation_id is not None} | {
+            output.operation_id for output in outputs if output.operation_id is not None
+        }
+        seen.inputs += inputs
+        seen.outputs += outputs
 
-        for input_ in inputs:
-            if input_.schema_id is not None:
-                input_.schema = schemas_by_id.get(input_.schema_id)
-        for output in outputs:
-            if output.schema_id is not None:
-                output.schema = schemas_by_id.get(output.schema_id)
+        dataset_ids = (
+            {input_.dataset_id for input_ in seen.inputs} | {output.dataset_id for output in seen.outputs}
+        ) - seen.dataset_ids
 
-        # Include only operations which have at least one input or output.
-        # In case granularity == "RUN", all operation_id are None.
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        input_operation_ids = {input_.operation_id for input_ in inputs if input_.operation_id is not None}
-        output_operation_ids = {output.operation_id for output in outputs if output.operation_id is not None}
-        operation_ids = input_operation_ids | output_operation_ids - ids_to_skip.operations
-        operations = await self._uow.operation.list_by_ids(operation_ids)
-        operations_by_id = {operation.id: operation for operation in operations}
-
-        job_ids = {run.job_id for run in runs} - ids_to_skip.jobs
-        jobs = await self._uow.job.list_by_ids(job_ids)
-        jobs_by_id = {job.id: job for job in jobs}
-
-        result = LineageServiceResult(
-            jobs=jobs_by_id,
-            runs=runs_by_id,
-            operations=operations_by_id,
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in outputs
-            },
-        )
-        if level == 0:
-            result.run_ancestor_relations.update({tuple(r) for r in run_relations})
-
-            job_relations = await self._uow.job.list_ancestor_relations(job_ids)
-            result.job_ancestor_relations.update({tuple(r) for r in job_relations})
-
-        upstream_dataset_ids = {input_.dataset_id for input_ in inputs} - ids_to_skip.datasets
-        downstream_dataset_ids = {output.dataset_id for output in outputs} - ids_to_skip.datasets
-        ids_to_skip = ids_to_skip.merge(IdsToSkip.from_result(result))
-
-        if depth > 1:
-            # If we passed direction=BOTH, return only relations like `dataset1 -> current_run -> dataset2``,
-            # but do not include relations like `another_run -> dataset2`.
-            # Also datasets and symlinks will be populated by nested calls.
-            result.merge(
-                await self.get_lineage_by_datasets(
-                    start_node_ids=upstream_dataset_ids,
-                    direction=LineageDirectionV1.UPSTREAM,
-                    granularity=granularity,
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-            result.merge(
-                await self.get_lineage_by_datasets(
-                    start_node_ids=downstream_dataset_ids,
-                    direction=LineageDirectionV1.DOWNSTREAM,
-                    granularity=granularity,
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-        else:
-            dataset_ids = upstream_dataset_ids | downstream_dataset_ids
-            extra_dataset_ids, dataset_symlinks = await self._resolve_dataset_ids_via_symlink(dataset_ids, ids_to_skip)
-            datasets = await self._uow.dataset.list_by_ids(dataset_ids | extra_dataset_ids)
-
-            result.datasets = {dataset.id: dataset for dataset in datasets}
-            result.dataset_symlinks = {
-                (dataset_symlink.from_dataset_id, dataset_symlink.to_dataset_id): dataset_symlink
-                for dataset_symlink in dataset_symlinks
-            }
-
-        if level == 0:
-            result.merge(await self._populate_parents(result, granularity=granularity))
-            if include_column_lineage:
-                result.column_lineage.update(
-                    await self._get_column_lineage(current_result=result, since=since, until=until, granularity="RUN"),
-                )
+        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(dataset_ids)
+        dataset_ids |= {symlink.dataset_id for symlink in symlink_groups} - seen.dataset_ids
+        seen.symlink_groups += symlink_groups
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Level %d] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
-                "%d inputs, %d outputs, %d column lineage",
+                "[Level %d] Found %d datasets by %d jobs",
                 level,
+                len(dataset_ids),
+                len(job_ids),
+            )
+
+        if not dataset_ids:
+            return seen
+
+        if depth == 1:
+            seen.dataset_ids |= dataset_ids
+            return seen
+
+        return await self._get_lineage_by_datasets_recursive(
+            dataset_ids=dataset_ids,
+            seen=seen,
+            direction=direction,
+            granularity=granularity,
+            since=since,
+            until=until,
+            depth=depth - 1,
+            level=level + 1,
+        )
+
+    async def get_lineage_by_run(
+        self,
+        *,
+        run_id: UUID,
+        direction: LineageDirectionV1,
+        granularity: Literal["RUN", "OPERATION"],
+        since: datetime,
+        until: datetime | None,
+        depth: int,
+        include_column_lineage: bool = False,
+    ) -> LineageServiceResult:
+        if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
+            upstream = await self._get_lineage_by_runs_recursive(
+                run_ids={run_id},
+                seen=LineageServiceIntermediateResult(),
+                direction=LineageDirectionV1.UPSTREAM,
+                granularity=granularity,
+                since=since,
+                until=until,
+                depth=depth,
+            )
+            seen = upstream
+
+        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
+            downstream = await self._get_lineage_by_runs_recursive(
+                run_ids={run_id},
+                seen=LineageServiceIntermediateResult(),
+                direction=LineageDirectionV1.DOWNSTREAM,
+                granularity=granularity,
+                since=since,
+                until=until,
+                depth=depth,
+            )
+            seen = downstream
+
+        if direction == LineageDirectionV1.BOTH:
+            seen = upstream.merge(downstream)
+
+        operations = await self._uow.operation.list_by_ids(seen.operation_ids)
+
+        seen.run_ids |= {operation.run_id for operation in operations}
+        run_ancestors = await self._uow.run.list_ancestor_relations(seen.run_ids)
+        runs = await self._uow.run.list_by_ids(seen.run_ids | {p_id for p_id, _ in run_ancestors})
+
+        seen.job_ids |= {run.job_id for run in runs}
+        job_ancestors = await self._uow.job.list_ancestor_relations(seen.job_ids)
+        jobs = await self._uow.job.list_by_ids(seen.job_ids | {p_id for p_id, _ in job_ancestors})
+
+        datasets = await self._uow.dataset.list_by_ids(seen.dataset_ids)
+        await self._fill_input_output_schemas(seen)
+
+        if include_column_lineage:
+            column_lineage = await self._uow.column_lineage.list_by_run_ids(
+                run_ids=seen.run_ids,
+                since=since,
+                until=until,
+                source_dataset_ids={input_.dataset_id for input_ in seen.inputs},
+                target_dataset_ids={output.dataset_id for output in seen.outputs},
+            )
+        else:
+            column_lineage = []
+
+        result = LineageServiceResult(
+            jobs={job.id: job for job in jobs},
+            runs={run.id: run for run in runs},
+            operations={operation.id: operation for operation in operations},
+            datasets={dataset.id: dataset for dataset in datasets},
+            dataset_symlinks={
+                (pair.from_dataset_id, pair.to_dataset_id): pair
+                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
+            },
+            inputs={
+                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
+            },
+            outputs={
+                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
+                for output in seen.outputs
+            },
+            column_lineage=self._build_column_lineage(column_lineage),
+            run_ancestor_relations=run_ancestors,
+            job_ancestor_relations=job_ancestors,
+        )
+
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "%d inputs, %d outputs, %d column lineage",
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
@@ -509,161 +406,411 @@ class LineageService:
             )
         return result
 
-    async def get_lineage_by_operations(  # noqa: C901, PLR0912, PLR0915
+    async def _get_lineage_by_runs_recursive(  # noqa: C901
         self,
-        start_node_ids: Collection[UUID],
+        run_ids: set[UUID],
+        seen: LineageServiceIntermediateResult,
+        direction: LineageDirectionV1,
+        granularity: Literal["RUN", "OPERATION"],
+        since: datetime,
+        until: datetime | None,
+        depth: int,
+        level: int = 1,
+    ) -> LineageServiceIntermediateResult:
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "[Level %d] Get lineage by runs %r, with direction %s, since %s, until %s",
+                level,
+                sorted(run_ids),
+                direction,
+                since,
+                until,
+            )
+
+        # include all child runs
+        child_runs = await self._uow.run.list_descendant_relations(run_ids)
+        if child_runs and logger.isEnabledFor(logging.INFO):
+            logger.info("[Level %d] Including %d child runs", level, len(child_runs))
+        run_ids |= {c_id for _, c_id in child_runs}
+
+        inputs: list[InputRow] = []
+        if direction == LineageDirectionV1.UPSTREAM:
+            inputs = await self._uow.input.list_by_run_ids(
+                run_ids=run_ids - seen.run_ids,
+                since=since,
+                until=until,
+                granularity=granularity,
+            )
+
+            if granularity == "OPERATION":
+                inputs += await self._uow.input.list_by_run_ids(
+                    run_ids=run_ids - seen.run_ids,
+                    since=since,
+                    until=until,
+                    granularity="RUN",
+                )
+            if granularity in {"RUN", "OPERATION"}:
+                inputs += await self._uow.input.list_by_run_ids(
+                    run_ids=run_ids - seen.run_ids,
+                    since=since,
+                    until=until,
+                    granularity="JOB",
+                )
+
+        outputs: list[OutputRow] = []
+        if direction == LineageDirectionV1.DOWNSTREAM:
+            outputs = await self._uow.output.list_by_run_ids(
+                run_ids=run_ids - seen.run_ids,
+                since=since,
+                until=until,
+                granularity=granularity,
+            )
+            if granularity == "OPERATION":
+                outputs += await self._uow.output.list_by_run_ids(
+                    run_ids=run_ids - seen.run_ids,
+                    since=since,
+                    until=until,
+                    granularity="RUN",
+                )
+            if granularity in {"RUN", "OPERATION"}:
+                outputs += await self._uow.output.list_by_run_ids(
+                    run_ids=run_ids - seen.run_ids,
+                    since=since,
+                    until=until,
+                    granularity="JOB",
+                )
+
+        dataset_ids = (
+            {input_.dataset_id for input_ in inputs} | {output.dataset_id for output in outputs}
+        ) - seen.dataset_ids
+
+        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(dataset_ids)
+        dataset_ids |= {symlink.dataset_id for symlink in symlink_groups} - seen.dataset_ids
+        seen.symlink_groups += symlink_groups
+
+        seen.run_ids |= run_ids
+        seen.operation_ids |= {input_.operation_id for input_ in inputs if input_.operation_id is not None} | {
+            output.operation_id for output in outputs if output.operation_id is not None
+        }
+        seen.job_ids |= {input_.job_id for input_ in inputs} | {output.job_id for output in outputs}
+        seen.inputs += inputs
+        seen.outputs += outputs
+
+        logger.info(
+            "[Level %d] Found %d datasets by %d runs",
+            level,
+            len(dataset_ids),
+            len(run_ids),
+        )
+
+        if not dataset_ids:
+            return seen
+
+        if depth == 1:
+            seen.dataset_ids |= dataset_ids
+            return seen
+
+        return await self._get_lineage_by_datasets_recursive(
+            dataset_ids=dataset_ids,
+            seen=seen,
+            direction=direction,
+            granularity=granularity,
+            since=since,
+            until=until,
+            depth=depth - 1,
+            level=level + 1,
+        )
+
+    async def get_lineage_by_operation(
+        self,
+        *,
+        operation_id: UUID,
         direction: LineageDirectionV1,
         since: datetime,
         until: datetime | None,
         depth: int,
-        include_column_lineage: bool = False,  # noqa: FBT001, FBT002
-        ids_to_skip: IdsToSkip | None = None,
-        level: int = 0,
+        include_column_lineage: bool = False,
     ) -> LineageServiceResult:
-        if not start_node_ids:
-            return LineageServiceResult()
+        if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
+            upstream = await self._get_lineage_by_operations_recursive(
+                operation_ids={operation_id},
+                seen=LineageServiceIntermediateResult(),
+                direction=LineageDirectionV1.UPSTREAM,
+                since=since,
+                until=until,
+                depth=depth,
+            )
+            seen = upstream
 
+        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
+            downstream = await self._get_lineage_by_operations_recursive(
+                operation_ids={operation_id},
+                seen=LineageServiceIntermediateResult(),
+                direction=LineageDirectionV1.DOWNSTREAM,
+                since=since,
+                until=until,
+                depth=depth,
+            )
+            seen = downstream
+
+        if direction == LineageDirectionV1.BOTH:
+            seen = upstream.merge(downstream)
+
+        operations = await self._uow.operation.list_by_ids(seen.operation_ids)
+
+        seen.run_ids |= {operation.run_id for operation in operations}
+        run_ancestors = await self._uow.run.list_ancestor_relations(seen.run_ids)
+        runs = await self._uow.run.list_by_ids(seen.run_ids | {p_id for p_id, _ in run_ancestors})
+
+        seen.job_ids |= {run.job_id for run in runs}
+        job_ancestors = await self._uow.job.list_ancestor_relations(seen.job_ids)
+        jobs = await self._uow.job.list_by_ids(seen.job_ids | {p_id for p_id, _ in job_ancestors})
+
+        datasets = await self._uow.dataset.list_by_ids(seen.dataset_ids)
+        await self._fill_input_output_schemas(seen)
+
+        if include_column_lineage:
+            column_lineage = await self._uow.column_lineage.list_by_operation_ids(
+                operation_ids=seen.operation_ids,
+                source_dataset_ids={input_.dataset_id for input_ in seen.inputs},
+                target_dataset_ids={output.dataset_id for output in seen.outputs},
+            )
+        else:
+            column_lineage = []
+
+        result = LineageServiceResult(
+            jobs={job.id: job for job in jobs},
+            runs={run.id: run for run in runs},
+            operations={operation.id: operation for operation in operations},
+            datasets={dataset.id: dataset for dataset in datasets},
+            dataset_symlinks={
+                (pair.from_dataset_id, pair.to_dataset_id): pair
+                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
+            },
+            inputs={
+                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
+            },
+            outputs={
+                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
+                for output in seen.outputs
+            },
+            column_lineage=self._build_column_lineage(column_lineage),
+            run_ancestor_relations=run_ancestors,
+            job_ancestor_relations=job_ancestors,
+        )
+
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "%d inputs, %d outputs, %d column lineage",
+                len(result.jobs),
+                len(result.runs),
+                len(result.operations),
+                len(result.datasets),
+                len(result.dataset_symlinks),
+                len(result.inputs),
+                len(result.outputs),
+                len(result.column_lineage),
+            )
+        return result
+
+    async def _get_lineage_by_operations_recursive(
+        self,
+        operation_ids: set[UUID],
+        seen: LineageServiceIntermediateResult,
+        direction: LineageDirectionV1,
+        since: datetime,
+        until: datetime | None,
+        depth: int,
+        level: int = 1,
+    ) -> LineageServiceIntermediateResult:
         if logger.isEnabledFor(logging.INFO):
             logger.info(
                 "[Level %d] Get lineage by operations %r, with direction %s, since %s, until %s",
                 level,
-                sorted(start_node_ids),
+                sorted(operation_ids),
                 direction,
                 since,
                 until,
             )
 
-        operations = await self._uow.operation.list_by_ids(start_node_ids)
-        if not operations:
-            logger.info("[Level %d] No operations found", level)
-            return LineageServiceResult()
-
-        # Always include all requested operations.
-        operations_by_id = {operation.id: operation for operation in operations}
-
-        # Also include all parent runs & jobs.
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        run_ids = {operation.run_id for operation in operations}
-        runs = await self._uow.run.list_by_ids(run_ids - ids_to_skip.runs)
-        runs_by_id = {run.id: run for run in runs}
-
-        job_ids = {run.job_id for run in runs}
-        jobs = await self._uow.job.list_by_ids(job_ids - ids_to_skip.jobs)
-        jobs_by_id = {job.id: job for job in jobs}
-
         inputs: list[InputRow] = []
+        if direction == LineageDirectionV1.UPSTREAM:
+            inputs = await self._uow.input.list_by_operation_ids(
+                operation_ids=operation_ids - seen.run_ids,
+                granularity="OPERATION",
+            )
+            inputs += await self._uow.input.list_by_operation_ids(
+                operation_ids=operation_ids - seen.run_ids,
+                granularity="RUN",
+            )
+            inputs += await self._uow.input.list_by_operation_ids(
+                operation_ids=operation_ids - seen.run_ids,
+                granularity="JOB",
+            )
+
         outputs: list[OutputRow] = []
-        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
-            outputs.extend(
-                await self._uow.output.list_by_operation_ids(operations_by_id, granularity="OPERATION"),
+        if direction == LineageDirectionV1.DOWNSTREAM:
+            outputs = await self._uow.output.list_by_operation_ids(
+                operation_ids=operation_ids - seen.run_ids,
+                granularity="OPERATION",
             )
-            # include sum over all operations
-            outputs.extend(
-                await self._uow.output.list_by_operation_ids(operations_by_id, granularity="RUN"),
+            outputs += await self._uow.output.list_by_operation_ids(
+                operation_ids=operation_ids - seen.run_ids,
+                granularity="RUN",
             )
-            # include sum over all runs
-            outputs.extend(
-                await self._uow.output.list_by_operation_ids(operations_by_id, granularity="JOB"),
+            outputs += await self._uow.output.list_by_operation_ids(
+                operation_ids=operation_ids - seen.run_ids,
+                granularity="JOB",
             )
+
+        dataset_ids = (
+            {input_.dataset_id for input_ in inputs} | {output.dataset_id for output in outputs}
+        ) - seen.dataset_ids
+
+        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(dataset_ids)
+        dataset_ids |= {symlink.dataset_id for symlink in symlink_groups} - seen.dataset_ids
+        seen.symlink_groups += symlink_groups
+
+        seen.operation_ids |= operation_ids
+        seen.run_ids |= {input_.run_id for input_ in inputs if input_.run_id is not None} | {
+            output.run_id for output in outputs if output.run_id is not None
+        }
+        seen.job_ids |= {input_.job_id for input_ in inputs} | {output.job_id for output in outputs}
+        seen.inputs += inputs
+        seen.outputs += outputs
+
+        logger.info(
+            "[Level %d] Found %d datasets by %d operations",
+            level,
+            len(dataset_ids),
+            len(operation_ids),
+        )
+
+        if not dataset_ids:
+            return seen
+
+        if depth == 1:
+            seen.dataset_ids |= dataset_ids
+            return seen
+
+        return await self._get_lineage_by_datasets_recursive(
+            dataset_ids=dataset_ids,
+            seen=seen,
+            direction=direction,
+            granularity="OPERATION",
+            since=since,
+            until=until,
+            depth=depth - 1,
+            level=level + 1,
+        )
+
+    async def get_lineage_by_dataset(
+        self,
+        *,
+        dataset_id: int,
+        direction: LineageDirectionV1,
+        granularity: Literal["JOB", "RUN", "OPERATION"],
+        since: datetime,
+        until: datetime | None,
+        depth: int,
+        include_column_lineage: bool = False,
+    ) -> LineageServiceResult:
+        # include dataset symlinks
+        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups([dataset_id])
+        dataset_ids = {dataset_id} | {symlink.dataset_id for symlink in symlink_groups}
 
         if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
-            inputs.extend(
-                await self._uow.input.list_by_operation_ids(operations_by_id, granularity="OPERATION"),
+            upstream = await self._get_lineage_by_datasets_recursive(
+                dataset_ids=dataset_ids,
+                seen=LineageServiceIntermediateResult(symlink_groups=symlink_groups),
+                direction=LineageDirectionV1.UPSTREAM,
+                granularity=granularity,
+                since=since,
+                until=until,
+                depth=depth,
             )
-            # include sum over all operations
-            inputs.extend(
-                await self._uow.input.list_by_operation_ids(operations_by_id, granularity="RUN"),
-            )
-            # include sum over all runs
-            inputs.extend(
-                await self._uow.input.list_by_operation_ids(operations_by_id, granularity="JOB"),
-            )
+            seen = upstream
 
-        input_schema_ids = {input_.schema_id for input_ in inputs if input_.schema_id is not None}
-        output_schema_ids = {output.schema_id for output in outputs if output.schema_id is not None}
-        schemas = await self._uow.schema.list_by_ids(input_schema_ids | output_schema_ids)
-        schemas_by_id = {schema.id: schema for schema in schemas}
+        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
+            downstream = await self._get_lineage_by_datasets_recursive(
+                dataset_ids=dataset_ids,
+                seen=LineageServiceIntermediateResult(symlink_groups=symlink_groups),
+                direction=LineageDirectionV1.DOWNSTREAM,
+                granularity=granularity,
+                since=since,
+                until=until,
+                depth=depth,
+            )
+            seen = downstream
 
-        for input_ in inputs:
-            if input_.schema_id is not None:
-                input_.schema = schemas_by_id.get(input_.schema_id)
-        for output in outputs:
-            if output.schema_id is not None:
-                output.schema = schemas_by_id.get(output.schema_id)
+        if direction == LineageDirectionV1.BOTH:
+            seen = upstream.merge(downstream)
+
+        operations = await self._uow.operation.list_by_ids(seen.operation_ids)
+
+        seen.run_ids |= {operation.run_id for operation in operations}
+        run_ancestors = await self._uow.run.list_ancestor_relations(seen.run_ids)
+        runs = await self._uow.run.list_by_ids(seen.run_ids | {p_id for p_id, _ in run_ancestors})
+
+        seen.job_ids |= {run.job_id for run in runs}
+        job_ancestors = await self._uow.job.list_ancestor_relations(seen.job_ids)
+        jobs = await self._uow.job.list_by_ids(seen.job_ids | {p_id for p_id, _ in job_ancestors})
+
+        datasets = await self._uow.dataset.list_by_ids(seen.dataset_ids)
+        await self._fill_input_output_schemas(seen)
+
+        if include_column_lineage:
+            if seen.operation_ids:
+                column_lineage = await self._uow.column_lineage.list_by_operation_ids(
+                    operation_ids=seen.operation_ids,
+                    source_dataset_ids={input_.dataset_id for input_ in seen.inputs},
+                    target_dataset_ids={output.dataset_id for output in seen.outputs},
+                )
+            elif seen.run_ids:
+                column_lineage = await self._uow.column_lineage.list_by_run_ids(
+                    run_ids=seen.run_ids,
+                    source_dataset_ids={input_.dataset_id for input_ in seen.inputs},
+                    target_dataset_ids={output.dataset_id for output in seen.outputs},
+                    since=since,
+                    until=until,
+                )
+            else:
+                column_lineage = await self._uow.column_lineage.list_by_job_ids(
+                    job_ids=seen.job_ids,
+                    source_dataset_ids={input_.dataset_id for input_ in seen.inputs},
+                    target_dataset_ids={output.dataset_id for output in seen.outputs},
+                    since=since,
+                    until=until,
+                )
+        else:
+            column_lineage = []
 
         result = LineageServiceResult(
-            jobs=jobs_by_id,
-            runs=runs_by_id,
-            operations=operations_by_id,
+            jobs={job.id: job for job in jobs},
+            runs={run.id: run for run in runs},
+            operations={operation.id: operation for operation in operations},
+            datasets={dataset.id: dataset for dataset in datasets},
+            dataset_symlinks={
+                (pair.from_dataset_id, pair.to_dataset_id): pair
+                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
+            },
             inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in inputs
+                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
             },
             outputs={
                 (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in outputs
+                for output in seen.outputs
             },
+            column_lineage=self._build_column_lineage(column_lineage),
+            run_ancestor_relations=run_ancestors,
+            job_ancestor_relations=job_ancestors,
         )
-
-        upstream_dataset_ids = {input_.dataset_id for input_ in inputs} - ids_to_skip.datasets
-        downstream_dataset_ids = {output.dataset_id for output in outputs} - ids_to_skip.datasets
-        ids_to_skip = ids_to_skip.merge(IdsToSkip.from_result(result))
-
-        if depth > 1:
-            # If we passed direction=BOTH, return only relations like `dataset1 -> current_operation -> dataset2``,
-            # but do not include relations like `another_operation -> dataset2`.
-            # Also datasets and symlinks will be populated by nested calls.
-            result.merge(
-                await self.get_lineage_by_datasets(
-                    start_node_ids=upstream_dataset_ids,
-                    direction=LineageDirectionV1.UPSTREAM,
-                    granularity="OPERATION",
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-            result.merge(
-                await self.get_lineage_by_datasets(
-                    start_node_ids=downstream_dataset_ids,
-                    direction=LineageDirectionV1.DOWNSTREAM,
-                    granularity="OPERATION",
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-        else:
-            dataset_ids = upstream_dataset_ids | downstream_dataset_ids
-            extra_dataset_ids, dataset_symlinks = await self._resolve_dataset_ids_via_symlink(dataset_ids, ids_to_skip)
-            datasets = await self._uow.dataset.list_by_ids(dataset_ids | extra_dataset_ids)
-
-            result.datasets = {dataset.id: dataset for dataset in datasets}
-            result.dataset_symlinks = {
-                (dataset_symlink.from_dataset_id, dataset_symlink.to_dataset_id): dataset_symlink
-                for dataset_symlink in dataset_symlinks
-            }
-
-        if level == 0:
-            result.merge(await self._populate_parents(result, granularity="OPERATION"))
-            if include_column_lineage:
-                result.column_lineage.update(
-                    await self._get_column_lineage(
-                        current_result=result,
-                        since=since,
-                        until=until,
-                        granularity="OPERATION",
-                    ),
-                )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Level %d] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
                 "%d inputs, %d outputs, %d column lineage",
-                level,
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
@@ -675,510 +822,161 @@ class LineageService:
             )
         return result
 
-    async def get_lineage_by_datasets(  # noqa: C901
+    async def _get_lineage_by_datasets_recursive(  # noqa: C901, PLR0912
         self,
-        start_node_ids: Collection[int],
+        dataset_ids: set[int],
+        seen: LineageServiceIntermediateResult,
         direction: LineageDirectionV1,
-        granularity: Literal["JOB", "RUN", "OPERATION", "DATASET"],
+        granularity: Literal["JOB", "RUN", "OPERATION"],
         since: datetime,
         until: datetime | None,
         depth: int,
-        include_column_lineage: bool = False,  # noqa: FBT001, FBT002
-        ids_to_skip: IdsToSkip | None = None,
-        level: int = 0,
-    ) -> LineageServiceResult:
-        if not start_node_ids:
-            return LineageServiceResult()
-
+        level: int = 1,
+    ) -> LineageServiceIntermediateResult:
         if logger.isEnabledFor(logging.INFO):
             logger.info(
                 "[Level %d] Get lineage by datasets %r, with direction %s, since %s, until %s",
                 level,
-                sorted(start_node_ids),
+                sorted(dataset_ids),
                 direction,
                 since,
                 until,
             )
 
-        datasets = await self._uow.dataset.list_by_ids(start_node_ids)
-        if not datasets:
-            logger.info("[Level %d] No datasets found", level)
-            return LineageServiceResult()
-
-        datasets_by_id = {dataset.id: dataset for dataset in datasets}
-
-        # Treat dataset symlinks like they are specified in `start_node_ids`
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        extra_dataset_ids, dataset_symlinks = await self._resolve_dataset_ids_via_symlink(datasets_by_id, ids_to_skip)
-        extra_datasets = await self._uow.dataset.list_by_ids(extra_dataset_ids)
-        datasets.extend(extra_datasets)
-
-        datasets_by_id.update({dataset.id: dataset for dataset in extra_datasets})
-        dataset_symlinks_by_id = {
-            (dataset_symlink.from_dataset_id, dataset_symlink.to_dataset_id): dataset_symlink
-            for dataset_symlink in dataset_symlinks
-        }
-
-        # Get datasets -> (inputs, outputs) -> operations -> runs -> jobs
-        match granularity:
-            case "OPERATION":
-                result = await self._dataset_lineage_with_operation_granularity(
-                    datasets_by_id=datasets_by_id,
-                    dataset_symlinks_by_id=dataset_symlinks_by_id,
-                    direction=direction,
+        outputs: list[OutputRow] = []
+        if direction == LineageDirectionV1.UPSTREAM:
+            # JOB|RUN|OPERATION -> DATASET is UPSTREAM from dataset perspective
+            if granularity == "OPERATION":
+                outputs += await self._uow.output.list_by_dataset_ids(
+                    dataset_ids=dataset_ids - seen.dataset_ids,
                     since=since,
                     until=until,
-                    depth=depth,
-                    level=level,
-                    ids_to_skip=ids_to_skip,
+                    granularity=granularity,
                 )
-            case "RUN":
-                result = await self._dataset_lineage_with_run_granularity(
-                    datasets_by_id=datasets_by_id,
-                    dataset_symlinks_by_id=dataset_symlinks_by_id,
-                    direction=direction,
+            if granularity in {"RUN", "OPERATION"}:
+                outputs += await self._uow.output.list_by_dataset_ids(
+                    dataset_ids=dataset_ids - seen.dataset_ids,
                     since=since,
                     until=until,
-                    depth=depth,
-                    level=level,
-                    ids_to_skip=ids_to_skip,
+                    granularity="RUN",
                 )
-            case "JOB":
-                result = await self._dataset_lineage_with_job_granularity(
-                    datasets_by_id=datasets_by_id,
-                    dataset_symlinks_by_id=dataset_symlinks_by_id,
-                    direction=direction,
-                    since=since,
-                    until=until,
-                    depth=depth,
-                    level=level,
-                    ids_to_skip=ids_to_skip,
-                )
-            case "DATASET":
-                result = await self._dataset_lineage_with_dataset_granularity(
-                    datasets_by_id=datasets_by_id,
-                    dataset_symlinks_by_id=dataset_symlinks_by_id,
-                    direction=direction,
-                    since=since,
-                    until=until,
-                    depth=depth,
-                    include_column_lineage=include_column_lineage,
-                )
-            case _:
-                msg = f"Unknown granularity: {granularity}"
-                raise ValueError(msg)
+            outputs += await self._uow.output.list_by_dataset_ids(
+                dataset_ids=dataset_ids - seen.dataset_ids,
+                since=since,
+                until=until,
+                granularity="JOB",
+            )
 
-        if level == 0:
-            result.merge(await self._populate_parents(result, granularity=granularity))
-            if include_column_lineage:
-                result.column_lineage.update(
-                    await self._get_column_lineage(
-                        current_result=result,
-                        since=since,
-                        until=until,
-                        granularity=granularity,
-                    ),
+        inputs: list[InputRow] = []
+        if direction == LineageDirectionV1.DOWNSTREAM:
+            # DATASET -> JOB|RUN|OPERATION is DOWNSTREAM from dataset perspective
+            if granularity == "OPERATION":
+                inputs += await self._uow.input.list_by_dataset_ids(
+                    dataset_ids=dataset_ids - seen.dataset_ids,
+                    since=since,
+                    until=until,
+                    granularity=granularity,
                 )
+            if granularity in {"RUN", "OPERATION"}:
+                inputs += await self._uow.input.list_by_dataset_ids(
+                    dataset_ids=dataset_ids - seen.dataset_ids,
+                    since=since,
+                    until=until,
+                    granularity="RUN",
+                )
+            inputs += await self._uow.input.list_by_dataset_ids(
+                dataset_ids=dataset_ids - seen.dataset_ids,
+                since=since,
+                until=until,
+                granularity="JOB",
+            )
+
+        seen.dataset_ids |= dataset_ids
+        seen.inputs += inputs
+        seen.outputs += outputs
+
+        job_ids = ({output.job_id for output in outputs} | {input_.job_id for input_ in inputs}) - seen.job_ids
+
+        run_ids = (
+            {output.run_id for output in outputs if output.run_id is not None}
+            | {input_.run_id for input_ in inputs if input_.run_id is not None}
+        ) - seen.run_ids
+
+        operation_ids = (
+            {output.operation_id for output in outputs if output.operation_id is not None}
+            | {input_.operation_id for input_ in inputs if input_.operation_id is not None}
+        ) - seen.operation_ids
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Level %d] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
-                "%d inputs, %d outputs, %d column lineage",
+                "[Level %d] Found %d jobs, %d runs, %d operations",
                 level,
-                len(result.jobs),
-                len(result.runs),
-                len(result.operations),
-                len(result.datasets),
-                len(result.dataset_symlinks),
-                len(result.inputs),
-                len(result.outputs),
-                len(result.column_lineage),
+                len(job_ids),
+                len(run_ids),
+                len(operation_ids),
             )
-        return result
 
-    async def _resolve_dataset_ids_via_symlink(
+        if not operation_ids and not run_ids and not job_ids:
+            return seen
+
+        if depth == 1:
+            seen.job_ids |= job_ids
+            seen.run_ids |= run_ids
+            seen.operation_ids |= operation_ids
+            return seen
+
+        match granularity:
+            case "OPERATION":
+                return await self._get_lineage_by_operations_recursive(
+                    operation_ids=operation_ids,
+                    seen=seen,
+                    direction=direction,
+                    since=since,
+                    until=until,
+                    depth=depth - 1,
+                    level=level + 1,
+                )
+            case "RUN":
+                return await self._get_lineage_by_runs_recursive(
+                    run_ids=run_ids,
+                    seen=seen,
+                    direction=direction,
+                    granularity=granularity,
+                    since=since,
+                    until=until,
+                    depth=depth - 1,
+                    level=level + 1,
+                )
+            case "JOB":
+                return await self._get_lineage_by_jobs_recursive(
+                    job_ids=job_ids,
+                    seen=seen,
+                    direction=direction,
+                    granularity=granularity,
+                    since=since,
+                    until=until,
+                    depth=depth - 1,
+                    level=level + 1,
+                )
+
+    async def get_lineage_by_dataset_with_dataset_granularity(  # noqa: C901, PLR0912, PLR0915
         self,
-        dataset_ids: Collection[int],
-        ids_to_skip: IdsToSkip | None = None,
-    ) -> tuple[set[int], list[SymlinkPair]]:
-        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(dataset_ids)
-
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        symlink_dataset_ids = {row.dataset_id for row in symlink_groups}
-        new_dataset_ids = symlink_dataset_ids - set(dataset_ids) - ids_to_skip.datasets
-        return new_dataset_ids, _reconstruct_symlink_pairs(symlink_groups)
-
-    async def _dataset_lineage_with_operation_granularity(
-        self,
-        datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
+        *,
+        dataset_id: int,
         direction: LineageDirectionV1,
         since: datetime,
         until: datetime | None,
         depth: int,
-        level: int,
-        ids_to_skip: IdsToSkip | None = None,
+        include_column_lineage: bool,
     ) -> LineageServiceResult:
-        inputs: list[InputRow] = []
-        outputs: list[OutputRow] = []
-        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
-            inputs.extend(
-                await self._uow.input.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="OPERATION",
-                ),
-            )
-            # include sum over all operations
-            inputs.extend(
-                await self._uow.input.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                ),
-            )
-            # include sum over all runs
-            inputs.extend(
-                await self._uow.input.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                ),
-            )
-
-        if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
-            outputs.extend(
-                await self._uow.output.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="OPERATION",
-                ),
-            )
-            # include sum over all operations
-            outputs.extend(
-                await self._uow.output.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                ),
-            )
-            # include sum over all runs
-            outputs.extend(
-                await self._uow.output.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                ),
-            )
-
-        input_schema_ids = {input_.schema_id for input_ in inputs if input_.schema_id is not None}
-        output_schema_ids = {output.schema_id for output in outputs if output.schema_id is not None}
-        schemas = await self._uow.schema.list_by_ids(input_schema_ids | output_schema_ids)
-        schemas_by_id = {schema.id: schema for schema in schemas}
-
-        for input_ in inputs:
-            if input_.schema_id is not None:
-                input_.schema = schemas_by_id.get(input_.schema_id)
-        for output in outputs:
-            if output.schema_id is not None:
-                output.schema = schemas_by_id.get(output.schema_id)
-
-        result = LineageServiceResult(
-            datasets=datasets_by_id,
-            dataset_symlinks=dataset_symlinks_by_id,
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in outputs
-            },
-        )
-
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        downstream_operation_ids = {input_.operation_id for input_ in inputs if input_.operation_id is not None}
-        upstream_operation_ids = {output.operation_id for output in outputs if output.operation_id is not None}
-
-        # ignore operations only after they were included
-        ids_to_skip = ids_to_skip.merge(IdsToSkip.from_result(result))
-
-        if depth > 1:
-            # If we passed direction=BOTH, return only relations like `operation1 -> current_dataset -> operation2``,
-            # but do not include relations like `another_dataset -> operation2`.
-            # Also operations, runs and jobs will be populated by nested call.
-            result.merge(
-                await self.get_lineage_by_operations(
-                    start_node_ids=downstream_operation_ids - ids_to_skip.operations,
-                    direction=LineageDirectionV1.DOWNSTREAM,
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-            result.merge(
-                await self.get_lineage_by_operations(
-                    start_node_ids=upstream_operation_ids - ids_to_skip.operations,
-                    direction=LineageDirectionV1.UPSTREAM,
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-        else:
-            operation_ids = downstream_operation_ids | upstream_operation_ids - ids_to_skip.operations
-            operations = await self._uow.operation.list_by_ids(operation_ids)
-            result.operations = {operation.id: operation for operation in operations}
-
-            run_ids = {operation.run_id for operation in operations}
-            runs = await self._uow.run.list_by_ids(run_ids - ids_to_skip.runs)
-            result.runs = {run.id: run for run in runs}
-
-            job_ids = {run.job_id for run in runs}
-            jobs = await self._uow.job.list_by_ids(job_ids - ids_to_skip.jobs)
-            result.jobs = {job.id: job for job in jobs}
-
-        return result
-
-    async def _dataset_lineage_with_run_granularity(
-        self,
-        datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
-        direction: LineageDirectionV1,
-        since: datetime,
-        until: datetime | None,
-        depth: int,
-        level: int,
-        ids_to_skip: IdsToSkip | None = None,
-    ) -> LineageServiceResult:
-        inputs: list[InputRow] = []
-        outputs: list[OutputRow] = []
-        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
-            inputs.extend(
-                await self._uow.input.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                ),
-            )
-            # include sum over all runs
-            inputs.extend(
-                await self._uow.input.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                ),
-            )
-
-        if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
-            outputs.extend(
-                await self._uow.output.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                ),
-            )
-            # include sum over all runs
-            outputs.extend(
-                await self._uow.output.list_by_dataset_ids(
-                    datasets_by_id,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                ),
-            )
-
-        input_schema_ids = {input_.schema_id for input_ in inputs if input_.schema_id is not None}
-        output_schema_ids = {output.schema_id for output in outputs if output.schema_id is not None}
-        schemas = await self._uow.schema.list_by_ids(input_schema_ids | output_schema_ids)
-        schemas_by_id = {schema.id: schema for schema in schemas}
-        for input_ in inputs:
-            if input_.schema_id is not None:
-                input_.schema = schemas_by_id.get(input_.schema_id)
-        for output in outputs:
-            if output.schema_id is not None:
-                output.schema = schemas_by_id.get(output.schema_id)
-
-        result = LineageServiceResult(
-            datasets=datasets_by_id,
-            dataset_symlinks=dataset_symlinks_by_id,
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in outputs
-            },
-        )
-
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        downstream_run_ids = {input_.run_id for input_ in inputs if input_.run_id is not None}
-        upstream_run_ids = {output.run_id for output in outputs if output.run_id is not None}
-        ids_to_skip = ids_to_skip.merge(IdsToSkip.from_result(result))
-
-        if depth > 1:
-            # If we passed direction=BOTH, return only relations like `run1 -> current_dataset -> run2``,
-            # but do not include relations like `another_dataset -> run2`.
-            # Also runs and jobs will be populated by nested call.
-            result.merge(
-                await self.get_lineage_by_runs(
-                    start_node_ids=downstream_run_ids - ids_to_skip.runs,
-                    direction=LineageDirectionV1.DOWNSTREAM,
-                    granularity="RUN",
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-            result.merge(
-                await self.get_lineage_by_runs(
-                    start_node_ids=upstream_run_ids - ids_to_skip.runs,
-                    direction=LineageDirectionV1.UPSTREAM,
-                    granularity="RUN",
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-        else:
-            run_ids = downstream_run_ids | upstream_run_ids - ids_to_skip.runs
-            runs = await self._uow.run.list_by_ids(run_ids)
-            result.runs = {run.id: run for run in runs}
-
-            job_ids = {run.job_id for run in runs}
-            jobs = await self._uow.job.list_by_ids(job_ids - ids_to_skip.jobs)
-            result.jobs = {job.id: job for job in jobs}
-
-        return result
-
-    async def _dataset_lineage_with_job_granularity(
-        self,
-        datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
-        direction: LineageDirectionV1,
-        since: datetime,
-        until: datetime | None,
-        depth: int,
-        level: int,
-        ids_to_skip: IdsToSkip | None = None,
-    ) -> LineageServiceResult:
-        inputs: list[InputRow] = []
-        outputs: list[OutputRow] = []
-        if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
-            inputs = await self._uow.input.list_by_dataset_ids(
-                datasets_by_id,
-                since=since,
-                until=until,
-                granularity="JOB",
-            )
-
-        if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
-            outputs = await self._uow.output.list_by_dataset_ids(
-                datasets_by_id,
-                since=since,
-                until=until,
-                granularity="JOB",
-            )
-
-        input_schema_ids = {input_.schema_id for input_ in inputs if input_.schema_id is not None}
-        output_schema_ids = {output.schema_id for output in outputs if output.schema_id is not None}
-        schemas = await self._uow.schema.list_by_ids(input_schema_ids | output_schema_ids)
-        schemas_by_id = {schema.id: schema for schema in schemas}
-
-        for input_ in inputs:
-            if input_.schema_id is not None:
-                input_.schema = schemas_by_id.get(input_.schema_id)
-        for output in outputs:
-            if output.schema_id is not None:
-                output.schema = schemas_by_id.get(output.schema_id)
-
-        result = LineageServiceResult(
-            datasets=datasets_by_id,
-            dataset_symlinks=dataset_symlinks_by_id,
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in outputs
-            },
-        )
-
-        ids_to_skip = ids_to_skip or IdsToSkip()
-        downstream_job_ids = {input_.job_id for input_ in inputs if input_.job_id is not None}
-        upstream_job_ids = {output.job_id for output in outputs if output.job_id is not None}
-        ids_to_skip = ids_to_skip.merge(IdsToSkip.from_result(result))
-
-        if depth > 1:
-            # If we passed direction=BOTH, return only relations like `job1 -> current_dataset -> job2``,
-            # but do not include relations like `another_dataset -> job2`.
-            # Also jobs will be populated by nested call.
-            result.merge(
-                await self.get_lineage_by_jobs(
-                    start_node_ids=downstream_job_ids - ids_to_skip.jobs,
-                    direction=LineageDirectionV1.DOWNSTREAM,
-                    granularity="JOB",
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-            result.merge(
-                await self.get_lineage_by_jobs(
-                    start_node_ids=upstream_job_ids - ids_to_skip.jobs,
-                    direction=LineageDirectionV1.UPSTREAM,
-                    granularity="JOB",
-                    since=since,
-                    until=until,
-                    depth=depth - 1,
-                    level=level + 1,
-                    ids_to_skip=ids_to_skip,
-                ),
-            )
-        else:
-            job_ids = downstream_job_ids | upstream_job_ids - ids_to_skip.jobs
-            jobs = await self._uow.job.list_by_ids(job_ids)
-            result.jobs = {job.id: job for job in jobs}
-
-        return result
-
-    async def _dataset_lineage_with_dataset_granularity(  # noqa: C901, PLR0915, PLR0912
-        self,
-        datasets_by_id: dict[int, Dataset],
-        dataset_symlinks_by_id: dict[tuple[int, int], SymlinkPair],
-        direction: LineageDirectionV1,
-        since: datetime,
-        until: datetime | None,
-        depth: int,
-        include_column_lineage: bool,  # noqa: FBT001
-    ) -> LineageServiceResult:
-        result = LineageServiceResult(
-            datasets=datasets_by_id,
-            dataset_symlinks=dataset_symlinks_by_id,
-        )
-        all_dataset_ids = set(datasets_by_id.keys())
+        # include symlinks for starting datasets
+        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups([dataset_id])
+        all_dataset_ids = {dataset_id} | {symlink.dataset_id for symlink in symlink_groups}
         next_level_downstream_dataset_ids = all_dataset_ids.copy()
         next_level_upstream_dataset_ids = all_dataset_ids.copy()
 
         level = 0
+        result = LineageServiceResult()
         while depth:
             if not next_level_downstream_dataset_ids and not next_level_upstream_dataset_ids:
                 break
@@ -1193,8 +991,6 @@ class LineageService:
                 )
 
             relations_by_id = {}
-            symlinks_by_id = {}
-
             if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
                 downstream_relations = await self._uow.io_dataset_relation.get_relations(
                     next_level_downstream_dataset_ids,
@@ -1202,24 +998,20 @@ class LineageService:
                     until=until,
                     direction="DOWNSTREAM",
                 )
+                relations_by_id.update(
+                    {(relation.in_dataset_id, relation.out_dataset_id): relation for relation in downstream_relations},
+                )
                 next_level_downstream_dataset_ids = {
                     relation.out_dataset_id for relation in downstream_relations
                 } - all_dataset_ids
 
-                downstream_extra_dataset_ids, downstream_dataset_symlinks = await self._resolve_dataset_ids_via_symlink(
-                    next_level_downstream_dataset_ids,
+                extra_symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(
+                    next_level_downstream_dataset_ids
                 )
-                next_level_downstream_dataset_ids |= downstream_extra_dataset_ids
-
-                relations_by_id.update(
-                    {(relation.in_dataset_id, relation.out_dataset_id): relation for relation in downstream_relations},
-                )
-                symlinks_by_id.update(
-                    {
-                        (dataset_symlink.from_dataset_id, dataset_symlink.to_dataset_id): dataset_symlink
-                        for dataset_symlink in downstream_dataset_symlinks
-                    },
-                )
+                next_level_downstream_dataset_ids |= {
+                    symlink.dataset_id for symlink in extra_symlink_groups
+                } - all_dataset_ids
+                symlink_groups += extra_symlink_groups
 
             if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
                 upstream_relations = await self._uow.io_dataset_relation.get_relations(
@@ -1228,44 +1020,43 @@ class LineageService:
                     until=until,
                     direction="UPSTREAM",
                 )
+                relations_by_id.update(
+                    {(relation.in_dataset_id, relation.out_dataset_id): relation for relation in upstream_relations},
+                )
+
                 next_level_upstream_dataset_ids = {
                     relation.in_dataset_id for relation in upstream_relations
                 } - all_dataset_ids
 
-                upstream_extra_dataset_ids, upstream_dataset_symlinks = await self._resolve_dataset_ids_via_symlink(
-                    next_level_upstream_dataset_ids,
+                extra_symlink_groups = await self._uow.dataset_symlink.get_symlink_groups(
+                    next_level_upstream_dataset_ids
                 )
-                next_level_upstream_dataset_ids |= upstream_extra_dataset_ids
-
-                relations_by_id.update(
-                    {(relation.in_dataset_id, relation.out_dataset_id): relation for relation in upstream_relations},
-                )
-                symlinks_by_id.update(
-                    {
-                        (dataset_symlink.from_dataset_id, dataset_symlink.to_dataset_id): dataset_symlink
-                        for dataset_symlink in upstream_dataset_symlinks
-                    },
-                )
+                next_level_upstream_dataset_ids |= {
+                    symlink.dataset_id for symlink in extra_symlink_groups
+                } - all_dataset_ids
+                symlink_groups += extra_symlink_groups
 
             if logger.isEnabledFor(logging.INFO):
                 logger.info(
-                    "[Level %d] Found %d datasets, %d dataset symlinks, %d IO relations",
+                    "[Level %d] Found %d datasets, %d IO relations",
                     level,
                     len(next_level_upstream_dataset_ids | next_level_downstream_dataset_ids),
                     len(relations_by_id),
-                    len(symlinks_by_id),
                 )
 
             all_dataset_ids |= next_level_upstream_dataset_ids
             all_dataset_ids |= next_level_downstream_dataset_ids
 
             result.io_dataset_relations.update(relations_by_id)
-            result.dataset_symlinks.update(symlinks_by_id)
             depth -= 1
             level += 1
 
         datasets = await self._uow.dataset.list_by_ids(all_dataset_ids)
-        result.datasets.update({dataset.id: dataset for dataset in datasets})
+        result.datasets = {dataset.id: dataset for dataset in datasets}
+
+        result.dataset_symlinks = {
+            (pair.from_dataset_id, pair.to_dataset_id): pair for pair in _reconstruct_symlink_pairs(symlink_groups)
+        }
 
         schema_ids: set[int] = set()
         for relation in result.io_dataset_relations.values():
@@ -1292,99 +1083,39 @@ class LineageService:
             for item in column_lineage_result:
                 column_lineage_relations[(item.source_dataset_id, item.target_dataset_id)].append(item)
             result.column_lineage.update(column_lineage_relations)
+
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                "[Total] Found %d datasets, %d dataset symlinks, %d IO relations, %d column lineage",
+                len(result.datasets),
+                len(result.dataset_symlinks),
+                len(result.io_dataset_relations),
+                len(result.column_lineage),
+            )
         return result
 
-    async def _get_column_lineage(
+    def _build_column_lineage(
         self,
-        current_result: LineageServiceResult,
-        since: datetime,
-        until: datetime | None,
-        granularity: Literal["OPERATION", "RUN", "JOB", "DATASET"],
+        data: list[ColumnLineageRow],
     ) -> dict[tuple[int, int], list[ColumnLineageRow]]:
-        """
-        'granularity' argument of this function not the same as granularity in api request.
-        Here it's used for aggregation entity
-        """
-        result: dict[tuple[int, int], list[ColumnLineageRow]] = defaultdict(list)
-        if not current_result.inputs or not current_result.outputs:
-            return result
-
-        source_dataset_ids = [input_.dataset_id for input_ in current_result.inputs.values()]
-        target_dataset_ids = [output.dataset_id for output in current_result.outputs.values()]
-
-        match granularity:
-            case "OPERATION":
-                column_lineage_result = await self._uow.column_lineage.list_by_operation_ids(
-                    operation_ids=current_result.operations,
-                    # return column lineage only for datasets included into response
-                    source_dataset_ids=source_dataset_ids,
-                    target_dataset_ids=target_dataset_ids,
-                )
-            case "RUN":
-                column_lineage_result = await self._uow.column_lineage.list_by_run_ids(
-                    run_ids=current_result.runs,
-                    since=since,
-                    until=until,
-                    source_dataset_ids=source_dataset_ids,
-                    target_dataset_ids=target_dataset_ids,
-                )
-            case "JOB":
-                column_lineage_result = await self._uow.column_lineage.list_by_job_ids(
-                    job_ids=current_result.jobs,
-                    since=since,
-                    until=until,
-                    source_dataset_ids=source_dataset_ids,
-                    target_dataset_ids=target_dataset_ids,
-                )
-            case "DATASET":
-                # For dataset granularity column lineage added inside `_dataset_lineage_with_dataset_granularity` method
-                return result
-            case _:
-                msg = f"Unknown granularity for column lineage: {granularity}"
-                raise ValueError(msg)
-
-        for relation in column_lineage_result:
+        result = defaultdict(list)
+        for relation in data:
             result[(relation.source_dataset_id, relation.target_dataset_id)].append(
                 relation,
             )
-
         return result
 
-    async def _populate_parents(
-        self,
-        result: LineageServiceResult,
-        granularity: Literal["OPERATION", "RUN", "JOB", "DATASET"],
-    ) -> LineageServiceResult:
-        """Returns a LineageServiceResult with only run_parent_relations or job_parent_relations populated."""
-        match granularity:
-            case "RUN" | "OPERATION":
-                run_relations = await self._uow.run.list_ancestor_relations(result.runs.keys())
-                parents_run_ids = {p_id for p_id, _ in run_relations}
-                runs = await self._uow.run.list_by_ids(parents_run_ids)
-                runs_by_id = {run.id: run for run in runs}
-                job_ids = {run.job_id for run in runs}
-                jobs = await self._uow.job.list_by_ids(job_ids)
-                jobs_by_id = {job.id: job for job in jobs}
-                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys() | job_ids)
-                return LineageServiceResult(
-                    run_ancestor_relations={tuple(r) for r in run_relations},
-                    job_ancestor_relations={tuple(r) for r in job_relations},
-                    runs=runs_by_id,
-                    jobs=jobs_by_id,
-                )
+    async def _fill_input_output_schemas(self, result: LineageServiceIntermediateResult):
+        schema_ids = {input_.schema_id for input_ in result.inputs if input_.schema_id is not None} | {
+            output.schema_id for output in result.outputs if output.schema_id is not None
+        }
 
-            case "JOB":
-                job_relations = await self._uow.job.list_ancestor_relations(result.jobs.keys())
-                parents_job_ids = {p_id for p_id, _ in job_relations}
-                jobs = await self._uow.job.list_by_ids(parents_job_ids)
-                jobs_by_id = {job.id: job for job in jobs}
-                return LineageServiceResult(
-                    job_ancestor_relations={tuple(r) for r in job_relations},
-                    jobs=jobs_by_id,
-                )
+        schemas = await self._uow.schema.list_by_ids(schema_ids)
+        schemas_by_id = {schema.id: schema for schema in schemas}
 
-            case "DATASET":
-                return LineageServiceResult()
-            case _:
-                msg = f"Unknown granularity for parents relations: {granularity}"
-                raise ValueError(msg)
+        for input_ in result.inputs:
+            if input_.schema_id is not None:
+                input_.schema = schemas_by_id.get(input_.schema_id)
+        for output in result.outputs:
+            if output.schema_id is not None:
+                output.schema = schemas_by_id.get(output.schema_id)

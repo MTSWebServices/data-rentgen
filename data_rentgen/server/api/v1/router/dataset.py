@@ -51,8 +51,19 @@ async def get_datasets_lineage(
     lineage_service: Annotated[LineageService, Depends()],
     current_user: Annotated[User, Depends(get_user())],
 ) -> LineageResponseV1:
-    lineage = await lineage_service.get_lineage_by_datasets(
-        start_node_ids=[query_args.start_node_id],  # type: ignore[list-item]
+    if query_args.granularity == "DATASET":
+        lineage = await lineage_service.get_lineage_by_dataset_with_dataset_granularity(
+            dataset_id=query_args.start_node_id,
+            direction=query_args.direction,
+            since=query_args.since,
+            until=query_args.until,
+            depth=query_args.depth,
+            include_column_lineage=query_args.include_column_lineage,
+        )
+        return build_lineage_response_with_dataset_granularity(lineage)
+
+    lineage = await lineage_service.get_lineage_by_dataset(
+        dataset_id=query_args.start_node_id,
         direction=query_args.direction,
         granularity=query_args.granularity,
         since=query_args.since,
@@ -60,7 +71,4 @@ async def get_datasets_lineage(
         depth=query_args.depth,
         include_column_lineage=query_args.include_column_lineage,
     )
-    if query_args.granularity == "DATASET":
-        return build_lineage_response_with_dataset_granularity(lineage)
-
     return build_lineage_response(lineage)

@@ -63,8 +63,8 @@ async def get_jobs_lineage(
     lineage_service: Annotated[LineageService, Depends()],
     current_user: Annotated[User, Depends(get_user())],
 ) -> LineageResponseV1:
-    lineage = await lineage_service.get_lineage_by_jobs(
-        start_node_ids=[query_args.start_node_id],  # type: ignore[list-item]
+    lineage = await lineage_service.get_lineage_by_job(
+        job_id=query_args.start_node_id,
         direction=query_args.direction,
         granularity=query_args.granularity,
         since=query_args.since,
