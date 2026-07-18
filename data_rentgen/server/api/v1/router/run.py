@@ -57,8 +57,8 @@ async def get_runs_lineage(
     lineage_service: Annotated[LineageService, Depends()],
     current_user: Annotated[User, Depends(get_user())],
 ) -> LineageResponseV1:
-    lineage = await lineage_service.get_lineage_by_runs(
-        start_node_ids=[query_args.start_node_id],
+    lineage = await lineage_service.get_lineage_by_run(
+        run_id=query_args.start_node_id,
         direction=query_args.direction,
         granularity=query_args.granularity,
         since=query_args.since,
