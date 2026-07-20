@@ -190,7 +190,7 @@ class LineageService:
             )
         return result
 
-    async def _get_lineage_by_jobs_recursive(  # noqa: C901
+    async def _get_lineage_by_jobs_recursive(
         self,
         job_ids: set[int],
         seen: LineageServiceIntermediateResult,
@@ -226,21 +226,6 @@ class LineageService:
                 granularity=granularity,
             )
 
-            if granularity == "OPERATION":
-                inputs += await self._uow.input.list_by_job_ids(
-                    job_ids=job_ids - seen.job_ids,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                )
-            if granularity in {"RUN", "OPERATION"}:
-                inputs += await self._uow.input.list_by_job_ids(
-                    job_ids=job_ids - seen.job_ids,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                )
-
         outputs: list[OutputRow] = []
         if direction == LineageDirectionV1.DOWNSTREAM:
             outputs = await self._uow.output.list_by_job_ids(
@@ -249,20 +234,6 @@ class LineageService:
                 until=until,
                 granularity=granularity,
             )
-            if granularity == "OPERATION":
-                outputs += await self._uow.output.list_by_job_ids(
-                    job_ids=job_ids - seen.job_ids,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                )
-            if granularity in {"RUN", "OPERATION"}:
-                outputs += await self._uow.output.list_by_job_ids(
-                    job_ids=job_ids - seen.job_ids,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                )
 
         seen.job_ids |= job_ids
         seen.run_ids |= {input_.run_id for input_ in inputs if input_.run_id is not None} | {
@@ -406,7 +377,7 @@ class LineageService:
             )
         return result
 
-    async def _get_lineage_by_runs_recursive(  # noqa: C901
+    async def _get_lineage_by_runs_recursive(
         self,
         run_ids: set[UUID],
         seen: LineageServiceIntermediateResult,
@@ -442,21 +413,6 @@ class LineageService:
                 granularity=granularity,
             )
 
-            if granularity == "OPERATION":
-                inputs += await self._uow.input.list_by_run_ids(
-                    run_ids=run_ids - seen.run_ids,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                )
-            if granularity in {"RUN", "OPERATION"}:
-                inputs += await self._uow.input.list_by_run_ids(
-                    run_ids=run_ids - seen.run_ids,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                )
-
         outputs: list[OutputRow] = []
         if direction == LineageDirectionV1.DOWNSTREAM:
             outputs = await self._uow.output.list_by_run_ids(
@@ -465,20 +421,6 @@ class LineageService:
                 until=until,
                 granularity=granularity,
             )
-            if granularity == "OPERATION":
-                outputs += await self._uow.output.list_by_run_ids(
-                    run_ids=run_ids - seen.run_ids,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                )
-            if granularity in {"RUN", "OPERATION"}:
-                outputs += await self._uow.output.list_by_run_ids(
-                    run_ids=run_ids - seen.run_ids,
-                    since=since,
-                    until=until,
-                    granularity="JOB",
-                )
 
         dataset_ids = (
             {input_.dataset_id for input_ in inputs} | {output.dataset_id for output in outputs}
@@ -640,28 +582,12 @@ class LineageService:
                 operation_ids=operation_ids - seen.run_ids,
                 granularity="OPERATION",
             )
-            inputs += await self._uow.input.list_by_operation_ids(
-                operation_ids=operation_ids - seen.run_ids,
-                granularity="RUN",
-            )
-            inputs += await self._uow.input.list_by_operation_ids(
-                operation_ids=operation_ids - seen.run_ids,
-                granularity="JOB",
-            )
 
         outputs: list[OutputRow] = []
         if direction == LineageDirectionV1.DOWNSTREAM:
             outputs = await self._uow.output.list_by_operation_ids(
                 operation_ids=operation_ids - seen.run_ids,
                 granularity="OPERATION",
-            )
-            outputs += await self._uow.output.list_by_operation_ids(
-                operation_ids=operation_ids - seen.run_ids,
-                granularity="RUN",
-            )
-            outputs += await self._uow.output.list_by_operation_ids(
-                operation_ids=operation_ids - seen.run_ids,
-                granularity="JOB",
             )
 
         dataset_ids = (
@@ -822,7 +748,7 @@ class LineageService:
             )
         return result
 
-    async def _get_lineage_by_datasets_recursive(  # noqa: C901, PLR0912
+    async def _get_lineage_by_datasets_recursive(
         self,
         dataset_ids: set[int],
         seen: LineageServiceIntermediateResult,
@@ -846,49 +772,21 @@ class LineageService:
         outputs: list[OutputRow] = []
         if direction == LineageDirectionV1.UPSTREAM:
             # JOB|RUN|OPERATION -> DATASET is UPSTREAM from dataset perspective
-            if granularity == "OPERATION":
-                outputs += await self._uow.output.list_by_dataset_ids(
-                    dataset_ids=dataset_ids - seen.dataset_ids,
-                    since=since,
-                    until=until,
-                    granularity=granularity,
-                )
-            if granularity in {"RUN", "OPERATION"}:
-                outputs += await self._uow.output.list_by_dataset_ids(
-                    dataset_ids=dataset_ids - seen.dataset_ids,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                )
             outputs += await self._uow.output.list_by_dataset_ids(
                 dataset_ids=dataset_ids - seen.dataset_ids,
                 since=since,
                 until=until,
-                granularity="JOB",
+                granularity=granularity,
             )
 
         inputs: list[InputRow] = []
         if direction == LineageDirectionV1.DOWNSTREAM:
             # DATASET -> JOB|RUN|OPERATION is DOWNSTREAM from dataset perspective
-            if granularity == "OPERATION":
-                inputs += await self._uow.input.list_by_dataset_ids(
-                    dataset_ids=dataset_ids - seen.dataset_ids,
-                    since=since,
-                    until=until,
-                    granularity=granularity,
-                )
-            if granularity in {"RUN", "OPERATION"}:
-                inputs += await self._uow.input.list_by_dataset_ids(
-                    dataset_ids=dataset_ids - seen.dataset_ids,
-                    since=since,
-                    until=until,
-                    granularity="RUN",
-                )
             inputs += await self._uow.input.list_by_dataset_ids(
                 dataset_ids=dataset_ids - seen.dataset_ids,
                 since=since,
                 until=until,
-                granularity="JOB",
+                granularity=granularity,
             )
 
         seen.dataset_ids |= dataset_ids

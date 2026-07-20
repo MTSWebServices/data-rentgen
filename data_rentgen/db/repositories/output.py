@@ -6,9 +6,8 @@ from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Row, Select, any_, func, literal_column, select
+from sqlalchemy import ColumnElement, Row, Select, Subquery, any_, func, literal_column, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import InstrumentedAttribute
 
 from data_rentgen.db.models import Output, OutputType, Schema
 from data_rentgen.db.repositories.base import Repository
@@ -90,7 +89,6 @@ class OutputRepository(Repository[Output]):
             Output.created_at >= extract_timestamp_from_uuid(min(operation_ids)),
             Output.operation_id == any_(list(operation_ids)),  # type: ignore[arg-type]
         ]
-
         return await self._get_outputs(where, granularity)
 
     async def list_by_run_ids(
@@ -154,16 +152,12 @@ class OutputRepository(Repository[Output]):
 
     def _get_base_query(
         self,
-        return_columns: Collection[InstrumentedAttribute],
         where: Collection[ColumnElement],
     ) -> Select:
         # For operation.type=STREAMING or long-running operation.type=BATCH,
         # there can be multiple outputs for same operation+dataset+schema,
         # so we need to get latest output for each operation before applying sum on it
-
-        partition_columns = list(return_columns)
-        if Output.operation_id not in partition_columns:
-            partition_columns.append(Output.operation_id)
+        partition_columns = [Output.dataset_id, Output.job_id, Output.run_id, Output.operation_id]
 
         # Avoid sorting multiple times by different keys for performance reason,
         # instead reuse the same window expression
@@ -176,7 +170,7 @@ class OutputRepository(Repository[Output]):
 
         return (
             select(
-                *return_columns,
+                *partition_columns,
                 window(func.last_value(Output.created_at)).label("created_at"),
                 window(func.last_value(Output.num_bytes)).label("num_bytes"),
                 window(func.last_value(Output.num_rows)).label("num_rows"),
@@ -189,20 +183,12 @@ class OutputRepository(Repository[Output]):
             .where(*where)
         )
 
-    async def _get_outputs(
+    def _query_for_granularity(
         self,
-        where: Collection[ColumnElement],
+        base_query: Subquery,
         granularity: Literal["JOB", "RUN", "OPERATION"],
-    ) -> list[OutputRow]:
+    ):
         if granularity == "OPERATION":
-            return_columns = [
-                # same order as in GROUP BY
-                Output.operation_id,
-                Output.run_id,
-                Output.job_id,
-                Output.dataset_id,
-            ]
-            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 base_query.c.operation_id,
@@ -216,19 +202,12 @@ class OutputRepository(Repository[Output]):
                 func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
                 func.max(base_query.c.newest_schema_id).label("max_schema_id"),
             ).group_by(
-                base_query.c.operation_id,
-                base_query.c.run_id,
-                base_query.c.job_id,
                 base_query.c.dataset_id,
+                base_query.c.job_id,
+                base_query.c.run_id,
+                base_query.c.operation_id,
             )
         elif granularity == "RUN":
-            return_columns = [
-                # same order as in GROUP BY
-                Output.run_id,
-                Output.job_id,
-                Output.dataset_id,
-            ]
-            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 literal_column("NULL").label("operation_id"),
@@ -242,17 +221,11 @@ class OutputRepository(Repository[Output]):
                 func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
                 func.max(base_query.c.newest_schema_id).label("max_schema_id"),
             ).group_by(
-                base_query.c.run_id,
-                base_query.c.job_id,
                 base_query.c.dataset_id,
+                base_query.c.job_id,
+                base_query.c.run_id,
             )
         else:
-            return_columns = [
-                # same order as in GROUP BY
-                Output.job_id,
-                Output.dataset_id,
-            ]
-            base_query = self._get_base_query(return_columns, where).subquery()
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
                 literal_column("NULL").label("operation_id"),
@@ -266,9 +239,28 @@ class OutputRepository(Repository[Output]):
                 func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
                 func.max(base_query.c.newest_schema_id).label("max_schema_id"),
             ).group_by(
-                base_query.c.job_id,
                 base_query.c.dataset_id,
+                base_query.c.job_id,
             )
+        return query
+
+    async def _get_outputs(
+        self,
+        where: Collection[ColumnElement],
+        granularity: Literal["JOB", "RUN", "OPERATION"],
+    ) -> list[OutputRow]:
+        base_query = self._get_base_query(where).subquery()
+        if granularity == "OPERATION":
+            query = self._query_for_granularity(base_query, "OPERATION").union_all(
+                self._query_for_granularity(base_query, "RUN"),
+                self._query_for_granularity(base_query, "JOB"),
+            )
+        elif granularity == "RUN":
+            query = self._query_for_granularity(base_query, "RUN").union_all(
+                self._query_for_granularity(base_query, "JOB")
+            )
+        else:
+            query = self._query_for_granularity(base_query, "JOB")
 
         query_result = await self._session.execute(query)
         results = []
@@ -305,12 +297,7 @@ class OutputRepository(Repository[Output]):
             Output.operation_id == any_(list(operation_ids)),  # type: ignore[arg-type]
         ]
 
-        return_columns = [
-            # same order as in GROUP BY
-            Output.operation_id,
-            Output.dataset_id,
-        ]
-        base_query = self._get_base_query(return_columns, where).subquery()
+        base_query = self._get_base_query(where).subquery()
         query = select(
             base_query.c.operation_id.label("operation_id"),
             func.count(base_query.c.dataset_id.distinct()).label("total_datasets"),
@@ -332,12 +319,7 @@ class OutputRepository(Repository[Output]):
             Output.run_id == any_(list(run_ids)),  # type: ignore[arg-type]
         ]
 
-        return_columns = [
-            # same order as in GROUP BY
-            Output.run_id,
-            Output.dataset_id,
-        ]
-        base_query = self._get_base_query(return_columns, where).subquery()
+        base_query = self._get_base_query(where).subquery()
         query = select(
             base_query.c.run_id.label("run_id"),
             func.count(base_query.c.dataset_id.distinct()).label("total_datasets"),
