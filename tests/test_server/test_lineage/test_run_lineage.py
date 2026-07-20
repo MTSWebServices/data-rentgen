@@ -692,6 +692,62 @@ async def test_get_run_lineage_with_depth_ignore_cycles(
     }
 
 
+@pytest.mark.parametrize("run_index", [0, 1, 2])
+async def test_get_run_lineage_with_depth_includes_self_references(
+    test_client: AsyncClient,
+    async_session: AsyncSession,
+    self_referencing_lineage: LineageResult,
+    mocked_user: MockedUser,
+    run_index: int,
+):
+    # For this lineage:
+    # J1 -> R1 -> O2, D1 -> O2 -> D2
+    # J2 -> R2 -> O2, D2 -> O1 -> D2  # reading duplicates and removing them
+    # J3 -> R3 -> O3, D2 -> O2 -> D3
+    lineage = self_referencing_lineage
+
+    runs = await enrich_runs(lineage.runs, async_session)
+    jobs = await enrich_jobs(lineage.jobs, async_session)
+    datasets = await enrich_datasets(lineage.datasets, async_session)
+    since = min(run.created_at for run in lineage.runs)
+
+    response = await test_client.get(
+        "v1/runs/lineage",
+        headers={"Authorization": f"Bearer {mocked_user.access_token}"},
+        params={
+            "since": since.isoformat(),
+            # We start at any run
+            "start_node_id": str(runs[run_index].id),
+            "depth": 3,
+        },
+    )
+
+    # And return all relations
+    assert response.status_code == HTTPStatus.OK, response.json()
+    assert response.json() == {
+        "relations": {
+            "parents": run_parents_to_json(runs),
+            "symlinks": [],
+            "inputs": [
+                *inputs_to_json(merge_io_by_jobs(lineage.inputs), granularity="JOB"),
+                *inputs_to_json(merge_io_by_runs(lineage.inputs), granularity="RUN"),
+            ],
+            "outputs": [
+                *outputs_to_json(merge_io_by_jobs(lineage.outputs), granularity="JOB"),
+                *outputs_to_json(merge_io_by_runs(lineage.outputs), granularity="RUN"),
+            ],
+            "direct_column_lineage": [],
+            "indirect_column_lineage": [],
+        },
+        "nodes": {
+            "datasets": datasets_to_json(datasets, lineage.outputs, lineage.inputs),
+            "jobs": jobs_to_json(jobs),
+            "runs": runs_to_json(runs),
+            "operations": {},
+        },
+    }
+
+
 async def test_get_run_lineage_with_depth_ignore_unrelated_datasets(
     test_client: AsyncClient,
     async_session: AsyncSession,

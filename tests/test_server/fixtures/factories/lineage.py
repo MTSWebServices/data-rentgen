@@ -448,7 +448,9 @@ async def self_referencing_lineage(
 ):
     """
     Example then table can be its own source:
-    J1 -> R1 -> O1, D1 -> O1 -> D1  # reading duplicates and removing them
+    J1 -> R1 -> O2, D1 -> O2 -> D2
+    J2 -> R2 -> O2, D2 -> O1 -> D2  # reading duplicates and removing them
+    J3 -> R3 -> O3, D2 -> O2 -> D3
     """
 
     created_at = datetime.now(tz=UTC)
@@ -456,64 +458,149 @@ async def self_referencing_lineage(
     async with async_session_maker() as async_session:
         builder = LineageBuilder(async_session)
         dataset_location = await builder.create_location(key="self_ref_dataset_location")
-        dataset = await builder.create_dataset(key="self_ref_dataset", location=dataset_location)
-
-        schema = await builder.create_schema(key="self_ref_schema")
-
         job_type = await builder.create_job_type(key="self_ref_job_type")
-        job = await builder.create_job(
-            key="self_ref_job",
+        schema = await builder.create_schema(key="schema")
+
+        d1 = await builder.create_dataset(key="D1", location=dataset_location)
+        d2 = await builder.create_dataset(key="D2", location=dataset_location)
+        d3 = await builder.create_dataset(key="D3", location=dataset_location)
+
+        j1 = await builder.create_job(
+            key="J1",
             location_key="self_ref_job_location",
             job_type=job_type,
         )
-        run = await builder.create_run(
-            key="self_ref_run",
-            job=job,
+        r1 = await builder.create_run(
+            key="R1",
+            job=j1,
             run_kwargs={
-                "job_id": job.id,
                 "started_by_user_id": user.id,
-                "created_at": created_at + timedelta(seconds=5),
+                "created_at": created_at,
             },
         )
-        operation = await builder.create_operation(
-            key="self_ref_operation",
-            run=run,
+        op1 = await builder.create_operation(
+            key="Op1",
+            run=r1,
             operation_kwargs={
-                "run_id": run.id,
-                "created_at": run.created_at + timedelta(seconds=1),
+                "created_at": r1.created_at + timedelta(seconds=1),
             },
         )
         await builder.create_input(
-            key="self_ref_input",
-            operation=operation,
-            run=run,
-            job=job,
-            dataset=dataset,
+            key="In0",
+            operation=op1,
+            run=r1,
+            job=j1,
+            dataset=d1,
             schema=schema,
             input_kwargs={
-                "created_at": operation.created_at,
-                "operation_id": operation.id,
-                "run_id": run.id,
-                "job_id": job.id,
-                "dataset_id": dataset.id,
+                "created_at": op1.created_at,
+                "schema_id": schema.id,
+            },
+        )
+        await builder.create_output(
+            key="Out0",
+            operation=op1,
+            run=r1,
+            job=j1,
+            dataset=d2,
+            output_type=OutputType.OVERWRITE,
+            schema=schema,
+            output_kwargs={
+                "created_at": op1.created_at,
+                "type": OutputType.OVERWRITE,
                 "schema_id": schema.id,
             },
         )
 
+        j2 = await builder.create_job(
+            key="J2",
+            location_key="self_ref_job_location",
+            job_type=job_type,
+        )
+        r2 = await builder.create_run(
+            key="R2",
+            job=j2,
+            run_kwargs={
+                "started_by_user_id": user.id,
+                "created_at": created_at + timedelta(seconds=5),
+            },
+        )
+        op2 = await builder.create_operation(
+            key="Op2",
+            run=r2,
+            operation_kwargs={
+                "created_at": r2.created_at + timedelta(seconds=1),
+            },
+        )
+        await builder.create_input(
+            key="In2",
+            operation=op2,
+            run=r2,
+            job=j2,
+            dataset=d2,
+            schema=schema,
+            input_kwargs={
+                "created_at": op2.created_at,
+                "schema_id": schema.id,
+            },
+        )
         await builder.create_output(
-            key="self_ref_output",
-            operation=operation,
-            run=run,
-            job=job,
-            dataset=dataset,
+            key="Out2",
+            operation=op2,
+            run=r2,
+            job=j2,
+            dataset=d2,  # self-referencing
             output_type=OutputType.OVERWRITE,
             schema=schema,
             output_kwargs={
-                "created_at": operation.created_at,
-                "operation_id": operation.id,
-                "run_id": run.id,
-                "job_id": job.id,
-                "dataset_id": dataset.id,
+                "created_at": op2.created_at,
+                "type": OutputType.OVERWRITE,
+                "schema_id": schema.id,
+            },
+        )
+
+        j3 = await builder.create_job(
+            key="J3",
+            location_key="self_ref_job_location",
+            job_type=job_type,
+        )
+        r3 = await builder.create_run(
+            key="R3",
+            job=j3,
+            run_kwargs={
+                "started_by_user_id": user.id,
+                "created_at": created_at + timedelta(seconds=15),
+            },
+        )
+        op3 = await builder.create_operation(
+            key="Op3",
+            run=r3,
+            operation_kwargs={
+                "created_at": r3.created_at + timedelta(seconds=1),
+            },
+        )
+        await builder.create_input(
+            key="In3",
+            operation=op3,
+            run=r3,
+            job=j3,
+            dataset=d2,
+            schema=schema,
+            input_kwargs={
+                "created_at": op3.created_at,
+                "schema_id": schema.id,
+            },
+        )
+        await builder.create_output(
+            key="Out1",
+            operation=op3,
+            run=r3,
+            job=j3,
+            dataset=d3,
+            output_type=OutputType.OVERWRITE,
+            schema=schema,
+            output_kwargs={
+                "created_at": op3.created_at,
                 "type": OutputType.OVERWRITE,
                 "schema_id": schema.id,
             },
