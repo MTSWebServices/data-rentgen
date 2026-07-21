@@ -53,6 +53,7 @@ get_list_query = (
     select(Dataset)
     .where(Dataset.id == any_(bindparam("dataset_ids")))
     .order_by(Dataset.id)
+    .limit(bindparam("limit"))
     .options(selectinload(Dataset.location).selectinload(Location.addresses))
     .options(selectinload(Dataset.tag_values).selectinload(TagValue.tag))
 )
@@ -245,7 +246,13 @@ class DatasetRepository(Repository[Dataset]):
     async def list_by_ids(self, dataset_ids: Collection[int]) -> list[Dataset]:
         if not dataset_ids:
             return []
-        result = await self._session.scalars(get_list_query, {"dataset_ids": list(dataset_ids)})
+        result = await self._session.scalars(
+            get_list_query,
+            {
+                "dataset_ids": list(dataset_ids),
+                "limit": len(dataset_ids),
+            },
+        )
         return list(result.all())
 
     async def get_stats_by_location_ids(self, location_ids: Collection[int]) -> dict[int, Row]:

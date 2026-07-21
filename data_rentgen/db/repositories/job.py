@@ -64,6 +64,7 @@ get_list_query = (
     select(Job)
     .where(Job.id == any_(bindparam("job_ids")))
     .order_by(Job.id)
+    .limit(bindparam("limit"))
     .options(selectinload(Job.location).selectinload(Location.addresses))
 )
 
@@ -321,7 +322,7 @@ class JobRepository(Repository[Job]):
         if not job_ids:
             return []
 
-        result = await self._session.scalars(get_list_query, {"job_ids": list(job_ids)})
+        result = await self._session.scalars(get_list_query, {"job_ids": list(job_ids), "limit": len(job_ids)})
         return list(result.all())
 
     async def get_stats_by_location_ids(self, location_ids: Collection[int]) -> dict[int, Row]:
