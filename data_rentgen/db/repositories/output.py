@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Row, Select, Subquery, any_, func, literal_column, select
+from sqlalchemy import UUID as SQL_UUID
+from sqlalchemy import ColumnElement, Row, Select, Subquery, any_, func, literal, select
 from sqlalchemy.dialects.postgresql import insert
 
 from data_rentgen.db.models import Output, OutputType, Schema
@@ -210,7 +211,7 @@ class OutputRepository(Repository[Output]):
         elif granularity == "RUN":
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
-                literal_column("NULL").label("operation_id"),
+                literal(None, type_=SQL_UUID(), literal_execute=True).label("operation_id"),
                 base_query.c.run_id,
                 base_query.c.job_id,
                 base_query.c.dataset_id,
@@ -228,8 +229,8 @@ class OutputRepository(Repository[Output]):
         else:
             query = select(
                 func.max(base_query.c.created_at).label("max_created_at"),
-                literal_column("NULL").label("operation_id"),
-                literal_column("NULL").label("run_id"),
+                literal(None, type_=SQL_UUID(), literal_execute=True).label("operation_id"),
+                literal(None, type_=SQL_UUID(), literal_execute=True).label("run_id"),
                 base_query.c.job_id,
                 base_query.c.dataset_id,
                 func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
