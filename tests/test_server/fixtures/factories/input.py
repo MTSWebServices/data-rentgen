@@ -23,7 +23,7 @@ def input_factory(**kwargs) -> Input:
         "run_id": generate_new_uuid(created_at),
         "job_id": randint(0, 10000000),
         "dataset_id": randint(0, 10000000),
-        "schema_id": randint(0, 10000000),
+        "schema_id": None,
         "num_bytes": randint(0, 10000000),
         "num_rows": randint(0, 10000),
         "num_files": randint(0, 100),

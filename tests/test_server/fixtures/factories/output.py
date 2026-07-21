@@ -24,7 +24,7 @@ def output_factory(**kwargs) -> Output:
         "job_id": randint(0, 10000000),
         "dataset_id": randint(0, 10000000),
         "type": choice(list(OutputType)),
-        "schema_id": randint(0, 10000000),
+        "schema_id": None,
         "num_bytes": randint(0, 10000000),
         "num_rows": randint(0, 10000),
         "num_files": randint(0, 100),
