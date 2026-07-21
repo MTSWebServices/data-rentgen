@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Collection
+from dataclasses import dataclass
 from datetime import datetime
-from typing import NamedTuple
 from uuid import UUID
 
 from sqlalchemy import ARRAY, ColumnElement, Integer, any_, cast, func, select, tuple_
@@ -17,7 +17,8 @@ from data_rentgen.utils.uuid import (
 )
 
 
-class ColumnLineageRow(NamedTuple):
+@dataclass(slots=True)
+class ColumnLineageRow:
     source_dataset_id: int
     target_dataset_id: int
     source_column: str
