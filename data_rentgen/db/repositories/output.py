@@ -251,13 +251,13 @@ class OutputRepository(Repository[Output]):
     ) -> list[OutputRow]:
         base_query = self._get_base_query(where).subquery()
         if granularity == "OPERATION":
-            query = self._query_for_granularity(base_query, "OPERATION").union_all(
+            query = self._query_for_granularity(base_query, "JOB").union_all(
                 self._query_for_granularity(base_query, "RUN"),
-                self._query_for_granularity(base_query, "JOB"),
+                self._query_for_granularity(base_query, "OPERATION"),
             )
         elif granularity == "RUN":
-            query = self._query_for_granularity(base_query, "RUN").union_all(
-                self._query_for_granularity(base_query, "JOB")
+            query = self._query_for_granularity(base_query, "JOB").union_all(
+                self._query_for_granularity(base_query, "RUN")
             )
         else:
             query = self._query_for_granularity(base_query, "JOB")
