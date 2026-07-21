@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data_rentgen.db.models import Input, Output, Schema
 
 
-@dataclass
+@dataclass(slots=True)
 class IODatasetRelationRow:
     created_at: datetime
     in_dataset_id: int

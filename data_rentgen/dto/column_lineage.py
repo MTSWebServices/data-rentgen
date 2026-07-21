@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
 from datetime import datetime
-from functools import cached_property
 from uuid import UUID
 
 from data_rentgen.dto.dataset import DatasetDTO
@@ -24,6 +23,7 @@ class ColumnLineageDTO:
     target_dataset: DatasetDTO
     dataset_column_relations: InitVar[list[DatasetColumnRelationDTO]] = []  # noqa: RUF008
     _dataset_column_relations: dict[tuple, DatasetColumnRelationDTO] = field(default_factory=dict, init=False)
+    _fingerprint: UUID = field(init=False)
 
     def __post_init__(self, dataset_column_relations: list[DatasetColumnRelationDTO]):
         self._dataset_column_relations = {item.unique_key: item for item in dataset_column_relations}
@@ -59,11 +59,13 @@ class ColumnLineageDTO:
         ]
         return generate_incremental_uuid(self.created_at, ".".join(id_components))
 
-    @cached_property
+    @property
     def fingerprint(self) -> UUID:
-        id_components = sorted((*item.unique_key, item.type) for item in self.column_relations)
-        str_components = [".".join(map(str, item)) for item in id_components]
-        return generate_static_uuid(",".join(str_components))
+        if self._fingerprint is None:
+            id_components = sorted((*item.unique_key, item.type) for item in self.column_relations)
+            str_components = [".".join(map(str, item)) for item in id_components]
+            self._fingerprint = generate_static_uuid(",".join(str_components))
+        return self._fingerprint
 
     def merge(self, new: ColumnLineageDTO) -> ColumnLineageDTO:
         self.created_at = min([new.created_at, self.created_at])
