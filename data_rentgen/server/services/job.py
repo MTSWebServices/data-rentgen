@@ -65,7 +65,7 @@ class JobServicePaginatedResult(PaginationDTO[JobServiceResult]):
     pass
 
 
-@dataclass
+@dataclass(slots=True)
 class JobHierarchyResult:
     parents: set[tuple[int, int]] = field(default_factory=set)
     dependencies: set[tuple[int, int, str | None]] = field(default_factory=set)
