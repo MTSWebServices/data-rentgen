@@ -40,10 +40,14 @@ async def create_column_relation(
     async_session.add(column_relation)
     await async_session.commit()
 
-    query = select(DatasetColumnRelation).where(
-        DatasetColumnRelation.fingerprint == column_relation.fingerprint,
-        DatasetColumnRelation.source_column == column_relation.source_column,
-        DatasetColumnRelation.target_column == column_relation.target_column,
+    query = (
+        select(DatasetColumnRelation)
+        .where(
+            DatasetColumnRelation.fingerprint == column_relation.fingerprint,
+            DatasetColumnRelation.source_column == column_relation.source_column,
+            DatasetColumnRelation.target_column == column_relation.target_column,
+        )
+        .limit(1)
     )
     return (await async_session.scalars(query)).one()
 
@@ -77,6 +81,7 @@ async def create_column_lineage(
     query = (
         select(ColumnLineage)
         .where(ColumnLineage.id == column_lineage.id)
+        .limit(1)
         .options(selectinload(ColumnLineage.dataset_column_relations))
     )
     return await async_session.scalar(query)
