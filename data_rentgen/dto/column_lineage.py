@@ -23,10 +23,11 @@ class ColumnLineageDTO:
     target_dataset: DatasetDTO
     dataset_column_relations: InitVar[list[DatasetColumnRelationDTO]] = []  # noqa: RUF008
     _dataset_column_relations: dict[tuple, DatasetColumnRelationDTO] = field(default_factory=dict, init=False)
-    _fingerprint: UUID = field(init=False, compare=False)
+    _fingerprint: UUID | None = field(init=False, compare=False)
 
     def __post_init__(self, dataset_column_relations: list[DatasetColumnRelationDTO]):
         self._dataset_column_relations = {item.unique_key: item for item in dataset_column_relations}
+        self._fingerprint = None
 
     @property
     def column_relations(self) -> list[DatasetColumnRelationDTO]:
