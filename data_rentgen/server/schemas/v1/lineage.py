@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime
 from enum import Enum, IntEnum, IntFlag
 from typing import Literal
@@ -221,7 +222,7 @@ class DirectLineageColumnRelationV1(BaseModel):
     to: LineageEntityV1 = Field(description="Dataset with target columns")
     fields: dict[str, list[LineageSourceColumnV1]] = Field(
         description="Map of target and source columns with type of direct interaction",
-        default_factory=dict,
+        default_factory=lambda: defaultdict(list),  # type: ignore[arg-type]
     )
 
 

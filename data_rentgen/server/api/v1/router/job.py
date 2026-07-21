@@ -106,6 +106,7 @@ async def get_job_hierarchy(
                     from_=JobEntityV1(id=str(from_id)),
                     to=JobEntityV1(id=str(to_id)),
                 )
+                # parents are appended using +=, so sorting fetched from DB is lost
                 for from_id, to_id in sorted(job_hierarchy.parents)
             ],
             dependencies=[
@@ -114,13 +115,11 @@ async def get_job_hierarchy(
                     to=JobEntityV1(id=str(to_id)),
                     type_=type_,
                 )
+                # dependencies are appended using +=, so sorting fetched from DB is lost
                 for from_id, to_id, type_ in sorted(job_hierarchy.dependencies)
             ],
         ),
         nodes={
-            "jobs": {
-                str(job.id): JobResponseV1.model_validate(job.data)
-                for job in sorted(job_hierarchy.jobs, key=lambda item: item.id)
-            }
+            "jobs": {str(job.id): JobResponseV1.model_validate(job.data) for job in job_hierarchy.jobs},
         },
     )

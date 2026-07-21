@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import and_, any_, func, select
+from sqlalchemy import and_, any_, column, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import Input, Output, Schema
@@ -81,6 +81,7 @@ class IODatasetRelationRepository:
                 ),
             )
             .where(*where)
+            .order_by(column("in_dataset_id"), column("out_dataset_id"))
         )
 
         query_result = await self._session.execute(query)

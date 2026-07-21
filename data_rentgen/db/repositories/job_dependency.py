@@ -104,9 +104,17 @@ class JobDependencyRepository(Repository[JobDependency]):
         query: Select
         match direction:
             case "UPSTREAM":
-                query = select(core_subquery).where(core_subquery.c.to_job_id == any_(bindparam("job_ids")))
+                query = (
+                    select(core_subquery)
+                    .where(core_subquery.c.to_job_id == any_(bindparam("job_ids")))
+                    .order_by(core_subquery.c.from_job_id, core_subquery.c.to_job_id)
+                )
             case "DOWNSTREAM":
-                query = select(core_subquery).where(core_subquery.c.from_job_id == any_(bindparam("job_ids")))
+                query = (
+                    select(core_subquery)
+                    .where(core_subquery.c.from_job_id == any_(bindparam("job_ids")))
+                    .order_by(core_subquery.c.from_job_id, core_subquery.c.to_job_id)
+                )
 
         result = await self._session.execute(
             query,
@@ -162,6 +170,6 @@ class JobDependencyRepository(Repository[JobDependency]):
                 .where(*where_clauses, connected.c.original_dataset_id != connected.c.dataset_id_via_symlink)
             )
 
-            query = query.union(direct_connection, via_symlinks)
+            query = query.union(direct_connection, via_symlinks).order_by("from_job_id", "to_job_id", "type")
 
         return query

@@ -36,13 +36,13 @@ insert_statement = insert_statement.on_conflict_do_update(
 @dataclass(slots=True)
 class InputRow:
     created_at: datetime
-    operation_id: UUID
-    run_id: UUID
-    job_id: int
     dataset_id: int
-    num_bytes: int | None
-    num_rows: int | None
-    num_files: int | None
+    job_id: int
+    run_id: UUID | None = None
+    operation_id: UUID | None = None
+    num_bytes: int | None = None
+    num_rows: int | None = None
+    num_files: int | None = None
     schema_id: int | None = None
     schema_relevance_type: Literal["EXACT_MATCH", "LATEST_KNOWN"] | None = None
     schema: Schema | None = None
@@ -187,55 +187,79 @@ class InputRepository(Repository[Input]):
         granularity: Literal["JOB", "RUN", "OPERATION"],
     ):
         if granularity == "OPERATION":
-            query = select(
-                func.max(base_query.c.created_at).label("max_created_at"),
-                base_query.c.operation_id,
-                base_query.c.run_id,
-                base_query.c.job_id,
-                base_query.c.dataset_id,
-                func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
-                func.sum(base_query.c.num_rows).label("sum_num_rows"),
-                func.sum(base_query.c.num_files).label("sum_num_files"),
-                func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
-                func.max(base_query.c.newest_schema_id).label("max_schema_id"),
-            ).group_by(
-                base_query.c.dataset_id,
-                base_query.c.job_id,
-                base_query.c.run_id,
-                base_query.c.operation_id,
+            query = (
+                select(
+                    func.max(base_query.c.created_at).label("max_created_at"),
+                    base_query.c.operation_id,
+                    base_query.c.run_id,
+                    base_query.c.job_id,
+                    base_query.c.dataset_id,
+                    func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
+                    func.sum(base_query.c.num_rows).label("sum_num_rows"),
+                    func.sum(base_query.c.num_files).label("sum_num_files"),
+                    func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
+                    func.max(base_query.c.newest_schema_id).label("max_schema_id"),
+                )
+                .group_by(
+                    base_query.c.dataset_id,
+                    base_query.c.job_id,
+                    base_query.c.run_id,
+                    base_query.c.operation_id,
+                )
+                .order_by(
+                    base_query.c.dataset_id,
+                    base_query.c.job_id,
+                    base_query.c.run_id,
+                    base_query.c.operation_id,
+                )
             )
         elif granularity == "RUN":
-            query = select(
-                func.max(base_query.c.created_at).label("max_created_at"),
-                literal(None, type_=SQL_UUID(), literal_execute=True).label("operation_id"),
-                base_query.c.run_id,
-                base_query.c.job_id,
-                base_query.c.dataset_id,
-                func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
-                func.sum(base_query.c.num_rows).label("sum_num_rows"),
-                func.sum(base_query.c.num_files).label("sum_num_files"),
-                func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
-                func.max(base_query.c.newest_schema_id).label("max_schema_id"),
-            ).group_by(
-                base_query.c.dataset_id,
-                base_query.c.job_id,
-                base_query.c.run_id,
+            query = (
+                select(
+                    func.max(base_query.c.created_at).label("max_created_at"),
+                    literal(None, type_=SQL_UUID(), literal_execute=True).label("operation_id"),
+                    base_query.c.run_id,
+                    base_query.c.job_id,
+                    base_query.c.dataset_id,
+                    func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
+                    func.sum(base_query.c.num_rows).label("sum_num_rows"),
+                    func.sum(base_query.c.num_files).label("sum_num_files"),
+                    func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
+                    func.max(base_query.c.newest_schema_id).label("max_schema_id"),
+                )
+                .group_by(
+                    base_query.c.dataset_id,
+                    base_query.c.job_id,
+                    base_query.c.run_id,
+                )
+                .order_by(
+                    base_query.c.dataset_id,
+                    base_query.c.job_id,
+                    base_query.c.run_id,
+                )
             )
         else:
-            query = select(
-                func.max(base_query.c.created_at).label("max_created_at"),
-                literal(None, type_=SQL_UUID(), literal_execute=True).label("operation_id"),
-                literal(None, type_=SQL_UUID(), literal_execute=True).label("run_id"),
-                base_query.c.job_id,
-                base_query.c.dataset_id,
-                func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
-                func.sum(base_query.c.num_rows).label("sum_num_rows"),
-                func.sum(base_query.c.num_files).label("sum_num_files"),
-                func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
-                func.max(base_query.c.newest_schema_id).label("max_schema_id"),
-            ).group_by(
-                base_query.c.dataset_id,
-                base_query.c.job_id,
+            query = (
+                select(
+                    func.max(base_query.c.created_at).label("max_created_at"),
+                    literal(None, type_=SQL_UUID(), literal_execute=True).label("operation_id"),
+                    literal(None, type_=SQL_UUID(), literal_execute=True).label("run_id"),
+                    base_query.c.job_id,
+                    base_query.c.dataset_id,
+                    func.sum(base_query.c.num_bytes).label("sum_num_bytes"),
+                    func.sum(base_query.c.num_rows).label("sum_num_rows"),
+                    func.sum(base_query.c.num_files).label("sum_num_files"),
+                    func.min(base_query.c.oldest_schema_id).label("min_schema_id"),
+                    func.max(base_query.c.newest_schema_id).label("max_schema_id"),
+                )
+                .group_by(
+                    base_query.c.dataset_id,
+                    base_query.c.job_id,
+                )
+                .order_by(
+                    base_query.c.dataset_id,
+                    base_query.c.job_id,
+                )
             )
         return query
 

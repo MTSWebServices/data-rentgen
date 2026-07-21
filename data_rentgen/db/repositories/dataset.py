@@ -52,6 +52,7 @@ fetch_bulk_query = (
 get_list_query = (
     select(Dataset)
     .where(Dataset.id == any_(bindparam("dataset_ids")))
+    .order_by(Dataset.id)
     .options(selectinload(Dataset.location).selectinload(Location.addresses))
     .options(selectinload(Dataset.tag_values).selectinload(TagValue.tag))
 )

@@ -35,6 +35,7 @@ get_list_by_id_query = (
         Run.id == any_(bindparam("run_ids")),
     )
     .limit(bindparam("limit"))
+    .order_by(Run.id)
     .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
@@ -46,6 +47,7 @@ get_list_by_job_ids_query = (
         Run.created_at >= bindparam("since"),
         Run.job_id == any_(bindparam("job_ids")),
     )
+    .order_by(Run.id)
     .options(selectinload(Run.job).joinedload(Job.location).selectinload(Location.addresses))
     .options(selectinload(Run.started_by_user))
 )
@@ -57,6 +59,7 @@ fetch_bulk_query = (
         Run.created_at <= bindparam("until"),
         Run.id == any_(bindparam("run_ids")),
     )
+    .order_by(Run.id)
     .limit(bindparam("limit"))
 )
 
@@ -418,7 +421,7 @@ class RunRepository(Repository[Run]):
             ],
         )
 
-    async def list_ancestor_relations(self, run_ids: Collection[UUID]):
+    async def list_ancestor_relations(self, run_ids: Collection[UUID]) -> list[tuple[UUID, UUID]]:
         if not run_ids:
             return []
         result = await self._session.execute(
@@ -429,13 +432,13 @@ class RunRepository(Repository[Run]):
                 "run_ids": list(run_ids),
             },
         )
-        return list(result.all())
+        return list(result.all())  # type: ignore[arg-type]
 
-    async def list_descendant_relations(self, run_ids: Collection[UUID]):
+    async def list_descendant_relations(self, run_ids: Collection[UUID]) -> list[tuple[UUID, UUID]]:
         result = await self._session.execute(
             descendants_by_run_query,
             {
                 "run_ids": list(run_ids),
             },
         )
-        return list(result.all())
+        return list(result.all())  # type: ignore[arg-type]

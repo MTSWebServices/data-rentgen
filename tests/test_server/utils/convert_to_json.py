@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from itertools import groupby
+from operator import attrgetter
 from typing import TYPE_CHECKING, Literal
 
 from data_rentgen.db.models import (
@@ -67,8 +68,10 @@ def run_ancestor_to_json(run: Run):
 
 
 def runs_ancestors_to_json(runs: list[Run]):
-    results = [run_ancestor_to_json(run) for run in runs if run.parent_run_id]
-    return sorted(results, key=lambda x: (x["from"]["id"], x["to"]["id"]))
+    return [
+        run_ancestor_to_json(run)
+        for run in sorted([run for run in runs if run.parent_run_id], key=attrgetter("parent_run_id"))
+    ]
 
 
 def job_ancestor_to_json(job: Job):
@@ -79,8 +82,10 @@ def job_ancestor_to_json(job: Job):
 
 
 def jobs_ancestors_to_json(jobs: list[Job]):
-    results = [job_ancestor_to_json(job) for job in jobs if job.parent_job_id]
-    return sorted(results, key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])))
+    return [
+        job_ancestor_to_json(job)
+        for job in sorted([job for job in jobs if job.parent_job_id], key=attrgetter("parent_job_id"))
+    ]
 
 
 def symlink_to_json(symlink: DatasetSymlink):
@@ -93,8 +98,7 @@ def symlink_to_json(symlink: DatasetSymlink):
 
 def symlinks_to_json(symlinks: list[DatasetSymlink]):
     return [
-        symlink_to_json(symlink)
-        for symlink in sorted(symlinks, key=lambda x: (str(x.from_dataset_id), str(x.to_dataset_id)))
+        symlink_to_json(symlink) for symlink in sorted(symlinks, key=lambda x: (x.from_dataset_id, x.to_dataset_id))
     ]
 
 
@@ -131,12 +135,15 @@ def input_to_json(input: InputRow | Input, granularity: Literal["OPERATION", "RU
     }
 
 
-def inputs_to_json(inputs: list[InputRow | Input], granularity: Literal["OPERATION", "RUN", "JOB"]):
-    results = [input_to_json(input_, granularity) for input_ in inputs]
-    return sorted(
-        results,
-        key=lambda x: (x["from"]["id"], x["to"]["id"]),
-    )
+def inputs_to_json(inputs: list[InputRow] | list[Input], granularity: Literal["OPERATION", "RUN", "JOB"]):
+    def sort_key(x: InputRow | Input):
+        if granularity == "OPERATION":
+            return (2, x.dataset_id, x.operation_id)
+        if granularity == "RUN":
+            return (1, x.dataset_id, x.run_id)
+        return (0, x.dataset_id, x.job_id)
+
+    return [input_to_json(input_, granularity) for input_ in sorted(inputs, key=sort_key)]
 
 
 def output_to_json(output: OutputRow | Output, granularity: Literal["OPERATION", "RUN", "JOB"]):
@@ -148,9 +155,11 @@ def output_to_json(output: OutputRow | Output, granularity: Literal["OPERATION",
         from_ = {"kind": "JOB", "id": str(output.job_id)}
 
     if isinstance(output, Output):
-        types = [output.type.name]
+        types = [type_.name for type_ in OutputTypeV1 if type_ & output.type]
     else:
-        types = [type_.name for type_ in OutputTypeV1 if type_ & output.types_combined]
+        types = [
+            type_.name for type_ in OutputTypeV1 if output.types_combined is not None and type_ & output.types_combined
+        ]
     return {
         "from": from_,
         "to": {"kind": "DATASET", "id": str(output.dataset_id)},
@@ -162,12 +171,15 @@ def output_to_json(output: OutputRow | Output, granularity: Literal["OPERATION",
     }
 
 
-def outputs_to_json(outputs: list[OutputRow | Output], granularity: Literal["OPERATION", "RUN", "JOB"]):
-    results = [output_to_json(output, granularity) for output in outputs]
-    return sorted(
-        results,
-        key=lambda x: (x["from"]["id"], x["to"]["id"]),
-    )
+def outputs_to_json(outputs: list[OutputRow] | list[Output], granularity: Literal["OPERATION", "RUN", "JOB"]):
+    def sort_key(x: OutputRow | Output):
+        if granularity == "OPERATION":
+            return (2, x.operation_id, x.dataset_id)
+        if granularity == "RUN":
+            return (1, x.run_id, x.dataset_id)
+        return (0, x.job_id, x.dataset_id)
+
+    return [output_to_json(output, granularity) for output in sorted(outputs, key=sort_key)]
 
 
 def address_to_json(address: Address):
@@ -188,18 +200,18 @@ def locations_to_json(locations: list[Location]):
     return {str(location.id): location_to_json(location) for location in locations}
 
 
-def _get_dataset_schema(dataset: Dataset, outputs: list[OutputRow | Output], inputs: list[InputRow | Input]):
-    outputs = sorted(outputs, key=lambda output: output.schema_id, reverse=True)
-    inputs = sorted(inputs, key=lambda input: input.schema_id, reverse=True)
-    schema = next((output.schema for output in outputs if output.dataset_id == dataset.id), None) or next(
-        (input.schema for input in inputs if input.dataset_id == dataset.id),
-        None,
-    )
+def _get_dataset_schema(
+    dataset: Dataset, outputs: list[OutputRow] | list[Output], inputs: list[InputRow] | list[Input]
+):
+    for output in sorted(outputs, key=lambda x: (x.created_at, x.schema_id or 0), reverse=True):
+        if output.dataset_id == dataset.id and output.schema is not None:
+            return schema_to_json(output.schema, "EXACT_MATCH")
 
-    if not schema:
-        return None
+    for input_ in sorted(inputs, key=lambda x: (x.created_at, x.schema_id or 0), reverse=True):
+        if input_.dataset_id == dataset.id and input_.schema is not None:
+            return schema_to_json(input_.schema, "EXACT_MATCH")
 
-    return schema_to_json(schema, "EXACT_MATCH")
+    return None
 
 
 def tag_to_json(tag: Tag, values: list[TagValue] | None = None) -> dict:
@@ -212,6 +224,7 @@ def tag_to_json(tag: Tag, values: list[TagValue] | None = None) -> dict:
 
 
 def tag_values_to_json(tag_values: Collection[TagValue]) -> list[dict]:
+    # sorting is important for groupby to work
     sorted_tag_values = sorted(tag_values, key=lambda tv: tv.tag.name.lower())
     tags = []
     for tag, group in groupby(sorted_tag_values, key=lambda tv: tv.tag):
@@ -221,12 +234,12 @@ def tag_values_to_json(tag_values: Collection[TagValue]) -> list[dict]:
 
 def dataset_to_json(
     dataset: Dataset,
-    outputs: list[OutputRow | Output] | None = None,
-    inputs: list[InputRow | Input] | None = None,
+    outputs: list[OutputRow] | list[Output] | None = None,
+    inputs: list[InputRow] | list[Input] | None = None,
 ):
     schema = None
     if outputs or inputs:
-        schema = _get_dataset_schema(dataset, outputs, inputs)
+        schema = _get_dataset_schema(dataset, outputs or [], inputs or [])
     return {
         "id": str(dataset.id),
         "name": dataset.name,
@@ -239,8 +252,8 @@ def dataset_to_json(
 
 def datasets_to_json(
     datasets: list[Dataset],
-    outputs: list[OutputRow | Output] | None = None,
-    inputs: list[InputRow | Input] | None = None,
+    outputs: list[OutputRow] | list[Output] | None = None,
+    inputs: list[InputRow] | list[Input] | None = None,
 ):
     if inputs is None:
         inputs = []

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from data_rentgen.db.repositories.input import InputRow
 from data_rentgen.db.repositories.output import OutputRow
@@ -33,35 +33,34 @@ from data_rentgen.server.schemas.v1.lineage import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from uuid import UUID
 
-    from data_rentgen.db.models.dataset import Dataset
-    from data_rentgen.db.models.operation import Operation
-    from data_rentgen.db.models.run import Run
+    from data_rentgen.db.models import Dataset, DatasetSymlinkGroup, Operation, Run, Schema
     from data_rentgen.db.repositories.column_lineage import ColumnLineageRow
     from data_rentgen.db.repositories.io_dataset_relation import IODatasetRelationRow
-    from data_rentgen.server.services.lineage import LineageServiceResult, SymlinkPair
+    from data_rentgen.server.services.lineage import LineageServiceResult
 
 
 def build_lineage_response(lineage: LineageServiceResult) -> LineageResponseV1:
+    jobs = {str(job.id): JobResponseV1.model_validate(job) for job in lineage.jobs}
+    runs = {run.id: RunResponseV1.model_validate(run) for run in lineage.runs}
+    operations = {op.id: OperationResponseV1.model_validate(op) for op in lineage.operations}
     datasets = _get_datasets(lineage.datasets, lineage.outputs, lineage.inputs)
-    jobs = {str(job.id): JobResponseV1.model_validate(job) for job in lineage.jobs.values()}
-    runs = {run.id: RunResponseV1.model_validate(run) for run in lineage.runs.values()}
-    operations = {op.id: OperationResponseV1.model_validate(op) for op in lineage.operations.values()}
 
     return LineageResponseV1(
         nodes=LineageNodesResponseV1(
             jobs=jobs,
             datasets=datasets,
-            runs=runs,  # type: ignore[assignment, arg-type]
-            operations=operations,  # type: ignore[assignment, arg-type]
+            runs=runs,
+            operations=operations,
         ),
         relations=LineageRelationsResponseV1(
             parents=_get_jobs_ancestor_relations(lineage.job_ancestor_relations)
             + _get_run_ancestor_relations(lineage.run_ancestor_relations)
             + _get_run_parent_relations(lineage.runs)
             + _get_operation_parent_relations(lineage.operations),
-            symlinks=_get_symlink_relations(lineage.dataset_symlinks),
+            symlinks=_get_symlink_relations(lineage.symlink_groups),
             inputs=_get_input_relations(lineage.inputs),
             outputs=_get_output_relations(lineage.outputs),
             direct_column_lineage=_get_direct_column_lineage(lineage.column_lineage),
@@ -75,7 +74,7 @@ def build_lineage_response_with_dataset_granularity(lineage: LineageServiceResul
     return LineageResponseV1(
         nodes=LineageNodesResponseV1(datasets=datasets),
         relations=LineageRelationsResponseV1(
-            symlinks=_get_symlink_relations(lineage.dataset_symlinks),
+            symlinks=_get_symlink_relations(lineage.symlink_groups),
             inputs=_get_input_relations_with_dataset_granularity(lineage.io_dataset_relations),
             direct_column_lineage=_get_direct_column_lineage(lineage.column_lineage),
             indirect_column_lineage=_get_indirect_column_lineage(lineage.column_lineage),
@@ -83,54 +82,67 @@ def build_lineage_response_with_dataset_granularity(lineage: LineageServiceResul
     )
 
 
-def _get_run_parent_relations(runs: dict[UUID, Run]) -> list[LineageParentRelationV1]:
-    parents = []
-    for run_id in sorted(runs):
-        run = runs[run_id]
-        relation = LineageParentRelationV1(
+def _get_run_parent_relations(runs: list[Run]) -> list[LineageParentRelationV1]:
+    return [
+        LineageParentRelationV1(
             from_=LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(run.job_id)),
             to=LineageEntityV1(kind=LineageEntityKindV1.RUN, id=run.id),
         )
-        parents.append(relation)
-    return parents
+        for run in runs
+    ]
 
 
-def _get_operation_parent_relations(operations: dict[UUID, Operation]) -> list[LineageParentRelationV1]:
-    parents = []
-    for operation_id in sorted(operations):
-        operation = operations[operation_id]
-        relation = LineageParentRelationV1(
+def _get_operation_parent_relations(operations: list[Operation]) -> list[LineageParentRelationV1]:
+    return [
+        LineageParentRelationV1(
             from_=LineageEntityV1(kind=LineageEntityKindV1.RUN, id=operation.run_id),
             to=LineageEntityV1(kind=LineageEntityKindV1.OPERATION, id=operation.id),
         )
-        parents.append(relation)
-    return parents
+        for operation in operations
+    ]
 
 
-def _get_symlink_relations(dataset_symlinks: dict[Any, SymlinkPair]) -> list[LineageSymlinkRelationV1]:
-    symlinks = []
-    for key in sorted(dataset_symlinks):
-        dataset_symlink = dataset_symlinks[key]
-        relation = LineageSymlinkRelationV1(
-            type=dataset_symlink.type,
-            from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(dataset_symlink.from_dataset_id)),
-            to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(dataset_symlink.to_dataset_id)),
-        )
-        symlinks.append(relation)
-    return sorted(symlinks, key=lambda x: (x.from_.id, x.to.id))
+def _get_symlink_relations(symlink_groups: list[DatasetSymlinkGroup]) -> list[LineageSymlinkRelationV1]:
+    members_by_fingerprint = defaultdict(list)
+    for symlink_group in symlink_groups:
+        members_by_fingerprint[symlink_group.fingerprint].append(symlink_group)
+
+    pairs = {}
+    for members in members_by_fingerprint.values():
+        for from_ in members:
+            for to in members:
+                if from_.dataset_id == to.dataset_id:
+                    continue
+
+                pairs[(from_.dataset_id, to.dataset_id)] = LineageSymlinkRelationV1(
+                    type=to.type,
+                    from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(from_.dataset_id)),
+                    to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(to.dataset_id)),
+                )
+    # symlink_groups are appended using +=, so sorting fetched from DB is lost
+    return [pair for _, pair in sorted(pairs.items(), key=lambda item: item[0])]
 
 
-def _get_input_relations(inputs: dict[Any, InputRow]) -> list[LineageInputRelationV1]:
-    relations = []
-    for input_ in inputs.values():
+def _get_input_relations(inputs: list[InputRow]) -> list[LineageInputRelationV1]:
+    relations = {}
+    for input_ in inputs:
+        # inputs may be merged using +=, so sorting is not preserved.
+        # also this list may contain duplicates
+
         if input_.operation_id is not None:
             to = LineageEntityV1(kind=LineageEntityKindV1.OPERATION, id=input_.operation_id)
+            key = (2, input_.dataset_id, input_.operation_id.int)
         elif input_.run_id is not None:
             to = LineageEntityV1(kind=LineageEntityKindV1.RUN, id=input_.run_id)
+            key = (1, input_.dataset_id, input_.run_id.int)
         elif input_.job_id is not None:
             to = LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(input_.job_id))
+            key = (0, input_.dataset_id, input_.job_id)
 
-        relation = LineageInputRelationV1(
+        if key in relations:
+            continue
+
+        relations[key] = LineageInputRelationV1(
             from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(input_.dataset_id)),
             to=to,
             last_interaction_at=input_.created_at,
@@ -138,22 +150,31 @@ def _get_input_relations(inputs: dict[Any, InputRow]) -> list[LineageInputRelati
             num_rows=input_.num_rows,
             num_files=input_.num_files,
         )
-        relations.append(relation)
 
-    return sorted(relations, key=lambda x: (x.to.kind, str(x.from_.id), str(x.to.id)))
+    # inputs are appended using +=, so sorting fetched from DB is lost
+    return [relation for _, relation in sorted(relations.items(), key=lambda item: item[0])]
 
 
-def _get_output_relations(outputs: dict[Any, OutputRow]) -> list[LineageOutputRelationV1]:
-    relations = []
-    for output in outputs.values():
+def _get_output_relations(outputs: list[OutputRow]) -> list[LineageOutputRelationV1]:
+    relations = {}
+    for output in outputs:
+        # outputs may be merged using +=, so sorting is not preserved.
+        # also this list may contain duplicates
+
         if output.operation_id is not None:
             from_ = LineageEntityV1(kind=LineageEntityKindV1.OPERATION, id=output.operation_id)
+            key = (2, output.operation_id.int, output.dataset_id)
         elif output.run_id is not None:
             from_ = LineageEntityV1(kind=LineageEntityKindV1.RUN, id=output.run_id)
+            key = (1, output.run_id.int, output.dataset_id)
         elif output.job_id is not None:
             from_ = LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(output.job_id))
+            key = (0, output.job_id, output.dataset_id)
 
-        relation = LineageOutputRelationV1(
+        if key in relations:
+            continue
+
+        relations[key] = LineageOutputRelationV1(
             types=[type_ for type_ in OutputTypeV1 if type_ & output.types_combined],  # type: ignore[operator]
             from_=from_,
             to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(output.dataset_id)),
@@ -162,131 +183,145 @@ def _get_output_relations(outputs: dict[Any, OutputRow]) -> list[LineageOutputRe
             num_rows=output.num_rows,
             num_files=output.num_files,
         )
-        relations.append(relation)
 
-    return sorted(relations, key=lambda x: (x.from_.kind, str(x.from_.id), str(x.to.id)))
+    # outputs are appended using +=, so sorting fetched from DB is lost
+    return [relation for _, relation in sorted(relations.items(), key=lambda item: item[0])]
 
 
 def _get_input_relations_with_dataset_granularity(
-    io_dataset_relations: dict[Any, IODatasetRelationRow],
+    io_dataset_relations: list[IODatasetRelationRow],
 ) -> list[LineageInputRelationV1]:
-    relations = []
-    for relation in io_dataset_relations.values():
-        input_ = LineageInputRelationV1(
+    result = {}
+    for relation in io_dataset_relations:
+        key = (relation.in_dataset_id, relation.out_dataset_id)
+        if key in result:
+            continue
+
+        result[key] = LineageInputRelationV1(
             from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(relation.in_dataset_id)),
             to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(relation.out_dataset_id)),
             last_interaction_at=relation.created_at,
         )
-
-        relations.append(input_)
-    return sorted(relations, key=lambda x: (str(x.from_.id), str(x.to.id)))
-
-
-def _get_direct_column_lineage(column_lineage_by_source_target_id: dict[tuple, list[ColumnLineageRow]]):
-    relations = []
-    for (source_dataset_id, target_dataset_id), column_relations in column_lineage_by_source_target_id.items():
-        column_lineage_relation = DirectLineageColumnRelationV1(
-            from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(source_dataset_id)),
-            to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(target_dataset_id)),
-        )
-        fields = defaultdict(list)
-        for column_relation in column_relations:
-            if column_relation.target_column:
-                fields[column_relation.target_column].append(
-                    LineageSourceColumnV1(
-                        field=column_relation.source_column,
-                        last_used_at=column_relation.last_used_at,
-                        types=[
-                            type_
-                            for type_ in ColumnLineageInteractionTypeV1
-                            if type_.value & column_relation.types_combined
-                        ],
-                    ),
-                )
-        if fields:
-            column_lineage_relation.fields = fields  # type: ignore[assignment]
-            relations.append(column_lineage_relation)
-    return sorted(relations, key=lambda x: (str(x.from_.id), str(x.to.id)))
+    # inputs are appended using +=, so sorting fetched from DB is lost
+    return [relation for _, relation in sorted(result.items(), key=lambda item: item[0])]
 
 
-def _get_indirect_column_lineage(column_lineage_by_source_target_id: dict[tuple, list[ColumnLineageRow]]):
-    relations = []
-    for (source_dataset_id, target_dataset_id), column_relations in column_lineage_by_source_target_id.items():
-        column_lineage_relation = IndirectLineageColumnRelationV1(
-            from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(source_dataset_id)),
-            to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(target_dataset_id)),
-        )
-        fields = [
-            LineageSourceColumnV1(
-                field=column_relation.source_column,
-                last_used_at=column_relation.last_used_at,
-                types=[
-                    type_ for type_ in ColumnLineageInteractionTypeV1 if type_.value & column_relation.types_combined
-                ],
+def _get_direct_column_lineage(column_lineage: list[ColumnLineageRow]) -> list[DirectLineageColumnRelationV1]:
+    relations: dict[tuple[int, int], DirectLineageColumnRelationV1] = {}
+    for item in column_lineage:
+        if not item.target_column:
+            # indirect column lineage
+            continue
+
+        key = (item.source_dataset_id, item.target_dataset_id)
+        column_lineage_relation = relations.get(key)
+        if column_lineage_relation is None:
+            column_lineage_relation = relations[key] = DirectLineageColumnRelationV1(
+                from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(item.source_dataset_id)),
+                to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(item.target_dataset_id)),
             )
-            for column_relation in column_relations
-            if column_relation.target_column is None
-        ]
-        if fields:
-            column_lineage_relation.fields = fields
-            relations.append(column_lineage_relation)
-    return sorted(relations, key=lambda x: (str(x.from_.id), str(x.to.id)))
+
+        source_field = LineageSourceColumnV1(
+            field=item.source_column,
+            last_used_at=item.last_used_at,
+            types=[type_ for type_ in ColumnLineageInteractionTypeV1 if type_.value & item.types_combined],
+        )
+
+        column_lineage_relation.fields[item.target_column].append(source_field)
+
+    return list(relations.values())
 
 
-def _get_latest_io_schema(dataset: Dataset, relations: list[OutputRow | InputRow]) -> DatasetSchemaV1 | None:
-    relations = [
-        relation for relation in relations if relation.dataset_id == dataset.id and relation.schema is not None
-    ]
-    if not relations:
+def _get_indirect_column_lineage(
+    column_lineage_by_source_target_id: list[ColumnLineageRow],
+) -> list[IndirectLineageColumnRelationV1]:
+    relations: dict[tuple[int, int], IndirectLineageColumnRelationV1] = {}
+    for item in column_lineage_by_source_target_id:
+        if item.target_column:
+            # direct column lineage
+            continue
+
+        key = (item.source_dataset_id, item.target_dataset_id)
+        column_lineage_relation = relations.get(key)
+        if column_lineage_relation is None:
+            column_lineage_relation = relations[key] = IndirectLineageColumnRelationV1(
+                from_=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(item.source_dataset_id)),
+                to=LineageEntityV1(kind=LineageEntityKindV1.DATASET, id=str(item.target_dataset_id)),
+            )
+
+        source_field = LineageSourceColumnV1(
+            field=item.source_column,
+            last_used_at=item.last_used_at,
+            types=[type_ for type_ in ColumnLineageInteractionTypeV1 if type_.value & item.types_combined],
+        )
+        column_lineage_relation.fields.append(source_field)
+
+    return list(relations.values())
+
+
+def _get_latest_io_schema(relations: Sequence[OutputRow | InputRow]) -> DatasetSchemaV1 | None:
+    oldest_schema: Schema | None = None
+    newest_schema: Schema | None = None
+    for relation in sorted(relations, key=lambda relation: (relation.created_at, relation.schema_id or 0)):
+        if relation.schema is None:
+            continue
+        if oldest_schema is None:
+            oldest_schema = relation.schema
+        newest_schema = relation.schema
+
+    if oldest_schema is None or newest_schema is None:
         return None
-    relations = sorted(relations, key=lambda relation: (relation.created_at, relation.schema_id or 0))
-    oldest_relation, newest_relation = relations[0], relations[-1]
 
-    dataset_schema = DatasetSchemaV1.model_validate(newest_relation.schema)
-    if oldest_relation.schema_id == newest_relation.schema_id:
-        dataset_schema.relevance_type = "EXACT_MATCH"
+    result = DatasetSchemaV1.model_validate(newest_schema)
+    if oldest_schema.id == newest_schema.id:
+        result.relevance_type = "EXACT_MATCH"
     else:
-        dataset_schema.relevance_type = "LATEST_KNOWN"
-
-    return dataset_schema
+        result.relevance_type = "LATEST_KNOWN"
+    return result
 
 
 def _get_datasets(
-    raw_datasets: dict[int, Dataset],
-    outputs: dict[Any, OutputRow],
-    inputs: dict[Any, InputRow],
+    raw_datasets: list[Dataset],
+    outputs: list[OutputRow],
+    inputs: list[InputRow],
 ) -> dict[str, DatasetResponseV1]:
-    datasets: dict[str, DatasetResponseV1] = defaultdict()
-    for dataset in raw_datasets.values():
-        schema: DatasetSchemaV1 | None = None
-        schema = _get_latest_io_schema(dataset, list(outputs.values())) or _get_latest_io_schema(
-            dataset,
-            list(inputs.values()),
-        )
-        datasets[str(dataset.id)] = DatasetResponseV1(
+    outputs_dict = defaultdict(list)
+    for output in outputs:
+        outputs_dict[output.dataset_id].append(output)
+
+    inputs_dict = defaultdict(list)
+    for input_ in inputs:
+        inputs_dict[input_.dataset_id].append(input_)
+
+    return {
+        str(dataset.id): DatasetResponseV1(
             id=str(dataset.id),
             location=LocationResponseV1.model_validate(dataset.location),
             name=dataset.name,
             external_id=dataset.external_id,
             external_url=dataset.external_url,
-            schema=schema,
+            schema=(
+                _get_latest_io_schema(outputs_dict.get(dataset.id, []))
+                or _get_latest_io_schema(inputs_dict.get(dataset.id, []))
+            ),
         )
-    return datasets
+        for dataset in raw_datasets
+    }
 
 
 def _get_io_by_dataset(
-    io_relations: dict[tuple[int, int], IODatasetRelationRow],
+    io_relations: list[IODatasetRelationRow],
 ) -> tuple[dict[int, list], dict[int, list]]:
     # Group inputs and outputs by dataset
     outputs, inputs = defaultdict(list), defaultdict(list)
-    for (input_dataset_id, output_dataset_id), relation in io_relations.items():
-        outputs[output_dataset_id].append(
+    for relation in io_relations:
+        outputs[relation.out_dataset_id].append(
             OutputRow(
                 created_at=relation.created_at,
-                operation_id=None,  # type: ignore[arg-type]
-                run_id=None,  # type: ignore[arg-type]
-                job_id=None,  # type: ignore[arg-type]
-                dataset_id=output_dataset_id,
+                operation_id=None,
+                run_id=None,
+                job_id=0,
+                dataset_id=relation.out_dataset_id,
                 schema_id=relation.output_schema_id,
                 schema=relation.output_schema,
                 schema_relevance_type=relation.output_schema_relevance_type,
@@ -295,13 +330,13 @@ def _get_io_by_dataset(
                 num_files=None,
             ),
         )
-        inputs[input_dataset_id].append(
+        inputs[relation.in_dataset_id].append(
             InputRow(
                 created_at=relation.created_at,
-                operation_id=None,  # type: ignore[arg-type]
-                run_id=None,  # type: ignore[arg-type]
-                job_id=None,  # type: ignore[arg-type]
-                dataset_id=input_dataset_id,
+                operation_id=None,
+                run_id=None,
+                job_id=0,
+                dataset_id=relation.in_dataset_id,
                 schema_id=relation.input_schema_id,
                 schema=relation.input_schema,
                 schema_relevance_type=relation.input_schema_relevance_type,
@@ -314,47 +349,41 @@ def _get_io_by_dataset(
 
 
 def _get_datasets_with_dataset_granularity(
-    raw_datasets: dict[int, Dataset],
-    io_relations: dict[tuple[int, int], IODatasetRelationRow],
+    raw_datasets: list[Dataset],
+    io_relations: list[IODatasetRelationRow],
 ) -> dict[str, DatasetResponseV1]:
-    datasets: dict[str, DatasetResponseV1] = defaultdict()
-
-    outputs_by_dataset_id, inputs_by_dataset_id = _get_io_by_dataset(io_relations)
-
-    for dataset in raw_datasets.values():
-        schema: DatasetSchemaV1 | None = None
-        schema = _get_latest_io_schema(dataset, outputs_by_dataset_id[dataset.id]) or _get_latest_io_schema(
-            dataset,
-            inputs_by_dataset_id[dataset.id],
-        )
-        datasets[str(dataset.id)] = DatasetResponseV1(
+    outputs_dict, inputs_dict = _get_io_by_dataset(io_relations)
+    return {
+        str(dataset.id): DatasetResponseV1(
             id=str(dataset.id),
             location=LocationResponseV1.model_validate(dataset.location),
             name=dataset.name,
             external_id=dataset.external_id,
             external_url=dataset.external_url,
-            schema=schema,
+            schema=(
+                _get_latest_io_schema(outputs_dict.get(dataset.id, []))
+                or _get_latest_io_schema(inputs_dict.get(dataset.id, []))
+            ),
         )
-    return datasets
+        for dataset in raw_datasets
+    }
 
 
-def _get_run_ancestor_relations(runs_relations: set[tuple[UUID, UUID]]) -> list[LineageParentRelationV1]:
-    parents = []
-    for parent_run_id, run_id in runs_relations:
-        relation = LineageParentRelationV1(
+def _get_run_ancestor_relations(runs_relations: list[tuple[UUID, UUID]]) -> list[LineageParentRelationV1]:
+    return [
+        LineageParentRelationV1(
             from_=LineageEntityV1(kind=LineageEntityKindV1.RUN, id=parent_run_id),
             to=LineageEntityV1(kind=LineageEntityKindV1.RUN, id=run_id),
         )
-        parents.append(relation)
-    return sorted(parents, key=lambda x: (x.from_.id, x.to.id))
+        for parent_run_id, run_id in runs_relations
+    ]
 
 
-def _get_jobs_ancestor_relations(jobs_relations: set[tuple[int, int]]) -> list[LineageParentRelationV1]:
-    parents = []
-    for parent_job_id, job_id in jobs_relations:
-        relation = LineageParentRelationV1(
+def _get_jobs_ancestor_relations(jobs_relations: list[tuple[int, int]]) -> list[LineageParentRelationV1]:
+    return [
+        LineageParentRelationV1(
             from_=LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(parent_job_id)),
             to=LineageEntityV1(kind=LineageEntityKindV1.JOB, id=str(job_id)),
         )
-        parents.append(relation)
-    return sorted(parents, key=lambda x: (x.from_.id, x.to.id))
+        for parent_job_id, job_id in jobs_relations
+    ]

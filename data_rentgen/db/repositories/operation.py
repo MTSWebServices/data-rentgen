@@ -27,6 +27,7 @@ get_list_by_ids = (
         Operation.id == any_(bindparam("operation_ids")),
     )
     .limit(bindparam("limit"))
+    .order_by(Operation.id)
 )
 
 get_stats_by_run_ids = (

@@ -18,7 +18,9 @@ fetch_bulk_query = (
     .limit(bindparam("limit"))
 )
 
-get_list_by_ids_query = select(Schema).where(Schema.id == any_(bindparam("schema_ids"))).limit(bindparam("limit"))
+get_list_by_ids_query = (
+    select(Schema).where(Schema.id == any_(bindparam("schema_ids"))).order_by(Schema.id).limit(bindparam("limit"))
+)
 get_one_by_digest_query = (
     select(Schema).where(Schema.digest == bindparam("digest")).limit(literal(1, literal_execute=True))
 )

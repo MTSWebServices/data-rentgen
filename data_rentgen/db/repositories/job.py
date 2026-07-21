@@ -62,9 +62,8 @@ get_one_query = (
 
 get_list_query = (
     select(Job)
-    .where(
-        Job.id == any_(bindparam("job_ids")),
-    )
+    .where(Job.id == any_(bindparam("job_ids")))
+    .order_by(Job.id)
     .options(selectinload(Job.location).selectinload(Location.addresses))
 )
 
@@ -332,14 +331,14 @@ class JobRepository(Repository[Job]):
         query_result = await self._session.execute(get_stats_query, {"location_ids": list(location_ids)})
         return {row.location_id: row for row in query_result.all()}
 
-    async def list_ancestor_relations(self, job_ids: Collection[int]):
+    async def list_ancestor_relations(self, job_ids: Collection[int]) -> list[tuple[int, int]]:
         if not job_ids:
             return []
         result = await self._session.execute(ancestors_by_job_query, {"job_ids": list(job_ids)})
-        return list(result.all())
+        return list(result.all())  # type: ignore[arg-type]
 
-    async def list_descendant_relations(self, job_ids: Collection[int]):
+    async def list_descendant_relations(self, job_ids: Collection[int]) -> list[tuple[int, int]]:
         if not job_ids:
             return []
         result = await self._session.execute(descendants_by_job_query, {"job_ids": list(job_ids)})
-        return list(result.all())
+        return list(result.all())  # type: ignore[arg-type]

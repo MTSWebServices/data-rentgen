@@ -80,6 +80,7 @@ class DatasetService:
                             ],
                         )
                         for tag, group in groupby(
+                            # sorting is important for groupby to work
                             sorted(dataset.tag_values, key=lambda tv: tv.tag.name.lower()),
                             key=lambda tv: tv.tag,
                         )

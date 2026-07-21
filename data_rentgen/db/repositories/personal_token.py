@@ -19,6 +19,7 @@ get_by_id_query = (
         PersonalToken.id == bindparam("token_id"),
         PersonalToken.revoked_at.is_(None),
     )
+    .order_by(PersonalToken.id)
     .limit(literal(1, literal_execute=True))
 )
 

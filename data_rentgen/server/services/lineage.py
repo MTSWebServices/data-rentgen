@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Annotated, Literal, NamedTuple
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import Depends
@@ -13,7 +12,6 @@ from fastapi import Depends
 from data_rentgen.db.models import (
     Dataset,
     DatasetSymlinkGroup,
-    DatasetSymlinkType,
     Job,
     Operation,
     Run,
@@ -26,30 +24,6 @@ from data_rentgen.server.schemas.v1.lineage import LineageDirectionV1
 from data_rentgen.services.uow import UnitOfWork
 
 logger = logging.getLogger(__name__)
-
-
-class SymlinkPair(NamedTuple):
-    from_dataset_id: int
-    to_dataset_id: int
-    type: DatasetSymlinkType
-
-
-def _reconstruct_symlink_pairs(symlink_groups: list[DatasetSymlinkGroup]) -> list[SymlinkPair]:
-    members_by_fingerprint: dict[UUID, list[tuple[int, DatasetSymlinkType]]] = defaultdict(list)
-    for row in symlink_groups:
-        members_by_fingerprint[row.fingerprint].append((row.dataset_id, row.type))
-
-    pairs: dict[tuple[int, int], SymlinkPair] = {}
-    for members in members_by_fingerprint.values():
-        for from_dataset_id, _ in members:
-            for to_dataset_id, to_type in members:
-                if from_dataset_id != to_dataset_id:
-                    pairs[(from_dataset_id, to_dataset_id)] = SymlinkPair(
-                        from_dataset_id=from_dataset_id,
-                        to_dataset_id=to_dataset_id,
-                        type=to_type,
-                    )
-    return list(pairs.values())
 
 
 @dataclass(slots=True)
@@ -75,17 +49,17 @@ class LineageServiceIntermediateResult:
 
 @dataclass(slots=True)
 class LineageServiceResult:
-    jobs: dict[int, Job] = field(default_factory=dict)
-    runs: dict[UUID, Run] = field(default_factory=dict)
-    operations: dict[UUID, Operation] = field(default_factory=dict)
-    datasets: dict[int, Dataset] = field(default_factory=dict)
-    dataset_symlinks: dict[tuple[int, int], SymlinkPair] = field(default_factory=dict)
-    inputs: dict[tuple[int, int, UUID | None, UUID | None], InputRow] = field(default_factory=dict)
-    outputs: dict[tuple[int, int, UUID | None, UUID | None, int | None], OutputRow] = field(default_factory=dict)
-    column_lineage: dict[tuple[int, int], list[ColumnLineageRow]] = field(default_factory=dict)
-    io_dataset_relations: dict[tuple[int, int], IODatasetRelationRow] = field(default_factory=dict)
-    run_ancestor_relations: set[tuple[UUID, UUID]] = field(default_factory=set)
-    job_ancestor_relations: set[tuple[int, int]] = field(default_factory=set)
+    jobs: list[Job] = field(default_factory=list)
+    runs: list[Run] = field(default_factory=list)
+    operations: list[Operation] = field(default_factory=list)
+    datasets: list[Dataset] = field(default_factory=list)
+    symlink_groups: list[DatasetSymlinkGroup] = field(default_factory=list)
+    inputs: list[InputRow] = field(default_factory=list)
+    outputs: list[OutputRow] = field(default_factory=list)
+    column_lineage: list[ColumnLineageRow] = field(default_factory=list)
+    io_dataset_relations: list[IODatasetRelationRow] = field(default_factory=list)
+    run_ancestor_relations: list[tuple[UUID, UUID]] = field(default_factory=list)
+    job_ancestor_relations: list[tuple[int, int]] = field(default_factory=list)
 
 
 class LineageService:
@@ -155,35 +129,27 @@ class LineageService:
             column_lineage = []
 
         result = LineageServiceResult(
-            jobs={job.id: job for job in jobs},
-            runs={run.id: run for run in runs},
-            operations={operation.id: operation for operation in operations},
-            datasets={dataset.id: dataset for dataset in datasets},
-            dataset_symlinks={
-                (pair.from_dataset_id, pair.to_dataset_id): pair
-                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
-            },
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in seen.outputs
-            },
-            column_lineage=self._build_column_lineage(column_lineage),
+            jobs=jobs,
+            runs=runs,
+            operations=operations,
+            datasets=datasets,
+            symlink_groups=seen.symlink_groups,
+            inputs=seen.inputs,
+            outputs=seen.outputs,
+            column_lineage=column_lineage,
             run_ancestor_relations=run_ancestors,
             job_ancestor_relations=job_ancestors,
         )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d symlink groups, "
                 "%d inputs, %d outputs, %d column lineage",
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
                 len(result.datasets),
-                len(result.dataset_symlinks),
+                len(result.symlink_groups),
                 len(result.inputs),
                 len(result.outputs),
                 len(result.column_lineage),
@@ -342,35 +308,27 @@ class LineageService:
             column_lineage = []
 
         result = LineageServiceResult(
-            jobs={job.id: job for job in jobs},
-            runs={run.id: run for run in runs},
-            operations={operation.id: operation for operation in operations},
-            datasets={dataset.id: dataset for dataset in datasets},
-            dataset_symlinks={
-                (pair.from_dataset_id, pair.to_dataset_id): pair
-                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
-            },
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in seen.outputs
-            },
-            column_lineage=self._build_column_lineage(column_lineage),
+            jobs=jobs,
+            runs=runs,
+            operations=operations,
+            datasets=datasets,
+            symlink_groups=seen.symlink_groups,
+            inputs=seen.inputs,
+            outputs=seen.outputs,
+            column_lineage=column_lineage,
             run_ancestor_relations=run_ancestors,
             job_ancestor_relations=job_ancestors,
         )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d symlink groups, "
                 "%d inputs, %d outputs, %d column lineage",
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
                 len(result.datasets),
-                len(result.dataset_symlinks),
+                len(result.symlink_groups),
                 len(result.inputs),
                 len(result.outputs),
                 len(result.column_lineage),
@@ -521,35 +479,27 @@ class LineageService:
             column_lineage = []
 
         result = LineageServiceResult(
-            jobs={job.id: job for job in jobs},
-            runs={run.id: run for run in runs},
-            operations={operation.id: operation for operation in operations},
-            datasets={dataset.id: dataset for dataset in datasets},
-            dataset_symlinks={
-                (pair.from_dataset_id, pair.to_dataset_id): pair
-                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
-            },
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in seen.outputs
-            },
-            column_lineage=self._build_column_lineage(column_lineage),
+            jobs=jobs,
+            runs=runs,
+            operations=operations,
+            datasets=datasets,
+            symlink_groups=seen.symlink_groups,
+            inputs=seen.inputs,
+            outputs=seen.outputs,
+            column_lineage=column_lineage,
             run_ancestor_relations=run_ancestors,
             job_ancestor_relations=job_ancestors,
         )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d symlink groups, "
                 "%d inputs, %d outputs, %d column lineage",
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
                 len(result.datasets),
-                len(result.dataset_symlinks),
+                len(result.symlink_groups),
                 len(result.inputs),
                 len(result.outputs),
                 len(result.column_lineage),
@@ -713,35 +663,27 @@ class LineageService:
             column_lineage = []
 
         result = LineageServiceResult(
-            jobs={job.id: job for job in jobs},
-            runs={run.id: run for run in runs},
-            operations={operation.id: operation for operation in operations},
-            datasets={dataset.id: dataset for dataset in datasets},
-            dataset_symlinks={
-                (pair.from_dataset_id, pair.to_dataset_id): pair
-                for pair in _reconstruct_symlink_pairs(seen.symlink_groups)
-            },
-            inputs={
-                (input_.dataset_id, input_.job_id, input_.run_id, input_.operation_id): input_ for input_ in seen.inputs
-            },
-            outputs={
-                (output.dataset_id, output.job_id, output.run_id, output.operation_id, output.types_combined): output
-                for output in seen.outputs
-            },
-            column_lineage=self._build_column_lineage(column_lineage),
+            jobs=jobs,
+            runs=runs,
+            operations=operations,
+            datasets=datasets,
+            symlink_groups=seen.symlink_groups,
+            inputs=seen.inputs,
+            outputs=seen.outputs,
+            column_lineage=column_lineage,
             run_ancestor_relations=run_ancestors,
             job_ancestor_relations=job_ancestors,
         )
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d dataset symlinks, "
+                "[Total] Found %d jobs, %d runs, %d operations, %d datasets, %d symlink groups, "
                 "%d inputs, %d outputs, %d column lineage",
                 len(result.jobs),
                 len(result.runs),
                 len(result.operations),
                 len(result.datasets),
-                len(result.dataset_symlinks),
+                len(result.symlink_groups),
                 len(result.inputs),
                 len(result.outputs),
                 len(result.column_lineage),
@@ -857,7 +799,7 @@ class LineageService:
                     level=level + 1,
                 )
 
-    async def get_lineage_by_dataset_with_dataset_granularity(  # noqa: C901, PLR0912, PLR0915
+    async def get_lineage_by_dataset_with_dataset_granularity(  # noqa: C901, PLR0912
         self,
         *,
         dataset_id: int,
@@ -868,13 +810,13 @@ class LineageService:
         include_column_lineage: bool,
     ) -> LineageServiceResult:
         # include symlinks for starting datasets
-        symlink_groups = await self._uow.dataset_symlink.get_symlink_groups([dataset_id])
-        all_dataset_ids = {dataset_id} | {symlink.dataset_id for symlink in symlink_groups}
+        result = LineageServiceResult()
+        result.symlink_groups = await self._uow.dataset_symlink.get_symlink_groups([dataset_id])
+        all_dataset_ids = {dataset_id} | {symlink.dataset_id for symlink in result.symlink_groups}
         next_level_downstream_dataset_ids = all_dataset_ids.copy()
         next_level_upstream_dataset_ids = all_dataset_ids.copy()
 
         level = 0
-        result = LineageServiceResult()
         while depth:
             if not next_level_downstream_dataset_ids and not next_level_upstream_dataset_ids:
                 break
@@ -888,7 +830,7 @@ class LineageService:
                     until,
                 )
 
-            relations_by_id = {}
+            found_relations = 0
             if direction in {LineageDirectionV1.DOWNSTREAM, LineageDirectionV1.BOTH}:
                 downstream_relations = await self._uow.io_dataset_relation.get_relations(
                     next_level_downstream_dataset_ids,
@@ -896,9 +838,9 @@ class LineageService:
                     until=until,
                     direction="DOWNSTREAM",
                 )
-                relations_by_id.update(
-                    {(relation.in_dataset_id, relation.out_dataset_id): relation for relation in downstream_relations},
-                )
+                found_relations += len(downstream_relations)
+                result.io_dataset_relations += downstream_relations
+
                 next_level_downstream_dataset_ids = {
                     relation.out_dataset_id for relation in downstream_relations
                 } - all_dataset_ids
@@ -909,7 +851,7 @@ class LineageService:
                 next_level_downstream_dataset_ids |= {
                     symlink.dataset_id for symlink in extra_symlink_groups
                 } - all_dataset_ids
-                symlink_groups += extra_symlink_groups
+                result.symlink_groups += extra_symlink_groups
 
             if direction in {LineageDirectionV1.UPSTREAM, LineageDirectionV1.BOTH}:
                 upstream_relations = await self._uow.io_dataset_relation.get_relations(
@@ -918,9 +860,8 @@ class LineageService:
                     until=until,
                     direction="UPSTREAM",
                 )
-                relations_by_id.update(
-                    {(relation.in_dataset_id, relation.out_dataset_id): relation for relation in upstream_relations},
-                )
+                found_relations += len(upstream_relations)
+                result.io_dataset_relations += upstream_relations
 
                 next_level_upstream_dataset_ids = {
                     relation.in_dataset_id for relation in upstream_relations
@@ -932,32 +873,26 @@ class LineageService:
                 next_level_upstream_dataset_ids |= {
                     symlink.dataset_id for symlink in extra_symlink_groups
                 } - all_dataset_ids
-                symlink_groups += extra_symlink_groups
+                result.symlink_groups += extra_symlink_groups
 
             if logger.isEnabledFor(logging.INFO):
                 logger.info(
                     "[Level %d] Found %d datasets, %d IO relations",
                     level,
                     len(next_level_upstream_dataset_ids | next_level_downstream_dataset_ids),
-                    len(relations_by_id),
+                    found_relations,
                 )
 
             all_dataset_ids |= next_level_upstream_dataset_ids
             all_dataset_ids |= next_level_downstream_dataset_ids
 
-            result.io_dataset_relations.update(relations_by_id)
             depth -= 1
             level += 1
 
-        datasets = await self._uow.dataset.list_by_ids(all_dataset_ids)
-        result.datasets = {dataset.id: dataset for dataset in datasets}
-
-        result.dataset_symlinks = {
-            (pair.from_dataset_id, pair.to_dataset_id): pair for pair in _reconstruct_symlink_pairs(symlink_groups)
-        }
+        result.datasets = await self._uow.dataset.list_by_ids(all_dataset_ids)
 
         schema_ids: set[int] = set()
-        for relation in result.io_dataset_relations.values():
+        for relation in result.io_dataset_relations:
             if relation.input_schema_id is not None:
                 schema_ids.add(relation.input_schema_id)
             if relation.output_schema_id is not None:
@@ -965,41 +900,26 @@ class LineageService:
 
         schemas = await self._uow.schema.list_by_ids(schema_ids)
         schemas_by_id = {schema.id: schema for schema in schemas}
-        for relation in result.io_dataset_relations.values():
+        for relation in result.io_dataset_relations:
             if relation.input_schema_id is not None:
                 relation.input_schema = schemas_by_id.get(relation.input_schema_id)
             if relation.output_schema_id is not None:
                 relation.output_schema = schemas_by_id.get(relation.output_schema_id)
 
         if include_column_lineage:
-            column_lineage_result = await self._uow.column_lineage.list_by_dataset_pairs(
-                result.io_dataset_relations.keys(),
+            result.column_lineage = await self._uow.column_lineage.list_by_dataset_pairs(
+                [(relation.in_dataset_id, relation.out_dataset_id) for relation in result.io_dataset_relations],
                 since,
                 until,
             )
-            column_lineage_relations: dict[tuple[int, int], list[ColumnLineageRow]] = defaultdict(list)
-            for item in column_lineage_result:
-                column_lineage_relations[(item.source_dataset_id, item.target_dataset_id)].append(item)
-            result.column_lineage.update(column_lineage_relations)
 
         if logger.isEnabledFor(logging.INFO):
             logger.info(
-                "[Total] Found %d datasets, %d dataset symlinks, %d IO relations, %d column lineage",
+                "[Total] Found %d datasets, %d symlink groups, %d IO relations, %d column lineage",
                 len(result.datasets),
-                len(result.dataset_symlinks),
+                len(result.symlink_groups),
                 len(result.io_dataset_relations),
                 len(result.column_lineage),
-            )
-        return result
-
-    def _build_column_lineage(
-        self,
-        data: list[ColumnLineageRow],
-    ) -> dict[tuple[int, int], list[ColumnLineageRow]]:
-        result = defaultdict(list)
-        for relation in data:
-            result[(relation.source_dataset_id, relation.target_dataset_id)].append(
-                relation,
             )
         return result
 

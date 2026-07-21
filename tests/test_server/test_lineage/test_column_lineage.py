@@ -21,7 +21,12 @@ from tests.test_server.utils.convert_to_json import (
 )
 from tests.test_server.utils.enrich import enrich_datasets, enrich_jobs, enrich_runs
 from tests.test_server.utils.lineage_result import LineageResult
-from tests.test_server.utils.merge import merge_io_by_jobs, merge_io_by_runs
+from tests.test_server.utils.merge import (
+    merge_inputs_by_job,
+    merge_inputs_by_run,
+    merge_outputs_by_job,
+    merge_outputs_by_run,
+)
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio, pytest.mark.lineage]
 
@@ -72,12 +77,12 @@ async def test_get_dataset_lineage_with_empty_column_lineage(
             "parents": run_parents_to_json(runs),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_run(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": [],
             "indirect_column_lineage": [],
@@ -130,14 +135,14 @@ async def test_get_operation_lineage_include_columns_with_combined_transformatio
             "parents": run_parents_to_json([run]) + operation_parents_to_json([operation]),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
                 *inputs_to_json(inputs, granularity="OPERATION"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_run(outputs), granularity="RUN"),
                 *outputs_to_json(outputs, granularity="OPERATION"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": [
                 {
@@ -223,12 +228,12 @@ async def test_get_run_lineage_include_columns_with_combined_transformations(
             "parents": run_parents_to_json([run]),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_run(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": [
                 {
@@ -314,8 +319,8 @@ async def test_get_job_lineage_include_columns_with_combined_transformations(
         "relations": {
             "parents": [],
             "symlinks": [],
-            "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-            "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+            "inputs": inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+            "outputs": outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
             "direct_column_lineage": [
                 {
                     "from": {"id": str(datasets[0].id), "kind": "DATASET"},
@@ -439,12 +444,12 @@ async def test_get_dataset_lineage_include_columns_with_depth_and_granularity_ru
             "parents": run_parents_to_json(runs),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_run(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": [
                 {
@@ -560,8 +565,8 @@ async def test_get_dataset_lineage_include_columns_with_depth_and_granularity_jo
         "relations": {
             "parents": [],
             "symlinks": [],
-            "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-            "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+            "inputs": inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+            "outputs": outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
             "direct_column_lineage": [
                 {
                     "from": {"id": str(lineage.datasets[0].id), "kind": "DATASET"},
@@ -690,14 +695,14 @@ async def test_get_dataset_lineage_include_columns_with_depth_and_granularity_op
             "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
                 *inputs_to_json(inputs, granularity="OPERATION"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="RUN"),
                 *outputs_to_json(outputs, granularity="OPERATION"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": [
                 {
@@ -828,14 +833,14 @@ async def test_get_operation_lineage_include_columns_with_depth(
             "parents": run_parents_to_json(runs) + operation_parents_to_json(operations),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
                 *inputs_to_json(inputs, granularity="OPERATION"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_run(outputs), granularity="RUN"),
                 *outputs_to_json(outputs, granularity="OPERATION"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": sorted(
                 [
@@ -870,7 +875,7 @@ async def test_get_operation_lineage_include_columns_with_depth(
                         },
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "indirect_column_lineage": sorted(
                 [
@@ -901,7 +906,7 @@ async def test_get_operation_lineage_include_columns_with_depth(
                         ],
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
         },
         "nodes": {
@@ -988,12 +993,12 @@ async def test_get_run_lineage_include_columns_with_depth(
             "parents": run_parents_to_json(runs),
             "symlinks": [],
             "inputs": [
-                *inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-                *inputs_to_json(merge_io_by_runs(inputs), granularity="RUN"),
+                *inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+                *inputs_to_json(merge_inputs_by_run(inputs), granularity="RUN"),
             ],
             "outputs": [
-                *outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
-                *outputs_to_json(merge_io_by_runs(outputs), granularity="RUN"),
+                *outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
+                *outputs_to_json(merge_outputs_by_run(outputs), granularity="RUN"),
             ],
             "direct_column_lineage": sorted(
                 [
@@ -1028,7 +1033,7 @@ async def test_get_run_lineage_include_columns_with_depth(
                         },
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "indirect_column_lineage": sorted(
                 [
@@ -1059,7 +1064,7 @@ async def test_get_run_lineage_include_columns_with_depth(
                         ],
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
         },
         "nodes": {
@@ -1142,8 +1147,8 @@ async def test_get_job_lineage_include_columns_with_depth(
         "relations": {
             "parents": [],
             "symlinks": [],
-            "inputs": inputs_to_json(merge_io_by_jobs(inputs), granularity="JOB"),
-            "outputs": outputs_to_json(merge_io_by_jobs(outputs), granularity="JOB"),
+            "inputs": inputs_to_json(merge_inputs_by_job(inputs), granularity="JOB"),
+            "outputs": outputs_to_json(merge_outputs_by_job(outputs), granularity="JOB"),
             "direct_column_lineage": sorted(
                 [
                     {
@@ -1177,7 +1182,7 @@ async def test_get_job_lineage_include_columns_with_depth(
                         },
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "indirect_column_lineage": sorted(
                 [
@@ -1208,7 +1213,7 @@ async def test_get_job_lineage_include_columns_with_depth(
                         ],
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
         },
         "nodes": {
@@ -1266,7 +1271,7 @@ async def test_get_dataset_lineage_with_granularity_dataset_and_column_lineage(
                     }
                     for i in range(len(datasets) - 1)
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "direct_column_lineage": sorted(
                 [
@@ -1301,7 +1306,7 @@ async def test_get_dataset_lineage_with_granularity_dataset_and_column_lineage(
                         },
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "indirect_column_lineage": sorted(
                 [
@@ -1332,7 +1337,7 @@ async def test_get_dataset_lineage_with_granularity_dataset_and_column_lineage(
                         ],
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
         },
         "nodes": {
@@ -1400,7 +1405,7 @@ async def test_get_dataset_lineage_with_granularity_dataset_and_column_lineage_f
                     }
                     for i in range(len(datasets) - 1)
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "direct_column_lineage": sorted(
                 [
@@ -1439,7 +1444,7 @@ async def test_get_dataset_lineage_with_granularity_dataset_and_column_lineage_f
                         },
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
             "indirect_column_lineage": sorted(
                 [
@@ -1474,7 +1479,7 @@ async def test_get_dataset_lineage_with_granularity_dataset_and_column_lineage_f
                         ],
                     },
                 ],
-                key=lambda x: (x["from"]["id"], x["to"]["id"]),
+                key=lambda x: (int(x["from"]["id"]), int(x["to"]["id"])),
             ),
         },
         "nodes": {
