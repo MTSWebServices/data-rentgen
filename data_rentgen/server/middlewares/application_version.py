@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
-@dataclass
+@dataclass(slots=True)
 class ApplicationVersionMiddleware:
     app: ASGIApp
     version: str

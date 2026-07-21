@@ -12,7 +12,7 @@ from data_rentgen.server.services.tag import TagData, TagValueData
 from data_rentgen.services.uow import UnitOfWork
 
 
-@dataclass
+@dataclass(slots=True)
 class DatasetData:
     id: int
     name: str
@@ -21,7 +21,7 @@ class DatasetData:
     external_url: str | None
 
 
-@dataclass
+@dataclass(slots=True)
 class DatasetServiceResult:
     id: int
     data: DatasetData

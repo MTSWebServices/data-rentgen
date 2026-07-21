@@ -16,7 +16,7 @@ from data_rentgen.dto.operation import OperationDTO
 from data_rentgen.utils.uuid import generate_incremental_uuid, generate_static_uuid
 
 
-@dataclass
+@dataclass(slots=True)
 class ColumnLineageDTO:
     created_at: datetime
     operation: OperationDTO

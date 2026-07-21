@@ -9,20 +9,20 @@ from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.services.uow import UnitOfWork
 
 
-@dataclass
+@dataclass(slots=True)
 class TagValueData:
     id: int
     value: str
 
 
-@dataclass
+@dataclass(slots=True)
 class TagData:
     id: int
     name: str
     values: list[TagValueData]
 
 
-@dataclass
+@dataclass(slots=True)
 class TagServiceResult:
     id: int
     data: TagData

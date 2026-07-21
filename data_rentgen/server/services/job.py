@@ -17,7 +17,7 @@ from data_rentgen.services.uow import UnitOfWork
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(slots=True)
 class JobData:
     id: int
     parent_job_id: int | None
@@ -26,7 +26,7 @@ class JobData:
     location: Location
 
 
-@dataclass
+@dataclass(slots=True)
 class JobServiceResult:
     id: int
     data: JobData

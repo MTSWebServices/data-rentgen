@@ -52,7 +52,7 @@ def _reconstruct_symlink_pairs(symlink_groups: list[DatasetSymlinkGroup]) -> lis
     return list(pairs.values())
 
 
-@dataclass
+@dataclass(slots=True)
 class LineageServiceIntermediateResult:
     job_ids: set[int] = field(default_factory=set)
     run_ids: set[UUID] = field(default_factory=set)
@@ -73,7 +73,7 @@ class LineageServiceIntermediateResult:
         return self
 
 
-@dataclass
+@dataclass(slots=True)
 class LineageServiceResult:
     jobs: dict[int, Job] = field(default_factory=dict)
     runs: dict[UUID, Run] = field(default_factory=dict)

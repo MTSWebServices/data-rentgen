@@ -12,7 +12,7 @@ from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.services.uow import UnitOfWork
 
 
-@dataclass
+@dataclass(slots=True)
 class LocationServiceDatasetStatistics:
     total_datasets: int = 0
 
@@ -24,7 +24,7 @@ class LocationServiceDatasetStatistics:
         return cls(total_datasets=row.total_datasets)
 
 
-@dataclass
+@dataclass(slots=True)
 class LocationServiceJobStatistics:
     total_jobs: int = 0
 
@@ -36,13 +36,13 @@ class LocationServiceJobStatistics:
         return cls(total_jobs=row.total_jobs)
 
 
-@dataclass
+@dataclass(slots=True)
 class LocationServiceStatistics:
     datasets: LocationServiceDatasetStatistics
     jobs: LocationServiceJobStatistics
 
 
-@dataclass
+@dataclass(slots=True)
 class LocationServiceResult:
     id: int
     data: Location

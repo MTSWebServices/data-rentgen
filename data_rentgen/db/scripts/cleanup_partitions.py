@@ -84,7 +84,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-@dataclass()
+@dataclass(slots=True)
 class TablePartition:
     name: str
     begin_date: date

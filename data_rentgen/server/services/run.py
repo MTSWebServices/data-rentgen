@@ -13,7 +13,7 @@ from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.services.uow import UnitOfWork
 
 
-@dataclass
+@dataclass(slots=True)
 class RunServiceIOStatistics:
     total_datasets: int = 0
     total_bytes: int = 0
@@ -33,7 +33,7 @@ class RunServiceIOStatistics:
         )
 
 
-@dataclass
+@dataclass(slots=True)
 class RunServiceOperationStatistics:
     total_operations: int = 0
 
@@ -47,14 +47,14 @@ class RunServiceOperationStatistics:
         )
 
 
-@dataclass
+@dataclass(slots=True)
 class RunServiceStatistics:
     inputs: RunServiceIOStatistics
     outputs: RunServiceIOStatistics
     operations: RunServiceOperationStatistics
 
 
-@dataclass
+@dataclass(slots=True)
 class RunServicePageItem:
     id: UUID
     data: Run

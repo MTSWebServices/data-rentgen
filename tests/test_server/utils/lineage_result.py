@@ -15,7 +15,7 @@ from data_rentgen.db.models import (
 )
 
 
-@dataclass
+@dataclass(slots=True)
 class LineageResult:
     jobs: list[Job] = field(default_factory=list)
     runs: list[Run] = field(default_factory=list)

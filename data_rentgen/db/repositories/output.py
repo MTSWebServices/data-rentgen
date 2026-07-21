@@ -34,7 +34,7 @@ insert_statement = insert_statement.on_conflict_do_update(
 )
 
 
-@dataclass
+@dataclass(slots=True)
 class OutputRow:
     created_at: datetime
     operation_id: UUID

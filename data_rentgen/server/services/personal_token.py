@@ -16,7 +16,7 @@ from data_rentgen.services.uow import UnitOfWork
 from data_rentgen.utils.uuid import generate_new_uuid
 
 
-@dataclass
+@dataclass(slots=True)
 class PersonalTokenServiceResult:
     id: UUID
     data: PersonalToken

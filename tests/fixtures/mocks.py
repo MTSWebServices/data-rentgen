@@ -11,7 +11,7 @@ from data_rentgen.server.settings.auth.personal_token import PersonalTokenSettin
 from data_rentgen.server.utils.jwt import decode_jwt, sign_jwt
 
 
-@dataclass
+@dataclass(slots=True)
 class MockedUser:
     user: User
     access_token: str
