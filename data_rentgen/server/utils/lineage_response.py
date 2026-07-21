@@ -239,7 +239,7 @@ def _get_latest_io_schema(dataset: Dataset, relations: list[OutputRow | InputRow
     ]
     if not relations:
         return None
-    relations = sorted(relations, key=lambda relation: relation.created_at)
+    relations = sorted(relations, key=lambda relation: (relation.created_at, relation.schema_id))
     oldest_relation, newest_relation = relations[0], relations[-1]
 
     dataset_schema = DatasetSchemaV1.model_validate(newest_relation.schema)
