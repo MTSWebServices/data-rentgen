@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
+import textwrap
 from collections.abc import Collection
 
 from sqlalchemy import (
@@ -95,43 +96,47 @@ delete_tag_value_query = delete(JobTagValue).where(
 )
 
 ancestors_by_job_query = text(
-    """
-    WITH RECURSIVE ancestors_by_job AS (
-        SELECT job.parent_job_id AS parent_job_id, job.id AS child_job_id
-        FROM job
-        WHERE job.id = ANY(:job_ids) AND job.parent_job_id IS NOT NULL
+    textwrap.dedent(
+        """
+        WITH RECURSIVE ancestors_by_job AS (
+            SELECT job.parent_job_id AS parent_job_id, job.id AS child_job_id
+            FROM job
+            WHERE job.id = ANY(:job_ids) AND job.parent_job_id IS NOT NULL
 
-        UNION
+            UNION
 
-        SELECT parent.parent_job_id, parent.id
-        FROM job AS parent
-        JOIN ancestors_by_job ON parent.id = ancestors_by_job.parent_job_id
-        WHERE parent.parent_job_id IS NOT NULL
-    )
-    SELECT parent_job_id, child_job_id
-    FROM ancestors_by_job
-    ORDER BY parent_job_id, child_job_id
-    """
+            SELECT parent.parent_job_id, parent.id
+            FROM job AS parent
+            JOIN ancestors_by_job ON parent.id = ancestors_by_job.parent_job_id
+            WHERE parent.parent_job_id IS NOT NULL
+        )
+        SELECT parent_job_id, child_job_id
+        FROM ancestors_by_job
+        ORDER BY parent_job_id, child_job_id
+        """
+    ).strip(),
 )
 
 
 descendants_by_job_query = text(
-    """
-    WITH RECURSIVE descendants_by_job AS (
-        SELECT job.id AS child_job_id, job.parent_job_id AS parent_job_id
-        FROM job
-        WHERE job.parent_job_id = ANY(:job_ids)
+    textwrap.dedent(
+        """
+        WITH RECURSIVE descendants_by_job AS (
+            SELECT job.id AS child_job_id, job.parent_job_id AS parent_job_id
+            FROM job
+            WHERE job.parent_job_id = ANY(:job_ids)
 
-        UNION
+            UNION
 
-        SELECT child.id, child.parent_job_id
-        FROM job AS child
-        JOIN descendants_by_job ON child.parent_job_id = descendants_by_job.child_job_id
-    )
-    SELECT parent_job_id, child_job_id
-    FROM descendants_by_job
-    ORDER BY parent_job_id, child_job_id
-    """
+            SELECT child.id, child.parent_job_id
+            FROM job AS child
+            JOIN descendants_by_job ON child.parent_job_id = descendants_by_job.child_job_id
+        )
+        SELECT parent_job_id, child_job_id
+        FROM descendants_by_job
+        ORDER BY parent_job_id, child_job_id
+        """
+    ).strip(),
 )
 
 
