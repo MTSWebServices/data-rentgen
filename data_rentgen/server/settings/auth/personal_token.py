@@ -13,11 +13,13 @@ class PersonalTokenSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__ENABLED=True
-    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__SECRET_KEY=somesecret
-    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__SECURITY_ALGORITHM=HS256
-    DATA_RENTGEN__AUTH__PERSONAL_TOKENS__MAX_DURATION_DAYS=366
+    ```yaml title="config.yml"
+    auth:
+      personal_tokens:
+        enabled: true
+        secret_key: somesecret
+        security_algorithm: HS256
+        max_duration_days: 366
     ```
     """
 

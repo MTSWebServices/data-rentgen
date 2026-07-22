@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from data_rentgen.consumer.settings.consumer import ConsumerSettings
 from data_rentgen.consumer.settings.kafka import KafkaSettings
@@ -10,33 +9,33 @@ from data_rentgen.consumer.settings.monitoring import MonitoringSettings
 from data_rentgen.consumer.settings.producer import ProducerSettings
 from data_rentgen.db.settings import DatabaseSettings
 from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.settings import BaseSettings
 
 
 class ConsumerApplicationSettings(BaseSettings):
     """Data.Rentgen Kafka consumer settings.
 
-    Application can be configured in 2 ways:
+    Application can be configured in 3 ways, in descending order of priority:
 
     * By explicitly passing `settings` object as an argument to [application_factory][data_rentgen.consumer.application_factory]
-    * By setting up environment variables matching a specific key.
+    * By storing settings in a `config.yml` configuration file
+    * By setting environment variables matching a specific key
 
-      All environment variable names are written in uppercase and should be prefixed with `DATA_RENTGEN__`.
-      Nested items are delimited with `__`.
+    Environment variable names are written in uppercase, prefixed with `DATA_RENTGEN__`,
+    and use `__` to delimit nested items.
 
     More details can be found in [Pydantic documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/).
 
     Examples
     --------
 
-    ```bash
-    # same as settings.database.url = "postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen"
-    DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
-
-    # same as settings.kafka.bootstrap_servers = ["kafka1:9092", "kafka2:9092"]
-    DATA_RENTGEN__KAFKA__BOOTSTRAP_SERVERS="kafka1:9092,kafka2:9092"
-
-    # same as settings.logging.preset = "json"
-    DATA_RENTGEN__LOGGING__PRESET=json
+    ```yaml title="config.yml"
+    database:
+      url: postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
+    kafka:
+      bootstrap_servers: [kafka1:9092, kafka2:9092]
+    logging:
+      preset: json
     ```
     """  # noqa: E501
 
@@ -63,5 +62,3 @@ class ConsumerApplicationSettings(BaseSettings):
         default_factory=MonitoringSettings,
         description="[Monitoring settings][configuration-consumer-monitoring]",
     )
-
-    model_config = SettingsConfigDict(env_prefix="DATA_RENTGEN__", env_nested_delimiter="__", extra="forbid")

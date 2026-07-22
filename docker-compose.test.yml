@@ -2,7 +2,11 @@ services:
   db:
     image: postgres:17
     restart: unless-stopped
-    env_file: .env.docker
+    environment:
+      POSTGRES_DB: data_rentgen
+      POSTGRES_USER: data_rentgen
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
     ports:
       - 5432:5432
     volumes:
@@ -17,7 +21,20 @@ services:
   broker:
     image: bitnamilegacy/kafka:3.9
     restart: unless-stopped
-    env_file: .env.docker
+    environment:
+      KAFKA_CFG_NODE_ID: '0'
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: DOCKER://:9092,LOCALHOST://:9093,CONTROLLER://:9094,INTERBROKER://:9095
+      KAFKA_CFG_ADVERTISED_LISTENERS: DOCKER://broker:9092,LOCALHOST://localhost:9093,INTERBROKER://broker:9095
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERBROKER:PLAINTEXT,DOCKER:SASL_PLAINTEXT,LOCALHOST:SASL_PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@broker:9094
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_SASL_MECHANISM_CONTROLLER_PROTOCOL: PLAIN
+      KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_CLIENT_USERS: data_rentgen
+      KAFKA_CLIENT_PASSWORDS: changeme
+      KAFKA_CFG_SASL_ENABLED_MECHANISMS: PLAIN,SCRAM-SHA-256
     ports:
       - 9093:9093
     volumes:

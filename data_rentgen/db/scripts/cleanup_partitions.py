@@ -23,8 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data_rentgen.db.factory import create_session_factory
 from data_rentgen.db.models import Input, Operation, Output, Run
 from data_rentgen.db.models.column_lineage import ColumnLineage
-from data_rentgen.db.settings import DatabaseSettings
-from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.db.settings import DatabaseApplicationSettings
 from data_rentgen.logging.setup_logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -209,12 +208,14 @@ async def truncate_partitions(tables: dict[str, list[TablePartition]], session: 
 
 
 async def main(args: list[str]) -> None:
+    settings = DatabaseApplicationSettings()
+    setup_logging(settings.logging)
+
     parser = get_parser()
     params = parser.parse_args(args)
     logger.debug("Starting cleanup partition script with params: %s", params)
     keep_after = params.keep_after.date()
-    db_settings = DatabaseSettings()  # type: ignore[call-arg]
-    session_factory = create_session_factory(db_settings)
+    session_factory = create_session_factory(settings.database)
     async with session_factory() as session:
         tables = await get_partitioned_tables(session)
         partitions = filter_partitions(tables, keep_after)  # type: ignore[arg-type]
@@ -236,5 +237,4 @@ async def main(args: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    setup_logging(LoggingSettings())
     asyncio.run(main(sys.argv[1:]))

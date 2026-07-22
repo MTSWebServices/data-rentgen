@@ -14,9 +14,11 @@ class RequestIDSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__SERVER__REQUEST_ID__ENABLED=True
-    DATA_RENTGEN__SERVER__REQUEST_ID__UPDATE_REQUEST_HEADER=True
+    ```yaml title="config.yml"
+    server:
+      request_id:
+        enabled: true
+        update_request_header: true
     ```
     """
 

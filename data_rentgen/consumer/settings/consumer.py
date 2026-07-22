@@ -16,12 +16,13 @@ class ConsumerSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__CONSUMER__TOPICS_LIST=["input.runs"]
-    DATA_RENTGEN__CONSUMER__MALFOMED_TOPIC="input.runs:malformed"
-    DATA_RENTGEN__CONSUMER__GROUP_ID=data-rentgen
-    DATA_RENTGEN__CONSUMER__FETCH_MAX_WAIT_MS=5000
-    DATA_RENTGEN__CONSUMER__MAX_PARTITION_FETCH_BYTES=5MiB
+    ```yaml title="config.yml"
+    consumer:
+      topics_list: [input.runs]
+      malformed_topic: input.runs:malformed
+      group_id: data-rentgen
+      fetch_max_wait_ms: 5000
+      max_partition_fetch_bytes: 5MiB
     ```
     """
 

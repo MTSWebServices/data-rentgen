@@ -1,7 +1,5 @@
 #!make
 
-include .env.local
-
 VERSION = develop
 VIRTUAL_ENV ?= .venv
 PYTHON = ${VIRTUAL_ENV}/bin/python

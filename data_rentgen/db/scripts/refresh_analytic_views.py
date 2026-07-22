@@ -14,8 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.factory import create_session_factory
-from data_rentgen.db.settings import DatabaseSettings
-from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.db.settings import DatabaseApplicationSettings
 from data_rentgen.logging.setup_logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -61,7 +60,8 @@ async def refresh_view(depth: Depth, session: AsyncSession):
 
 
 async def main(args: list[str]) -> None:
-    setup_logging(LoggingSettings())
+    settings = DatabaseApplicationSettings()
+    setup_logging(settings.logging)
 
     parser = get_parser()
     params = parser.parse_args(args)
@@ -72,8 +72,7 @@ async def main(args: list[str]) -> None:
     else:
         depths = sorted(set(depths))
 
-    db_settings = DatabaseSettings()  # type: ignore[call-arg]
-    session_factory = create_session_factory(db_settings)
+    session_factory = create_session_factory(settings.database)
     async with session_factory() as session:
         for depth in depths:
             await refresh_view(depth, session)

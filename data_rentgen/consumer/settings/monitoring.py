@@ -13,9 +13,11 @@ class MonitoringSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__MONITORING__ENABLED=True
-    DATA_RENTGEN__MONITORING__LABELS={"instance": "production"}
+    ```yaml title="config.yml"
+    monitoring:
+      enabled: true
+      labels:
+        instance: production
     ```
     """
 

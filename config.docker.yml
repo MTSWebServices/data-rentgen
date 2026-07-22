@@ -1,0 +1,46 @@
+database:
+  url: postgresql+asyncpg://data_rentgen:changeme@db:5432/data_rentgen
+
+logging:
+  preset: colored
+
+kafka:
+  bootstrap_servers: [broker:9092]
+  security:
+    type: SCRAM-SHA-256
+    user: data_rentgen
+    password: changeme
+  compression: zstd
+
+server:
+  debug: false
+  session:
+    enabled: true
+    secret_key: session_secret_key
+  cors:
+    enabled: true
+    allow_origins: [http://localhost:3000]
+    allow_credentials: true
+    allow_methods: ['*']
+    allow_headers: ['*']
+    expose_headers: [X-Request-ID, Location, Access-Control-Allow-Credentials]
+
+auth:
+  # Dummy Auth
+  provider: data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
+  access_token:
+    secret_key: access_key_secret
+  personal_tokens:
+    enabled: true
+    secret_key: pat_secret
+
+  # Keycloak Auth
+  # provider: data_rentgen.server.providers.auth.keycloak_provider.KeycloakAuthProvider
+  keycloak:
+    server_url: http://keycloak:8080
+    realm_name: create_realm_manually
+    client_id: create_client_manually
+    client_secret: generated_by_keycloak
+    redirect_uri: http://localhost:3000/auth-callback
+    scope: email
+    verify_ssl: false

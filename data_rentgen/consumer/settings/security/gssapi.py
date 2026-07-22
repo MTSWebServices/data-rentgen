@@ -29,19 +29,23 @@ class KafkaSecurityGSSAPISettings(KafkaSecurityBaseSettings):
 
     Using principal + password for calling `kinit`:
 
-    ```bash
-    DATA_RENTGEN__KAFKA__SECURITY__TYPE=GSSAPI
-    DATA_RENTGEN__KAFKA__SECURITY__PRINCIPAL=dummy
-    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
-    DATA_RENTGEN__KAFKA__SECURITY__REALM=MY.REALM.COM
+    ```yaml title="config.yml"
+    kafka:
+      security:
+        type: GSSAPI
+        principal: dummy
+        password: changeme
+        realm: MY.REALM.COM
     ```
     Using principal + keytab for calling `kinit`:
 
-    ```bash
-    DATA_RENTGEN__KAFKA__SECURITY__TYPE=GSSAPI
-    DATA_RENTGEN__KAFKA__SECURITY__PRINCIPAL=dummy
-    DATA_RENTGEN__KAFKA__SECURITY__KEYTAB=/etc/security/dummy.keytab
-    DATA_RENTGEN__KAFKA__SECURITY__REALM=MY.REALM.COM
+    ```yaml title="config.yml"
+    kafka:
+      security:
+        type: GSSAPI
+        principal: dummy
+        keytab: /etc/security/dummy.keytab
+        realm: MY.REALM.COM
     ```
     """
 

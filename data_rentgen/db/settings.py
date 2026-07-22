@@ -3,11 +3,13 @@
 
 import textwrap
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.settings import BaseSettings
 
 
-class DatabaseSettings(BaseSettings):
+class DatabaseSettings(BaseModel):
     """Data.Rentgen backend database settings.
 
     !!! note
@@ -19,10 +21,11 @@ class DatabaseSettings(BaseSettings):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
-    # custom option passed directly to engine factory
-    DATA_RENTGEN__DATABASE__POOL_PRE_PING=True
+    ```yaml title="config.yml"
+    database:
+      url: postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
+      # custom option passed directly to engine factory
+      pool_pre_ping: true
     ```
     """
 
@@ -40,4 +43,17 @@ class DatabaseSettings(BaseSettings):
         ),
     )
 
-    model_config = SettingsConfigDict(env_prefix="DATA_RENTGEN__DATABASE__", env_nested_delimiter="__", extra="allow")
+    model_config = ConfigDict(extra="allow")
+
+
+class DatabaseApplicationSettings(BaseSettings):
+    """Settings used by database migrations and maintenance scripts."""
+
+    database: DatabaseSettings = Field(
+        default_factory=DatabaseSettings,  # type: ignore[arg-type]
+        description="Database settings",
+    )
+    logging: LoggingSettings = Field(
+        default_factory=LoggingSettings,
+        description="Logging settings",
+    )

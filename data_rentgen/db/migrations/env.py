@@ -9,7 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from data_rentgen.db.models import Base
-from data_rentgen.db.settings import DatabaseSettings
+from data_rentgen.db.settings import DatabaseApplicationSettings
 
 config = context.config
 
@@ -19,7 +19,7 @@ if config.config_file_name is not None:
 
 if not config.get_main_option("sqlalchemy.url"):
     # read application settings only if sqlalchemy.url is not being passed via cli arguments
-    config.set_main_option("sqlalchemy.url", DatabaseSettings().url)  # type: ignore[call-arg]
+    config.set_main_option("sqlalchemy.url", DatabaseApplicationSettings().database.url)
 
 target_metadata = (Base.metadata,)
 

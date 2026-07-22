@@ -5,11 +5,14 @@
 By default, server does not add error details to response bodies,
 to avoid exposing instance-specific information to end users.
 
-You can change this by setting:
+With debug disabled:
+
+```yaml title="config.yml"
+server:
+  debug: false
+```
 
 ```console
-$ export DATA_RENTGEN__SERVER__DEBUG=False
-$ # start REST API server
 $ curl -XPOST http://localhost:8002/failing/endpoint ...
 {
     "error": {
@@ -20,9 +23,14 @@ $ curl -XPOST http://localhost:8002/failing/endpoint ...
 }
 ```
 
+With debug enabled:
+
+```yaml title="config.yml"
+server:
+  debug: true
+```
+
 ```console
-$ export DATA_RENTGEN__SERVER__DEBUG=True
-$ # start REST API server
 $ curl -XPOST http://localhost:8002/failing/endpoint ...
 Traceback (most recent call last):
 File ".../uvicorn/protocols/http/h11_impl.py", line 408, in run_asgi

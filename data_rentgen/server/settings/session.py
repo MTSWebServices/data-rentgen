@@ -24,14 +24,16 @@ class SessionSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__SERVER__SESSION__ENABLED=True
-    DATA_RENTGEN__SERVER__SESSION__SECRET_KEY=secret
-    DATA_RENTGEN__SERVER__SESSION__SESSION_COOKIE=custom_cookie_name
-    DATA_RENTGEN__SERVER__SESSION__MAX_AGE=None  # cookie will last as long as the browser session
-    DATA_RENTGEN__SERVER__SESSION__SAME_SITE=strict
-    DATA_RENTGEN__SERVER__SESSION__HTTPS_ONLY=True
-    DATA_RENTGEN__SERVER__SESSION__DOMAIN=example.com
+    ```yaml title="config.yml"
+    server:
+      session:
+        enabled: true
+        secret_key: secret
+        session_cookie: custom_cookie_name
+        max_age: null  # cookie will last as long as the browser session
+        same_site: strict
+        https_only: true
+        domain: example.com
     ```
     """
 
