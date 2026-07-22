@@ -60,17 +60,19 @@ By default, database is created with no data. To seed database with some example
     - `db-refresh-views` will refresh analytic views.
     - `db-seed` will seed database with some examples (optional, can be omitted).
 
-    Options can be set via `.env` file or `environment` section in `docker-compose.yml`
+    Options can be set via `environment` section in `docker-compose.yml`
+
+    Data.Rentgen database settings are loaded from `config.docker.yml`.
 
     ```yaml title="docker-compose.yml"
     --8<--
-    docker-compose.yml:1:69,176:176
+    docker-compose.yml:1:79,208:210
     --8<--
     ```
 
-    ```ini title=".env.docker"
+    ```yaml title="config.docker.yml"
     --8<--
-    .env.docker:1:5,23:23
+    config.docker.yml
     --8<--
     ```
 
@@ -104,19 +106,11 @@ By default, database is created with no data. To seed database with some example
     ...
     ```
 
-- Configure [`Database connection`][configuration-database] using environment variables, e.g. by creating `.env` file:
+- Configure [`Database connection`][configuration-database] in `config.yml`:
 
-    ```console title="/some/.env"
-
-    $ export DATA_RENTGEN__DATABASE__URL=postgresql+asyncpg://data_rentgen:changeme@localhost:5432/data_rentgen
-    ...
-    ```
-
-    And then read values from this file:
-
-    ```console
-    $ source /some/.env
-    ...
+    ```yaml title="config.yml"
+    database:
+      url: postgresql+asyncpg://data_rentgen:changeme@localhost:5432/data_rentgen
     ```
 
 - Run migrations:

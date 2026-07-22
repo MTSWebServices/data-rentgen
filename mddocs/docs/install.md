@@ -7,16 +7,16 @@
 
 ## Install & run
 
-Copy `docker-compose.yml` and `.env.docker` from this repo:
+Copy `docker-compose.yml` and `config.docker.yml` from this repo:
 
 ??? note "docker-compose.yml"
     ```yaml
     --8<-- "docker-compose.yml"
     ```
 
-??? note ".env.docker"
-    ```ini
-    --8<-- ".env.docker"
+??? note "config.docker.yml"
+    ```yaml
+    --8<-- "config.docker.yml"
     ```
 
 Then start containers using `docker-compose`:
@@ -26,7 +26,8 @@ $ VERSION=latest docker compose --profile all up -d --wait
 ...
 ```
 
-`docker-compose` will download required images, create containers and start them in a proper order. Options can be set via `.env.docker` file or `environment` section in `docker-compose.yml`.
+`docker-compose` will download required images, create containers and start them in a proper order.
+Settings are loaded from `config.docker.yml`.
 
 `VERSION` is a tag of docker image. You can find all available tags [here](https://hub.docker.com/r/mtsrus/data-rentgen/tags).
 

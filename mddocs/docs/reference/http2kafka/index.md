@@ -37,17 +37,17 @@ If this is not possible, http2kafka is the way to go.
 
     `docker-compose` will download all necessary images, create containers, and then start the component.
 
-    Options can be set via `.env` file or `environment` section in `docker-compose.yml`
+    Settings are loaded from `config.docker.yml`.
 
     ```yaml title="docker-compose.yml"
     --8<--
-    docker-compose.yml:155:173
+    docker-compose.yml:187:206
     --8<--
     ```
 
-    ```ini title=".env.docker"
+    ```yaml title="config.docker.yml"
     --8<--
-    .env.docker:29:34
+    config.docker.yml
     --8<--
     ```
 

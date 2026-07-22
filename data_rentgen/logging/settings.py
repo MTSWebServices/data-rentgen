@@ -5,11 +5,10 @@ import textwrap
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class LoggingSettings(BaseSettings):
+class LoggingSettings(BaseModel):
     """Data.Rentgen backend logging Settings.
 
     Examples
@@ -17,21 +16,27 @@ class LoggingSettings(BaseSettings):
 
     Using `json` preset:
 
-    ```bash
-    DATA_RENTGEN__LOGGING__SETUP=True
-    DATA_RENTGEN__LOGGING__PRESET=json
+    ```yaml title="config.yml"
+    logging:
+      setup: true
+      preset: json
     ```
     Passing custom logging config file:
 
-    ```bash
-    DATA_RENTGEN__LOGGING__SETUP=True
-    DATA_RENTGEN__LOGGING__CUSTOM_CONFIG_PATH=/some/logging.yml
+    ```yaml title="config.yml"
+    logging:
+      setup: true
+      custom_config_path: /some/logging.yml
     ```
     Setup logging in some other way, e.g. using [uvicorn args](https://www.uvicorn.org/settings/#logging):
 
+    ```yaml title="config.yml"
+    logging:
+      setup: false
+    ```
+
     ```bash
-    $ export DATA_RENTGEN__LOGGING__SETUP=False
-    $ python -m data_rentgen.server --log-level debug
+    python -m data_rentgen.server --log-level debug
     ```
     """
 
@@ -89,4 +94,4 @@ class LoggingSettings(BaseSettings):
         ),
     )
 
-    model_config = SettingsConfigDict(env_prefix="DATA_RENTGEN__LOGGING__", env_nested_delimiter="__", extra="forbid")
+    model_config = ConfigDict(extra="forbid")

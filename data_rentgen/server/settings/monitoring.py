@@ -19,10 +19,12 @@ class MonitoringSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__SERVER__MONITORING__ENABLED=True
-    DATA_RENTGEN__SERVER__MONITORING__SKIP_PATHS=["/some/path"]
-    DATA_RENTGEN__SERVER__MONITORING__SKIP_METHODS=["OPTIONS"]
+    ```yaml title="config.yml"
+    server:
+      monitoring:
+        enabled: true
+        skip_paths: [/some/path]
+        skip_methods: [OPTIONS]
     ```
     """
 

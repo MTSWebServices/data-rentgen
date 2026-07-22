@@ -23,23 +23,27 @@ class CORSSettings(BaseModel):
 
     For development environment:
 
-    ```bash
-    DATA_RENTGEN__SERVER__CORS__ENABLED=True
-    DATA_RENTGEN__SERVER__CORS__ALLOW_ORIGINS="*"
-    DATA_RENTGEN__SERVER__CORS__ALLOW_METHODS="*"
-    DATA_RENTGEN__SERVER__CORS__ALLOW_HEADERS="*"
-    DATA_RENTGEN__SERVER__CORS__EXPOSE_HEADERS="X-Request-ID,Location,Access-Control-Allow-Credentials"
+    ```yaml title="config.yml"
+    server:
+      cors:
+        enabled: true
+        allow_origins: ['*']
+        allow_methods: ['*']
+        allow_headers: ['*']
+        expose_headers: [X-Request-ID, Location, Access-Control-Allow-Credentials]
     ```
     For production environment:
 
-    ```bash
-    DATA_RENTGEN__SERVER__CORS__ENABLED=True
-    DATA_RENTGEN__SERVER__CORS__ALLOW_ORIGINS="production.example.com"
-    DATA_RENTGEN__SERVER__CORS__ALLOW_METHODS="GET"
-    DATA_RENTGEN__SERVER__CORS__ALLOW_HEADERS="X-Request-ID,X-Request-With"
-    DATA_RENTGEN__SERVER__CORS__EXPOSE_HEADERS="X-Request-ID"
-    # custom option passed directly to middleware
-    DATA_RENTGEN__SERVER__CORS__MAX_AGE=600
+    ```yaml title="config.yml"
+    server:
+      cors:
+        enabled: true
+        allow_origins: [production.example.com]
+        allow_methods: [GET]
+        allow_headers: [X-Request-ID, X-Request-With]
+        expose_headers: [X-Request-ID]
+        # custom option passed directly to middleware
+        max_age: 600
     ```
     """
 

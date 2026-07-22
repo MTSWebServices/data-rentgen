@@ -21,9 +21,8 @@ from data_rentgen.db.scripts.seed.flink import generate_flink_run
 from data_rentgen.db.scripts.seed.hive import generate_hive_run
 from data_rentgen.db.scripts.seed.spark_local import generate_spark_run_local
 from data_rentgen.db.scripts.seed.spark_yarn import generate_spark_run_yarn
-from data_rentgen.db.settings import DatabaseSettings
+from data_rentgen.db.settings import DatabaseApplicationSettings
 from data_rentgen.dto.user import UserDTO
-from data_rentgen.logging.settings import LoggingSettings
 from data_rentgen.logging.setup_logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -66,7 +65,8 @@ def get_parser() -> ArgumentParser:
 
 
 async def main(args: list[str]) -> None:
-    setup_logging(LoggingSettings())
+    settings = DatabaseApplicationSettings()
+    setup_logging(settings.logging)
 
     parser = get_parser()
     params = parser.parse_args(args)
@@ -106,8 +106,7 @@ async def main(args: list[str]) -> None:
         result.merge(item)
     logger.info("  Generated: %r", result)
 
-    db_settings = DatabaseSettings()  # type: ignore[call-arg]
-    session_factory = create_session_factory(db_settings)
+    session_factory = create_session_factory(settings.database)
     async with session_factory() as session:
         saver = DatabaseSaver(session, logger)
         await saver.save(result)

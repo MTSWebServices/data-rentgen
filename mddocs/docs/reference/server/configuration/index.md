@@ -2,6 +2,9 @@
 
 ## Configuration
 
+Data.Rentgen reads settings from `config.yml` in the current working directory.
+Use `DATA_RENTGEN_CONFIG_FILE` to select another YAML file.
+
 - [logging][configuration-server-logging]
 - [monitoring][configuration-server-monitoring]
 - [cors][configuration-server-cors]

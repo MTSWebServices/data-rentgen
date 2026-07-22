@@ -14,9 +14,11 @@ class StaticFilesSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__SERVER__STATIC_FILES__ENABLED=True
-    DATA_RENTGEN__SERVER__STATIC_FILES__DIRECTORY=/app/data_rentgen/server/static
+    ```yaml title="config.yml"
+    server:
+      static_files:
+        enabled: true
+        directory: /app/data_rentgen/server/static
     ```
     """
 

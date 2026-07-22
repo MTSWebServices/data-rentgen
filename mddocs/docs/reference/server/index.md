@@ -20,17 +20,17 @@ Implemented using [FastAPI](https://fastapi.tiangolo.com/).
 
     `docker-compose` will download all necessary images, create containers, and then start the server.
 
-    Options can be set via `.env` file or `environment` section in `docker-compose.yml`
+    Settings are loaded from `config.docker.yml`.
 
     ```yaml title="docker-compose.yml"
     --8<--
-    docker-compose.yml:71:99
+    docker-compose.yml:80:109
     --8<--
     ```
 
-    ```ini title=".env.docker"
+    ```yaml title="config.docker.yml"
     --8<--
-    .env.docker:22:27
+    config.docker.yml
     --8<--
     ```
 

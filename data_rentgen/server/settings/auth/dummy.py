@@ -11,9 +11,11 @@ class DummyAuthProviderSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
-    DATA_RENTGEN__AUTH__ACCESS_KEY__SECRET_KEY=secret
+    ```yaml title="config.yml"
+    auth:
+      provider: data_rentgen.server.providers.auth.dummy_provider.DummyAuthProvider
+      access_key:
+        secret_key: secret
     ```
     """
 

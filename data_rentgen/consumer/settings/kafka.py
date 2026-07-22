@@ -30,11 +30,13 @@ class KafkaSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__KAFKA__BOOTSTRAP_SERVERS="localhost:9092"
-    DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-256
-    DATA_RENTGEN__KAFKA__REQUEST_TIMEOUT_MS=5000
-    DATA_RENTGEN__KAFKA__CONNECTIONS_MAX_IDLE_MS=540000
+    ```yaml title="config.yml"
+    kafka:
+      bootstrap_servers: [localhost:9092]
+      security:
+        type: SCRAM-SHA-256
+      request_timeout_ms: 5000
+      connections_max_idle_ms: 540000
     ```
     """
 

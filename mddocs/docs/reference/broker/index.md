@@ -41,18 +41,12 @@ Other popular OpenLineage server implementations use HTTP protocol for receiving
 
     `docker-compose` will download Apache Kafka image, create container and volume, and then start container.
 
-    Image entrypoint will create database if volume is empty.
-    Options can be set via `.env` file or `environment` section in `docker-compose.yml`
+    Image entrypoint will initialize broker storage if the volume is empty.
+    Options can be set via `environment` section in `docker-compose.yml`
 
     ```yaml title="docker-compose.yml"
     --8<--
-    docker-compose.yml:101:117,177:177
-    --8<--
-    ```
-
-    ```ini title=".env.docker"
-    --8<--
-    .env.docker:7:20
+    docker-compose.yml:111:141,208:210
     --8<--
     ```
 

@@ -11,8 +11,10 @@ class KafkaSecurityAnonymousSettings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__KAFKA__SECURITY__TYPE=None
+    ```yaml title="config.yml"
+    kafka:
+      security:
+        type: null
     ```
     """
 

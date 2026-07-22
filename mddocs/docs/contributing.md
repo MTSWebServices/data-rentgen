@@ -98,7 +98,7 @@ make dev-server
 
 And open [http://localhost:8000/docs](http://localhost:8000/docs)
 
-Settings are stored in `.env.local` file.
+Settings are stored in `config.yml`.
 
 To start developlment consumer, open a new terminal window/tab, and run:
 
@@ -176,7 +176,7 @@ make prod
 
 Then open [http://localhost:8000/docs](http://localhost:8000/docs)
 
-Settings are stored in `.env.docker` file.
+Settings are stored in `config.docker.yml`.
 
 ### Build documentation
 

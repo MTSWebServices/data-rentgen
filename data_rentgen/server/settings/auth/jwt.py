@@ -11,9 +11,11 @@ class JWTSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__AUTH__ACCESS_KEY__SECRET_KEY=somesecret
-    DATA_RENTGEN__AUTH__ACCESS_KEY__EXPIRE_SECONDS=3600  # 1 hour
+    ```yaml title="config.yml"
+    auth:
+      access_key:
+        secret_key: somesecret
+        expire_seconds: 3600  # 1 hour
     ```
     """
 

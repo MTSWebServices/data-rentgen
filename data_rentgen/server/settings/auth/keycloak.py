@@ -19,15 +19,17 @@ class KeycloakAuthProviderSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__AUTH__PROVIDER=data_rentgen.server.providers.auth.keycloak_provider.KeycloakAuthProvider
-    DATA_RENTGEN__AUTH__KEYCLOAK__SERVER_URL=http://keycloak:8080
-    DATA_RENTGEN__AUTH__KEYCLOAK__REDIRECT_URI=http://localhost:8000/auth-callback
-    DATA_RENTGEN__AUTH__KEYCLOAK__REALM_NAME=fastapi_realm
-    DATA_RENTGEN__AUTH__KEYCLOAK__CLIENT_ID=fastapi_client
-    DATA_RENTGEN__AUTH__KEYCLOAK__CLIENT_SECRET=generated_by_keycloak
-    DATA_RENTGEN__AUTH__KEYCLOAK__SCOPE=email
-    DATA_RENTGEN__AUTH__KEYCLOAK__VERIFY_SSL=False
+    ```yaml title="config.yml"
+    auth:
+      provider: data_rentgen.server.providers.auth.keycloak_provider.KeycloakAuthProvider
+      keycloak:
+        server_url: http://keycloak:8080
+        redirect_uri: http://localhost:8000/auth-callback
+        realm_name: fastapi_realm
+        client_id: fastapi_client
+        client_secret: generated_by_keycloak
+        scope: email
+        verify_ssl: false
     ```
     """
 

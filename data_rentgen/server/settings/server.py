@@ -20,14 +20,21 @@ class ServerSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__SERVER__DEBUG=True
-    DATA_RENTGEN__SERVER__MONITORING__ENABLED=True
-    DATA_RENTGEN__SERVER__CORS__ENABLED=True
-    DATA_RENTGEN__SERVER__REQUEST_ID__ENABLED=True
-    DATA_RENTGEN__SERVER__OPENAPI__ENABLED=True
-    DATA_RENTGEN__SERVER__OPENAPI__SWAGGER__ENABLED=True
-    DATA_RENTGEN__SERVER__OPENAPI__REDOC__ENABLED=True
+    ```yaml title="config.yml"
+    server:
+      debug: true
+      monitoring:
+        enabled: true
+      cors:
+        enabled: true
+      request_id:
+        enabled: true
+      openapi:
+        enabled: true
+        swagger:
+          enabled: true
+        redoc:
+          enabled: true
     ```
     """
 

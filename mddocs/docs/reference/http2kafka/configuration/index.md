@@ -2,6 +2,9 @@
 
 ## Configuration
 
+Data.Rentgen reads settings from `config.yml` in the current working directory.
+Use `DATA_RENTGEN_CONFIG_FILE` to select another YAML file.
+
 - [kafka][configuration-consumer-kafka]
 - [producer-specific][configuration-producer-specific]
 - [logging][configuration-http2kafka-logging]

@@ -19,8 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data_rentgen.db.factory import create_session_factory
 from data_rentgen.db.models import Input, Operation, Output, Run
 from data_rentgen.db.models.column_lineage import ColumnLineage
-from data_rentgen.db.settings import DatabaseSettings
-from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.db.settings import DatabaseApplicationSettings
 from data_rentgen.logging.setup_logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -123,7 +122,8 @@ async def create_partition(start: date, end: date, granularity: Granularity, ses
 
 
 async def main(args: list[str]) -> None:
-    setup_logging(LoggingSettings())
+    settings = DatabaseApplicationSettings()
+    setup_logging(settings.logging)
 
     parser = get_parser()
     params = parser.parse_args(args)
@@ -138,8 +138,7 @@ async def main(args: list[str]) -> None:
 
     logger.info("Creating partitions from %s to %s with %s granularity", start, end, granularity.value)
 
-    db_settings = DatabaseSettings()  # type: ignore[call-arg]
-    session_factory = create_session_factory(db_settings)
+    session_factory = create_session_factory(settings.database)
     async with session_factory() as session:
         for from_, to in generate_partition_range(start, end, granularity):
             await create_partition(from_, to, granularity, session)

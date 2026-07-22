@@ -15,9 +15,10 @@ class ProducerSettings(BaseModel):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__PRODUCER__MAIN_TOPIC="input.runs"
-    DATA_RENTGEN__PRODUCER__MALFOMED_TOPIC="input.runs__malformed"
+    ```yaml title="config.yml"
+    producer:
+      main_topic: input.runs
+      malformed_topic: input.runs__malformed
     ```
     """
 

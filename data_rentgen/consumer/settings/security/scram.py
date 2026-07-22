@@ -15,10 +15,12 @@ class KafkaSecurityScram256Settings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-256
-    DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
-    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```yaml title="config.yml"
+    kafka:
+      security:
+        type: SCRAM-SHA-256
+        user: dummy
+        password: changeme
     ```
     """
 
@@ -39,10 +41,12 @@ class KafkaSecurityScram512Settings(KafkaSecurityBaseSettings):
     Examples
     --------
 
-    ```bash
-    DATA_RENTGEN__KAFKA__SECURITY__TYPE=SCRAM-SHA-512
-    DATA_RENTGEN__KAFKA__SECURITY__USER=dummy
-    DATA_RENTGEN__KAFKA__SECURITY__PASSWORD=changeme
+    ```yaml title="config.yml"
+    kafka:
+      security:
+        type: SCRAM-SHA-512
+        user: dummy
+        password: changeme
     ```
     """
 
