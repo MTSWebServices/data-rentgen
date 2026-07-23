@@ -41,3 +41,8 @@ auth:
     redirect_uri: http://localhost:3000/auth-callback
     scope: email
     verify_ssl: false
+
+ui:
+  api_browser_url: http://localhost:8000
+  auth_provider: dummyAuthProvider
+  # auth_provider: keycloakAuthProvider

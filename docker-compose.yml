@@ -173,10 +173,10 @@ services:
   frontend:
     image: mtsrus/data-rentgen-ui:${VERSION:-latest}
     restart: unless-stopped
-    environment:
-      DATA_RENTGEN__UI__API_BROWSER_URL: http://localhost:8000
     ports:
       - 3000:3000
+    volumes:
+      - ./config.docker.yml:/app/config.yml:ro
     depends_on:
       server:
         condition: service_healthy
