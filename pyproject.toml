@@ -33,6 +33,7 @@ requires-python = ">=3.12"
 dependencies = [
   "pydantic~=2.13.4",
   "pydantic-settings~=2.14.2",
+  "pydantic-settings-logging~=0.1.1",
   "typing-extensions>=4.15,<4.17",
   "alembic~=1.18.4",
   "sqlalchemy~=2.0.51",
@@ -237,6 +238,10 @@ follow_untyped_imports = true
 [[tool.mypy.overrides]]
 module=["aiokafka.*"]
 follow_untyped_imports = true
+
+[[tool.mypy.overrides]]
+module = "pydantic_settings_logging"
+ignore_missing_imports = true
 
 [tool.darglint]
 docstring_style = "sphinx"

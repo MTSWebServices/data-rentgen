@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import data_rentgen
 from data_rentgen.db.factory import session_generator
-from data_rentgen.logging.setup_logging import setup_logging
+from data_rentgen.logging import setup_logging
 from data_rentgen.server.api.handlers import apply_exception_handlers
 from data_rentgen.server.api.router import api_router
 from data_rentgen.server.middlewares import apply_middlewares

@@ -4,7 +4,7 @@
 from pydantic import Field
 
 from data_rentgen.db.settings import DatabaseSettings
-from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.logging import DEFAULT_LOGGING_SETTINGS, LoggingSettings
 from data_rentgen.server.settings.auth import AuthSettings
 from data_rentgen.server.settings.server import ServerSettings
 from data_rentgen.settings import BaseSettings
@@ -30,8 +30,6 @@ class ServerApplicationSettings(BaseSettings):
     ```yaml title="config.yml"
     database:
       url: postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
-    logging:
-      preset: json
     server:
       debug: true
     ```
@@ -46,7 +44,7 @@ class ServerApplicationSettings(BaseSettings):
         description="[Database settings][configuration-database]",
     )
     logging: LoggingSettings = Field(
-        default_factory=LoggingSettings,
+        default=DEFAULT_LOGGING_SETTINGS,
         description="[Logging settings][configuration-server-logging]",
     )
     server: ServerSettings = Field(

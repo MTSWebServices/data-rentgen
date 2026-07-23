@@ -5,7 +5,7 @@ import textwrap
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.logging import DEFAULT_LOGGING_SETTINGS, LoggingSettings
 from data_rentgen.settings import BaseSettings
 
 
@@ -54,6 +54,6 @@ class DatabaseApplicationSettings(BaseSettings):
         description="Database settings",
     )
     logging: LoggingSettings = Field(
-        default_factory=LoggingSettings,
+        default=DEFAULT_LOGGING_SETTINGS,
         description="Logging settings",
     )

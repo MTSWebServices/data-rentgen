@@ -8,7 +8,7 @@ from data_rentgen.consumer.settings.kafka import KafkaSettings
 from data_rentgen.consumer.settings.monitoring import MonitoringSettings
 from data_rentgen.consumer.settings.producer import ProducerSettings
 from data_rentgen.db.settings import DatabaseSettings
-from data_rentgen.logging.settings import LoggingSettings
+from data_rentgen.logging import DEFAULT_LOGGING_SETTINGS, LoggingSettings
 from data_rentgen.settings import BaseSettings
 
 
@@ -34,8 +34,6 @@ class ConsumerApplicationSettings(BaseSettings):
       url: postgresql+asyncpg://postgres:postgres@localhost:5432/data_rentgen
     kafka:
       bootstrap_servers: [kafka1:9092, kafka2:9092]
-    logging:
-      preset: json
     ```
     """  # noqa: E501
 
@@ -44,7 +42,7 @@ class ConsumerApplicationSettings(BaseSettings):
         description="[Database settings][configuration-database]",
     )
     logging: LoggingSettings = Field(
-        default_factory=LoggingSettings,
+        default=DEFAULT_LOGGING_SETTINGS,
         description="[Logging settings][configuration-consumer-logging]",
     )
     kafka: KafkaSettings = Field(

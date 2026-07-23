@@ -20,7 +20,7 @@ from data_rentgen.db.factory import create_session_factory
 from data_rentgen.db.models import Input, Operation, Output, Run
 from data_rentgen.db.models.column_lineage import ColumnLineage
 from data_rentgen.db.settings import DatabaseApplicationSettings
-from data_rentgen.logging.setup_logging import setup_logging
+from data_rentgen.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

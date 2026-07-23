@@ -23,7 +23,7 @@ from data_rentgen.db.scripts.seed.spark_local import generate_spark_run_local
 from data_rentgen.db.scripts.seed.spark_yarn import generate_spark_run_yarn
 from data_rentgen.db.settings import DatabaseApplicationSettings
 from data_rentgen.dto.user import UserDTO
-from data_rentgen.logging.setup_logging import setup_logging
+from data_rentgen.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

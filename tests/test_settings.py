@@ -28,8 +28,6 @@ def test_all_application_settings_are_loaded_from_default_yaml_file(
             """\
             database:
               url: postgresql+asyncpg://yaml@localhost:5432/data_rentgen
-            logging:
-              preset: colored
             kafka:
               bootstrap_servers: [yaml:9092]
             server:
@@ -48,10 +46,14 @@ def test_all_application_settings_are_loaded_from_default_yaml_file(
     database_settings = DatabaseApplicationSettings()
 
     assert server_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
-    assert server_settings.server.debug is True
+    assert consumer_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
+    assert http2kafka_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
+    assert database_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
     assert consumer_settings.kafka.bootstrap_servers == ["yaml:9092"]
     assert http2kafka_settings.kafka.bootstrap_servers == ["yaml:9092"]
-    assert database_settings.logging.preset == "colored"
+    assert server_settings.server.debug is True
+    assert server_settings.auth.personal_tokens.enabled is False
+    assert http2kafka_settings.auth.personal_tokens.enabled is False
 
 
 def test_yaml_file_overrides_environment(
@@ -65,8 +67,6 @@ def test_yaml_file_overrides_environment(
             """\
             database:
               url: postgresql+asyncpg://yaml@localhost:5432/data_rentgen
-            logging:
-              preset: colored
             """,
         ),
         encoding="utf-8",
@@ -76,12 +76,10 @@ def test_yaml_file_overrides_environment(
         "DATA_RENTGEN__DATABASE__URL",
         "postgresql+asyncpg://env@localhost:5432/data_rentgen",
     )
-    monkeypatch.setenv("DATA_RENTGEN__LOGGING__PRESET", "json")
 
     settings = DatabaseApplicationSettings()
 
     assert settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
-    assert settings.logging.preset == "colored"
 
 
 def test_environment_fills_values_missing_from_yaml_file(
@@ -100,12 +98,10 @@ def test_environment_fills_values_missing_from_yaml_file(
         encoding="utf-8",
     )
     monkeypatch.setenv("DATA_RENTGEN_CONFIG_FILE", str(config_path))
-    monkeypatch.setenv("DATA_RENTGEN__LOGGING__PRESET", "json")
 
     settings = DatabaseApplicationSettings()
 
     assert settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
-    assert settings.logging.preset == "json"
 
 
 def test_settings_can_be_loaded_from_environment_without_yaml_file(

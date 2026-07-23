@@ -60,12 +60,14 @@ This is done by `request_id` middleware, which is enabled by default and can con
 
 This is done by adding a specific filter to logging handler:
 
-??? note "logging.yml"
-    ```yaml
-    --8<--
-    data_rentgen/logging/presets/plain.yml:6:12,23:24,35
-    --8<--
-    ```
+```yaml title="config.yml"
+logging:
+    filters:
+        correlation_id:
+            class: asgi_correlation_id.CorrelationIdFilter
+            uuid_length: 32
+            default_value: '-'
+```
 
 Resulting logs look like:
 

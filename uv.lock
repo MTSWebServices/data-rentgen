@@ -610,6 +610,7 @@ dependencies = [
     { name = "packaging" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pydantic-settings-logging" },
     { name = "python-dateutil" },
     { name = "python-json-logger" },
     { name = "pyyaml" },
@@ -715,6 +716,7 @@ requires-dist = [
     { name = "packaging", specifier = "~=26.0" },
     { name = "pydantic", specifier = "~=2.13.4" },
     { name = "pydantic-settings", specifier = "~=2.14.2" },
+    { name = "pydantic-settings-logging", specifier = "~=0.1.1" },
     { name = "pyjwt", marker = "extra == 'server'", specifier = "~=2.13.0" },
     { name = "python-dateutil", specifier = "~=2.9.0.post0" },
     { name = "python-json-logger", specifier = "~=4.1.0" },
@@ -1795,6 +1797,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5c/b5/8f48e906c3e0205276e8bd8cb7512217a87b2685304d64be27cad5b3019f/pydantic_settings-2.14.2.tar.gz", hash = "sha256:c19dd64b19097f1de80184f0cc7b0272a13ae6e170cbf240a3e27e381ed14a5f", size = 237700, upload-time = "2026-06-19T13:44:56.324Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/77/c1/6e422f34e569cf8e18df68d1939c81c099d2b61e4f7d9621c8a77560799c/pydantic_settings-2.14.2-py3-none-any.whl", hash = "sha256:a20c97b37910b6550d5ea50fbcc2d4187defe58cd57070b73863d069419c9440", size = 61715, upload-time = "2026-06-19T13:44:55.02Z" },
+]
+
+[[package]]
+name = "pydantic-settings-logging"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/0f/cbffb256faf4994def7bdaf97ce7e51bde95e816b1cd3099fdf85068baf6/pydantic_settings_logging-0.1.1.tar.gz", hash = "sha256:745879f91fe742b359765aa58bb42ea998985a04574391fc202fbd6c783e1715", size = 25684, upload-time = "2025-07-03T20:23:46.294Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/cb/17907f09ac34e13c761ba3563db68d1d43333d001e6f0d3076bf62c16dab/pydantic_settings_logging-0.1.1-py3-none-any.whl", hash = "sha256:08a961882a6ef6bde4fc4f7ec121aa29ee46cbd2f013974702c9a57f84e6204b", size = 15309, upload-time = "2025-07-03T20:23:45.12Z" },
 ]
 
 [[package]]

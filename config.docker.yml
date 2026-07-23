@@ -1,9 +1,6 @@
 database:
   url: postgresql+asyncpg://data_rentgen:changeme@db:5432/data_rentgen
 
-logging:
-  preset: colored
-
 kafka:
   bootstrap_servers: [broker:9092]
   security:

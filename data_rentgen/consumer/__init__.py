@@ -25,7 +25,7 @@ import data_rentgen
 from data_rentgen.consumer.settings import ConsumerApplicationSettings
 from data_rentgen.consumer.subscribers import runs_events_subscriber
 from data_rentgen.db.factory import session_generator
-from data_rentgen.logging.setup_logging import setup_logging
+from data_rentgen.logging import setup_logging
 
 __all__ = [
     "ConsumerApplicationSettings",
