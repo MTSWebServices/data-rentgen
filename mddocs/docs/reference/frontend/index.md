@@ -20,11 +20,17 @@ providing users the ability to navigate entities and build lineage graph.
 
     `docker-compose` will download Data.Rentgen UI image, create containers, and then start them.
 
-    Options can be set via `environment` section in `docker-compose.yml`
-
     ```yaml title="docker-compose.yml"
     --8<--
     docker-compose.yml:173:185
+    --8<--
+    ```
+
+    Options can be set via `config.yml`
+
+    ```yaml title="config.docker.yml"
+    --8<--
+    config.docker.yml:45:48
     --8<--
     ```
 

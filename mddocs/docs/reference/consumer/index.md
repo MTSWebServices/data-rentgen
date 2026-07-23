@@ -29,7 +29,7 @@ Data.Rentgen fetches messages from a [`message-broker`][message-broker] using a 
 
     ```yaml title="config.docker.yml"
     --8<--
-    config.docker.yml
+    config.docker.yml:4:10
     --8<--
     ```
 

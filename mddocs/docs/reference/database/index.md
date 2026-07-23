@@ -72,7 +72,7 @@ By default, database is created with no data. To seed database with some example
 
     ```yaml title="config.docker.yml"
     --8<--
-    config.docker.yml
+    config.docker.yml:1:2
     --8<--
     ```
 
