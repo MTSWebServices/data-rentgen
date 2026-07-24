@@ -30,9 +30,6 @@ updates:
       # do not use FastAPI 0.137.0+
       - dependency-name: fastapi
         update-types: [version-update:semver-major, version-update:semver-minor]
-      # do not use uvicorn 0.51.0+
-      - dependency-name: uvicorn
-        update-types: [version-update:semver-major, version-update:semver-minor]
     # https://til.simonwillison.net/github/dependabot-python-setup
     groups:
       python-packages:
