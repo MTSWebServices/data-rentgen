@@ -67,6 +67,7 @@ class PersonalTokenRepository(Repository[PersonalToken]):
 
     async def create(
         self,
+        *,
         token_id: UUID,
         user_id: int,
         name: str,

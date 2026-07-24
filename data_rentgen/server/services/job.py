@@ -85,6 +85,7 @@ class JobService:
 
     async def paginate(
         self,
+        *,
         page: int,
         page_size: int,
         job_ids: list[int],

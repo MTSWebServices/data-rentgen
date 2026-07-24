@@ -143,6 +143,7 @@ descendants_by_job_query = text(
 class JobRepository(Repository[Job]):
     async def paginate(
         self,
+        *,
         page: int,
         page_size: int,
         job_ids: list[int],

@@ -72,6 +72,7 @@ class RunService:
 
     async def paginate(
         self,
+        *,
         page: int,
         page_size: int,
         since: datetime | None,

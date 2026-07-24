@@ -158,6 +158,7 @@ class DatasetRepository(Repository[Dataset]):
 
     async def paginate(
         self,
+        *,
         page: int,
         page_size: int,
         dataset_ids: list[int],

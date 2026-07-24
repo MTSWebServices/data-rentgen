@@ -95,6 +95,7 @@ class OperationRepository(Repository[Operation]):
 
     async def paginate(
         self,
+        *,
         page: int,
         page_size: int,
         operation_ids: list[UUID],

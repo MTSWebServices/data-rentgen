@@ -149,6 +149,7 @@ descendants_by_run_query = text(
 class RunRepository(Repository[Run]):
     async def paginate(  # noqa: PLR0912, C901, PLR0915
         self,
+        *,
         page: int,
         page_size: int,
         since: datetime | None,

@@ -46,6 +46,7 @@ class Repository(ABC, Generic[Model]):
 
     async def _paginate_by_query(
         self,
+        *,
         query: Select | CompoundSelect,
         order_by: Sequence[ColumnElement | SQLColumnExpression],
         page: int,

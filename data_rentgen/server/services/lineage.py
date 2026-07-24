@@ -158,6 +158,7 @@ class LineageService:
 
     async def _get_lineage_by_jobs_recursive(
         self,
+        *,
         job_ids: set[int],
         seen: LineageServiceIntermediateResult,
         direction: LineageDirectionV1,
@@ -337,6 +338,7 @@ class LineageService:
 
     async def _get_lineage_by_runs_recursive(
         self,
+        *,
         run_ids: set[UUID],
         seen: LineageServiceIntermediateResult,
         direction: LineageDirectionV1,
@@ -508,6 +510,7 @@ class LineageService:
 
     async def _get_lineage_by_operations_recursive(
         self,
+        *,
         operation_ids: set[UUID],
         seen: LineageServiceIntermediateResult,
         direction: LineageDirectionV1,
@@ -692,6 +695,7 @@ class LineageService:
 
     async def _get_lineage_by_datasets_recursive(
         self,
+        *,
         dataset_ids: set[int],
         seen: LineageServiceIntermediateResult,
         direction: LineageDirectionV1,

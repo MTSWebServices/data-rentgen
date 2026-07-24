@@ -121,9 +121,9 @@ test = [
   "gevent~=26.5",
 ]
 dev = [
-  "prek~=0.4.5",
-  "ruff~=0.15.18",
-  "mypy>=2.1,<2.4",
+  "prek~=0.4.10",
+  "ruff~=0.16.0",
+  "mypy~=2.3.0",
   "sqlalchemy[mypy]~=2.0.51",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
@@ -201,7 +201,7 @@ extend-exclude = ["mddocs/", "Makefile"]
 [tool.ruff.lint]
 select = ["ALL"]
 # TODO: Optionally remove from ignore later: RUF005, TC001-003
-ignore = ["ARG", "ANN", "D", "COM812", "TD", "FIX002", "RUF005"]
+ignore = ["ARG", "ANN", "D", "COM812", "TD", "FIX002", "RUF005", "CPY001"]
 
 [tool.ruff.lint.per-file-ignores]
 "data_rentgen/server/services/*" = ["PLR0913"]
@@ -214,9 +214,7 @@ ignore = ["ARG", "ANN", "D", "COM812", "TD", "FIX002", "RUF005"]
 "data_rentgen/db/models/*" = ["TC"]
 "data_rentgen/consumer/*" = ["TC"]
 "data_rentgen/openlineage/*" = ["N815"]
-
-
-"tests/*" = ["S", "A", "E501", "FBT001", "PD901", "SIM300", "PLR0913", "PLR2004",  "SLF001", "RET504", "PLR0915"]
+"tests/*" = ["S", "A", "E501", "FBT001", "PD901", "SIM300", "PLR0913", "PLR2004",  "SLF001", "RET504", "PLR0915", "PLR0917"]
 
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "list"
