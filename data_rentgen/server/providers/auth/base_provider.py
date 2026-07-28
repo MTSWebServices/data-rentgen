@@ -113,9 +113,5 @@ class AuthProvider(ABC):
         """
 
     @abstractmethod
-    async def logout(
-        self,
-        user: User,
-        refresh_token: str,
-    ) -> None:
+    async def logout(self, user: User, request: Request) -> None:
         """This method should implement user logout logic"""

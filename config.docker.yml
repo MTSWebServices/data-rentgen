@@ -11,9 +11,6 @@ kafka:
 
 server:
   debug: false
-  session:
-    enabled: true
-    secret_key: session_secret_key
   cors:
     enabled: true
     allow_origins: [http://localhost:3000]
@@ -34,13 +31,15 @@ auth:
   # Keycloak Auth
   # provider: data_rentgen.server.providers.auth.keycloak_provider.KeycloakAuthProvider
   keycloak:
-    server_url: http://keycloak:8080
+    api_url: http://keycloak:8080
     realm_name: create_realm_manually
     client_id: create_client_manually
     client_secret: generated_by_keycloak
-    redirect_uri: http://localhost:3000/auth-callback
+    ui_callback_url: http://localhost:3000/auth-callback
     scope: email
     verify_ssl: false
+  cookie:
+    secret_key: cookie_secret_key
 
 ui:
   api_browser_url: http://localhost:8000

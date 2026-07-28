@@ -16,11 +16,7 @@ from data_rentgen.server.errors.schemas.not_authorized import (
     NotAuthorizedSchema,
 )
 from data_rentgen.server.errors.schemas.not_implemented import NotImplementedErrorSchema
-from data_rentgen.server.providers.auth import (
-    AuthProvider,
-    DummyAuthProvider,
-    KeycloakAuthProvider,
-)
+from data_rentgen.server.providers.auth import AuthProvider
 from data_rentgen.server.schemas.v1.auth import AuthTokenSchema
 from data_rentgen.server.services import PersonalTokenPolicy, get_user
 
@@ -43,7 +39,7 @@ router = APIRouter(
     ),
 )
 async def token(
-    auth_provider: Annotated[DummyAuthProvider, Depends(Stub(AuthProvider))],
+    auth_provider: Annotated[AuthProvider, Depends(Stub(AuthProvider))],
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> AuthTokenSchema:
     user_token = await auth_provider.get_token_password_grant(
@@ -68,7 +64,7 @@ async def token(
 async def auth_callback(
     request: Request,
     code: str,
-    auth_provider: Annotated[KeycloakAuthProvider, Depends(Stub(AuthProvider))],
+    auth_provider: Annotated[AuthProvider, Depends(Stub(AuthProvider))],
 ):
     code_grant = await auth_provider.get_token_authorization_code_grant(
         code=code,
@@ -94,9 +90,7 @@ async def auth_callback(
 async def logout(
     request: Request,
     current_user: Annotated[User, Depends(get_user(personal_token_policy=PersonalTokenPolicy.DENY))],
-    auth_provider: Annotated[KeycloakAuthProvider, Depends(Stub(AuthProvider))],
+    auth_provider: Annotated[AuthProvider, Depends(Stub(AuthProvider))],
 ):
-    refresh_token = request.session.get("refresh_token", None)
-    request.session.clear()
-    await auth_provider.logout(user=current_user, refresh_token=refresh_token)
+    await auth_provider.logout(user=current_user, request=request)
     return Response(status_code=HTTPStatus.NO_CONTENT)

@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from itsdangerous import TimestampSigner
 
-from data_rentgen.server.settings.auth.keycloak import KeycloakSettings
+from data_rentgen.server.settings.auth.keycloak import KeycloakCookieSettings, KeycloakSettings
 
 
 @pytest.fixture(scope="session")
@@ -49,9 +49,11 @@ def get_public_key_pem(public_key):
 
 @pytest.fixture
 def create_session_cookie(rsa_keys, server_app_settings):
+    cookie_settings = KeycloakCookieSettings.model_validate(server_app_settings.auth.cookie)
+
     def _create_session_cookie(user, expire_in_msec=5000) -> str:
         private_pem = rsa_keys["private_pem"]
-        session_secret_key = server_app_settings.server.session.secret_key.get_secret_value()
+        session_secret_key = cookie_settings.secret_key.get_secret_value()
 
         payload = {
             "sub": str(user.id),
@@ -89,10 +91,10 @@ def create_session_cookie(rsa_keys, server_app_settings):
 @pytest.fixture
 def mock_keycloak_well_known(server_app_settings, respx_mock):
     keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
-    server_url = keycloak_settings.server_url
+    api_url = keycloak_settings.api_url
     realm_name = keycloak_settings.realm_name
 
-    realm_url = f"{server_url}/realms/{realm_name}"
+    realm_url = f"{api_url}realms/{realm_name}"
     well_known_url = f"{realm_url}/.well-known/openid-configuration"
     openid_url = f"{realm_url}/protocol/openid-connect"
     respx_mock.get(well_known_url).respond(
@@ -112,11 +114,11 @@ def mock_keycloak_well_known(server_app_settings, respx_mock):
 @pytest.fixture
 def mock_keycloak_realm(server_app_settings, rsa_keys, respx_mock):
     keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
-    server_url = keycloak_settings.server_url
+    api_url = keycloak_settings.api_url
     realm_name = keycloak_settings.realm_name
     public_pem_str = get_public_key_pem(rsa_keys["public_key"])
 
-    realm_url = f"{server_url}/realms/{realm_name}"
+    realm_url = f"{api_url}realms/{realm_name}"
     openid_url = f"{realm_url}/protocol/openid-connect"
     respx_mock.get(realm_url).respond(
         status_code=200,
@@ -133,7 +135,7 @@ def mock_keycloak_realm(server_app_settings, rsa_keys, respx_mock):
 @pytest.fixture
 def mock_keycloak_token_refresh(user, server_app_settings, rsa_keys, respx_mock):
     keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
-    server_url = keycloak_settings.server_url
+    api_url = keycloak_settings.api_url
     realm_name = keycloak_settings.realm_name
 
     # generate new access and refresh tokens
@@ -156,7 +158,7 @@ def mock_keycloak_token_refresh(user, server_app_settings, rsa_keys, respx_mock)
     )
     new_refresh_token = "mock_new_refresh_token"
 
-    realm_url = f"{server_url}/realms/{realm_name}"
+    realm_url = f"{api_url}realms/{realm_name}"
     openid_url = f"{realm_url}/protocol/openid-connect"
     respx_mock.post(f"{openid_url}/token").respond(
         status_code=200,
@@ -173,10 +175,10 @@ def mock_keycloak_token_refresh(user, server_app_settings, rsa_keys, respx_mock)
 @pytest.fixture
 def mock_keycloak_logout(server_app_settings, respx_mock):
     keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
-    server_url = keycloak_settings.server_url
+    api_url = keycloak_settings.api_url
     realm_name = keycloak_settings.realm_name
 
-    realm_url = f"{server_url}/realms/{realm_name}"
+    realm_url = f"{api_url}realms/{realm_name}"
     openid_url = f"{realm_url}/protocol/openid-connect"
     respx_mock.post(f"{openid_url}/logout").respond(
         status_code=204,
@@ -187,10 +189,10 @@ def mock_keycloak_logout(server_app_settings, respx_mock):
 @pytest.fixture
 def mock_keycloak_logout_bad_request(server_app_settings, respx_mock):
     keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
-    server_url = keycloak_settings.server_url
+    api_url = keycloak_settings.api_url
     realm_name = keycloak_settings.realm_name
 
-    realm_url = f"{server_url}/realms/{realm_name}"
+    realm_url = f"{api_url}realms/{realm_name}"
     openid_url = f"{realm_url}/protocol/openid-connect"
     respx_mock.post(f"{openid_url}/logout").respond(
         status_code=400,
@@ -201,9 +203,9 @@ def mock_keycloak_logout_bad_request(server_app_settings, respx_mock):
 @pytest.fixture
 def mock_keycloak_certs(server_app_settings, rsa_keys, respx_mock):
     keycloak_settings = KeycloakSettings.model_validate(server_app_settings.auth.keycloak)
-    server_url = keycloak_settings.server_url
+    api_url = keycloak_settings.api_url
     realm_name = keycloak_settings.realm_name
-    realm_url = f"{server_url}/realms/{realm_name}"
+    realm_url = f"{api_url}realms/{realm_name}"
     openid_url = f"{realm_url}/protocol/openid-connect"
 
     def encode_number_base64(n: int):

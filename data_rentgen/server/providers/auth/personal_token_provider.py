@@ -212,6 +212,6 @@ class PersonalTokenAuthProvider:
         msg = "Authorization code grant is not supported by PersonalTokenAuthProvider"
         raise NotImplementedError(msg)
 
-    async def logout(self, user: User, refresh_token: str | None) -> None:
+    async def logout(self, user: User, request: Request) -> None:
         msg = "Logout method is not implemented for PersonalTokenAuthProvider"
         raise NotImplementedError(msg)

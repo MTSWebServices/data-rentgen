@@ -12,7 +12,6 @@ from data_rentgen.server.middlewares.monitoring import (
 )
 from data_rentgen.server.middlewares.openapi import apply_openapi_middleware
 from data_rentgen.server.middlewares.request_id import apply_request_id_middleware
-from data_rentgen.server.middlewares.session import apply_session_middleware
 from data_rentgen.server.middlewares.static_files import apply_static_files
 from data_rentgen.server.settings import ServerSettings
 
@@ -29,6 +28,5 @@ def apply_middlewares(
     apply_application_version_middleware(application, settings.application_version)
     apply_openapi_middleware(application, settings.openapi)
     apply_static_files(application, settings.static_files)
-    apply_session_middleware(application, settings.session)
 
     return application
