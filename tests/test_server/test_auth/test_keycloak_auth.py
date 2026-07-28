@@ -35,8 +35,8 @@ async def test_keycloak_get_current_user_unauthorized(
 
     # redirect unauthorized user to Keycloak
     redirect_url = (
-        f"{settings.server_url}/realms/{settings.realm_name}/protocol/openid-connect/auth?client_id="
-        f"{settings.client_id}&response_type=code&redirect_uri={settings.redirect_uri}"
+        f"{settings.api_url}realms/{settings.realm_name}/protocol/openid-connect/auth?client_id="
+        f"{settings.client_id}&response_type=code&redirect_uri={settings.ui_callback_url}"
         f"&scope={settings.scope}&state=&nonce="
     )
     assert response.status_code == HTTPStatus.UNAUTHORIZED, response.json()
@@ -189,8 +189,8 @@ async def test_keycloak_auth_logout(
     next_response = await test_client.get("v1/users/me")
     # redirect unauthorized user to Keycloak
     redirect_url = (
-        f"{settings.server_url}/realms/{settings.realm_name}/protocol/openid-connect/auth?client_id="
-        f"{settings.client_id}&response_type=code&redirect_uri={settings.redirect_uri}"
+        f"{settings.api_url}realms/{settings.realm_name}/protocol/openid-connect/auth?client_id="
+        f"{settings.client_id}&response_type=code&redirect_uri={settings.ui_callback_url}"
         f"&scope={settings.scope}&state=&nonce="
     )
     assert next_response.status_code == HTTPStatus.UNAUTHORIZED, response.json()

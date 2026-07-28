@@ -6,6 +6,7 @@ from typing import Annotated, Any, NoReturn
 from fastapi import Depends, FastAPI, Request
 from jwcrypto.common import JWException
 from keycloak import KeycloakOpenID, KeycloakOperationError
+from starlette.middleware.sessions import SessionMiddleware
 
 from data_rentgen.db.models import User
 from data_rentgen.dependencies import Stub
@@ -30,7 +31,7 @@ class KeycloakAuthProvider(AuthProvider):
         self.settings = settings
         self._uow = unit_of_work
         self.keycloak_openid = KeycloakOpenID(
-            server_url=self.settings.keycloak.server_url,
+            server_url=str(self.settings.keycloak.api_url).rstrip("/") + "/",
             client_id=self.settings.keycloak.client_id,
             realm_name=self.settings.keycloak.realm_name,
             client_secret_key=self.settings.keycloak.client_secret.get_secret_value(),
@@ -49,6 +50,13 @@ class KeycloakAuthProvider(AuthProvider):
 
         app.dependency_overrides[AuthProvider] = cls
         app.dependency_overrides[KeycloakAuthProviderSettings] = get_settings
+
+        app.add_middleware(
+            SessionMiddleware,
+            secret_key=settings.cookie.secret_key.get_secret_value(),
+            session_cookie=settings.cookie.name,
+            **settings.cookie.model_dump(exclude={"secret_key", "name"}),
+        )
         return app
 
     async def get_token_password_grant(
@@ -67,18 +75,14 @@ class KeycloakAuthProvider(AuthProvider):
             return await self.keycloak_openid.a_token(
                 grant_type="authorization_code",
                 code=code,
-                redirect_uri=self.settings.keycloak.redirect_uri,
+                redirect_uri=self.settings.keycloak.ui_callback_url,
             )
         except KeycloakOperationError as e:
             logger.exception("Fail to get token from keycloak: %s", e)  # noqa: TRY401
             msg = "Failed to get token"
             raise AuthorizationError(msg) from e
 
-    async def get_current_user(
-        self,
-        access_token: str | None,
-        request: Request,
-    ) -> User:
+    async def get_current_user(self, access_token: str | None, request: Request) -> User:
         # we ignore explicit token passed via Authorization header
         access_token = request.session.get("access_token")
         if not access_token:
@@ -100,13 +104,13 @@ class KeycloakAuthProvider(AuthProvider):
         if token_info is None:
             await self.redirect_to_auth()
 
-        # this name is hardcoded in keycloak:
+        # field name is hardcoded in keycloak:
         # https://github.com/keycloak/keycloak/blob/3ca3a4ad349b4d457f6829eaf2ae05f1e01408be/core/src/main/java/org/keycloak/representations/IDToken.java
-        login = token_info.get("preferred_username")  # type: ignore[union-attr]
+        login = token_info.get("preferred_username")
         if not login:
             msg = "Invalid token"
             raise AuthorizationError(msg)
-        return await self._uow.user.get_or_create(UserDTO(name=login))  # type: ignore[arg-type]
+        return await self._uow.user.get_or_create(UserDTO(name=login))
 
     async def decode_token(self, access_token: str) -> dict[str, Any] | None:
         try:
@@ -115,7 +119,7 @@ class KeycloakAuthProvider(AuthProvider):
             logger.debug("Access token is invalid or expired: %s", err)
             return None
 
-    async def refresh_access_token(self, refresh_token: str) -> tuple[str, str]:  # type: ignore[return]
+    async def refresh_access_token(self, refresh_token: str) -> tuple[str, str]:
         try:
             new_tokens = await self.keycloak_openid.a_refresh_token(refresh_token)
             logger.debug("Access token refreshed")
@@ -126,7 +130,7 @@ class KeycloakAuthProvider(AuthProvider):
 
     async def redirect_to_auth(self) -> NoReturn:
         auth_url = await self.keycloak_openid.a_auth_url(
-            redirect_uri=self.settings.keycloak.redirect_uri,
+            redirect_uri=self.settings.keycloak.ui_callback_url,
             scope=self.settings.keycloak.scope,
         )
 
@@ -136,7 +140,10 @@ class KeycloakAuthProvider(AuthProvider):
             details=auth_url,
         )
 
-    async def logout(self, user: User, refresh_token: str | None) -> None:
+    async def logout(self, user: User, request: Request) -> None:
+        request.session.pop("access_token", None)
+
+        refresh_token = request.session.pop("refresh_token", None)
         if not refresh_token:
             logger.debug("No refresh token found in session.")
             return
@@ -144,6 +151,6 @@ class KeycloakAuthProvider(AuthProvider):
         try:
             await self.keycloak_openid.a_logout(refresh_token)
         except KeycloakOperationError as err:
+            logger.debug("Can't logout user %s: %s", user.name, err)
             msg = f"Can't logout user: {user.name}"
-            logger.debug("%s. Error: %s", msg, err)
             raise LogoutError(msg) from err

@@ -99,6 +99,10 @@ end
     options:
       show_root_heading: true
 
+::: data_rentgen.server.settings.auth.keycloak.KeycloakCookieSettings
+    options:
+      show_root_heading: true
+
 ::: data_rentgen.server.settings.auth.keycloak.KeycloakSettings
     options:
       show_root_heading: true
