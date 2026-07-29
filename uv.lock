@@ -705,8 +705,8 @@ requires-dist = [
     { name = "cramjam", marker = "extra == 'consumer'", specifier = "~=2.11.0" },
     { name = "cramjam", marker = "extra == 'http2kafka'", specifier = "~=2.11.0" },
     { name = "faker", marker = "extra == 'seed'", specifier = ">=40.21,<40.36" },
-    { name = "fastapi", marker = "extra == 'http2kafka'", specifier = "~=0.136.3" },
-    { name = "fastapi", marker = "extra == 'server'", specifier = "~=0.136.3" },
+    { name = "fastapi", marker = "extra == 'http2kafka'", specifier = "~=0.140.13" },
+    { name = "fastapi", marker = "extra == 'server'", specifier = "~=0.140.13" },
     { name = "faststream", extras = ["cli", "kafka"], marker = "extra == 'http2kafka'", specifier = "~=0.7.2" },
     { name = "faststream", extras = ["cli", "kafka", "prometheus"], marker = "extra == 'consumer'", specifier = "~=0.7.2" },
     { name = "greenlet", specifier = "~=3.5.2" },
@@ -726,8 +726,8 @@ requires-dist = [
     { name = "sqlalchemy-utils", specifier = "~=0.42.0" },
     { name = "starlette", marker = "extra == 'http2kafka'", specifier = "<1.0" },
     { name = "starlette", marker = "extra == 'server'", specifier = "<1.0" },
-    { name = "starlette-exporter", marker = "extra == 'http2kafka'", specifier = "~=0.23.0" },
-    { name = "starlette-exporter", marker = "extra == 'server'", specifier = "~=0.23.0" },
+    { name = "starlette-exporter", marker = "extra == 'http2kafka'", specifier = "~=0.24.0" },
+    { name = "starlette-exporter", marker = "extra == 'server'", specifier = "~=0.24.0" },
     { name = "typing-extensions", specifier = ">=4.15,<4.17" },
     { name = "uuid6", specifier = "~=2025.0.0" },
     { name = "uvicorn", specifier = "~=0.51.0" },
@@ -836,7 +836,7 @@ pydantic = [
 
 [[package]]
 name = "fastapi"
-version = "0.136.3"
+version = "0.140.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -845,9 +845,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/2d/ff8d91d7b564d464629a0fd50a4489c97fcb836ac230bf3a7269232a9b1f/fastapi-0.136.3.tar.gz", hash = "sha256:e487fae93ad408e6f47641ee4dfe389864fd7bec92e547ea8498fc13f43e83ab", size = 396410, upload-time = "2026-05-23T18:53:15.192Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2f/cb/7a4d2c2eb5a5d8a91763c05b7383d72917862e32f780daa0e27ffbb34cc6/fastapi-0.140.13.tar.gz", hash = "sha256:500172a08cf1459901f90b05c37d93060dada3b573fec8f0862445db52ba6b4b", size = 424843, upload-time = "2026-07-28T15:37:00.805Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e0/82/45359b62a067409bd929ae8a56b8ed13e5a8c8a61194b3c236920999ab83/fastapi-0.136.3-py3-none-any.whl", hash = "sha256:3d2a69bdf04b7e9f3afa292c3bc7a98816bbfafa10bc9b45f3f3700d2f761620", size = 117481, upload-time = "2026-05-23T18:53:16.924Z" },
+    { url = "https://files.pythonhosted.org/packages/84/4e/f9e8c762ef5e05c40482131e3d5e8b36bca13fa127578261f1d6b35a25d4/fastapi-0.140.13-py3-none-any.whl", hash = "sha256:8b017110e1e9f30a95e8bdb8f71fbe2f0fe3af5717109e5b14f9e069df54f6d4", size = 131222, upload-time = "2026-07-28T15:37:02.124Z" },
 ]
 
 [[package]]
@@ -2229,15 +2229,15 @@ wheels = [
 
 [[package]]
 name = "starlette-exporter"
-version = "0.23.0"
+version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "prometheus-client" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/74/173c13e7257a358f275938b767bb8c4ac6a750f199095e1b09e4e7468555/starlette_exporter-0.23.0.tar.gz", hash = "sha256:f80998db2d4a3462808a9bce56950046b113d3fab6ec6c20cb6de4431d974969", size = 22383, upload-time = "2024-06-26T04:05:28.55Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/6a/93a504757e44ec4f3ea1538c71e6ec20786045563e6e7f58b806d8b20b19/starlette_exporter-0.24.0.tar.gz", hash = "sha256:c09cb9be59d3d43f69d717c0108b90858ff226f33431493033803f8b7d3dec78", size = 24815, upload-time = "2026-07-29T04:04:07.603Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/70/935e2ae3ca22a90aec8c935570115bf978cfb58c90110c179d79762d699c/starlette_exporter-0.23.0-py3-none-any.whl", hash = "sha256:ea1a27f2aae48122931e2384a361a03e00261efbb4a665ce1ae2e46f29123d5e", size = 16034, upload-time = "2024-06-26T04:05:26.423Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/ad/c64d699b6078c3e2b3f7795799eab6d2b60d64296328ac2f9904a0d4fbcc/starlette_exporter-0.24.0-py3-none-any.whl", hash = "sha256:fd6c3209473df4235d34c658e51979ef860bf5971422ecbfdfd9906ac3ed2b10", size = 16428, upload-time = "2026-07-29T04:04:06.601Z" },
 ]
 
 [[package]]

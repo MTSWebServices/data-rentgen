@@ -67,12 +67,10 @@ exclude = ["mddocs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  # fastapi 0.137.0 breaks starlette-exporter
-  # https://github.com/stephenhillier/starlette_exporter/issues/107
-  "fastapi~=0.136.3",
+  "fastapi~=0.140.13",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
-  "starlette-exporter~=0.23.0",
+  "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
   "pyjwt~=2.13.0",
   "itsdangerous~=2.2.0",
@@ -84,12 +82,10 @@ consumer = [
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  # fastapi 0.137.0 breaks starlette-exporter
-  # https://github.com/stephenhillier/starlette_exporter/issues/107
-  "fastapi~=0.136.3",
+  "fastapi~=0.140.13",
   # starlette 1.0.0 break cookies
   "starlette<1.0",
-  "starlette-exporter~=0.23.0",
+  "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
   "faststream[kafka,cli]~=0.7.2",
   "cramjam~=2.11.0",
