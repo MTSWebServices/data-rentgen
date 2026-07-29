@@ -5,10 +5,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import AsyncSession
 
 import data_rentgen
-from data_rentgen.db.factory import session_generator
+from data_rentgen.db.factory import create_session_factory
 from data_rentgen.logging import setup_logging
 from data_rentgen.server.api.handlers import apply_exception_handlers
 from data_rentgen.server.api.router import api_router
@@ -39,7 +38,6 @@ def application_factory(settings: ServerApplicationSettings) -> FastAPI:
         docs_url=None,
         redoc_url=None,
     )
-
     application.state.settings = settings
     application.include_router(api_router)
 
@@ -50,15 +48,7 @@ def application_factory(settings: ServerApplicationSettings) -> FastAPI:
     PersonalTokenAuthProvider.setup(application)
     apply_middlewares(application, settings.server)
 
-    async def get_settings():
-        return settings
-
-    application.dependency_overrides.update(
-        {
-            ServerApplicationSettings: get_settings,
-            AsyncSession: session_generator(settings.database),  # type: ignore[dict-item]
-        },
-    )
+    application.state.session_factory = create_session_factory(settings.database)
     return application
 
 

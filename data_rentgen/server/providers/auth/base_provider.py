@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 
 from data_rentgen.db.models import User
+from data_rentgen.services.uow import UnitOfWork
 
 
 class AuthProvider(ABC):
@@ -21,7 +22,7 @@ class AuthProvider(ABC):
         """
         This method is called by [data_rentgen.server.application_factory][].
 
-        Here you should add dependency overrides for auth provider,
+        Here you should add configure your auth provider, set `app.state.auth_provider`
         and return new `app` object.
 
         Examples
@@ -34,24 +35,22 @@ class AuthProvider(ABC):
 
         class MyAwesomeAuthProvider(AuthProvider):
             def setup(app):
-                app.dependency_overrides[AuthProvider] = MyAwesomeAuthProvider
-
-                # `settings_object_factory` returns MyAwesomeAuthProviderSettings object
-                app.dependency_overrides[MyAwesomeAuthProviderSettings] = settings_object_factory
+                settings_dict = app.state.settings.auth.model_dump(exclude={"provider})
+                settings = MyAwesomeAuthProviderSettings.model_validate(settings_dict)
+                app.state.auth_provider = MyAwesomeAuthProvider(settings)
                 return app
 
             def __init__(
                 self,
-                settings: Annotated[MyAwesomeAuthProviderSettings, Depends(Stub(MyAwesomeAuthProviderSettings))],
+                settings: MyAwesomeAuthProviderSettings,
             ):
-                # settings object is set automatically by FastAPI's dependency_overrides
                 self.settings = settings
         ```
         """
         ...
 
     @abstractmethod
-    async def get_current_user(self, access_token: str | None, request: Request) -> User:
+    async def get_current_user(self, access_token: str | None, request: Request, uow: UnitOfWork) -> User:
         """
         This method should return currently logged in user.
 
@@ -68,11 +67,7 @@ class AuthProvider(ABC):
         ...
 
     @abstractmethod
-    async def get_token_password_grant(
-        self,
-        login: str,
-        password: str,
-    ) -> dict[str, Any]:
+    async def get_token_password_grant(self, login: str, password: str, uow: UnitOfWork) -> dict[str, Any]:
         """
         This method should perform authentication and return JWT token.
 
@@ -107,6 +102,7 @@ class AuthProvider(ABC):
     async def get_token_authorization_code_grant(
         self,
         code: str,
+        request: Request,
     ) -> dict[str, Any]:
         """
         Obtain a token using the Authorization Code grant.

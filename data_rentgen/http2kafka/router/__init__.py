@@ -2,21 +2,22 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from http import HTTPStatus
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from asgi_correlation_id import correlation_id
 from fastapi import APIRouter, Body, Depends, Request, Response
-from faststream.kafka.publisher import DefaultPublisher
 
 from data_rentgen.db.models.user import User
-from data_rentgen.dependencies.stub import Stub
 from data_rentgen.http2kafka.router.gzip_route import SupportsGzipRoute
 from data_rentgen.openlineage.run_event import OpenLineageRunEvent
 from data_rentgen.openlineage.run_facets import OpenLineageParentRunFacet
 from data_rentgen.server.errors import get_error_responses
 from data_rentgen.server.errors.schemas import InvalidRequestSchema
 from data_rentgen.server.errors.schemas.not_authorized import NotAuthorizedSchema
-from data_rentgen.server.services.get_user import PersonalTokenPolicy, get_user
+from data_rentgen.server.services.user import PersonalTokenPolicy, get_user
+
+if TYPE_CHECKING:
+    from faststream.kafka.publisher import DefaultPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +38,9 @@ router = APIRouter(
 async def send_events_to_kafka(
     event: Annotated[OpenLineageRunEvent, Body()],
     request: Request,
-    kafka_publisher: Annotated[DefaultPublisher, Depends(Stub(DefaultPublisher))],
     current_user: Annotated[User, Depends(get_user(personal_token_policy=PersonalTokenPolicy.REQUIRE))],
 ):
+    kafka_publisher: DefaultPublisher = request.app.state.publisher
     body_json_bytes = await request.body()
     logger.debug("Got 1 message (%dKiB)", len(body_json_bytes) / 1024)
     await kafka_publisher.publish(

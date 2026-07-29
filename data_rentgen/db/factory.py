@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
-from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -18,13 +17,3 @@ def create_session_factory(settings: DatabaseSettings) -> async_sessionmaker[Asy
         class_=AsyncSession,
         expire_on_commit=False,
     )
-
-
-def session_generator(settings: DatabaseSettings):
-    a_session = create_session_factory(settings)
-
-    async def wrapper() -> AsyncGenerator[AsyncSession, None]:
-        async with a_session() as session:
-            yield session
-
-    return wrapper

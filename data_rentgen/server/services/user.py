@@ -11,6 +11,8 @@ from data_rentgen.db.models import User
 from data_rentgen.exceptions.auth import AuthorizationError
 from data_rentgen.server.providers.auth import AuthProvider
 from data_rentgen.server.providers.auth.personal_token_provider import PersonalTokenAuthProvider
+from data_rentgen.server.services import get_auth_provider, get_personal_token_provider
+from data_rentgen.services.uow import UnitOfWork
 
 
 class PersonalTokenPolicy(str, Enum):
@@ -30,12 +32,13 @@ oauth2_schema = OAuth2PasswordBearer(
 )
 
 
-async def get_user_via_any_credentials_source(
+async def get_user_via_any_credentials_source(  # noqa: PLR0917
     request: Request,
-    real_auth_provider: Annotated[AuthProvider, Depends()],
-    personal_token_provider: Annotated[PersonalTokenAuthProvider, Depends()],
+    real_auth_provider: Annotated[AuthProvider, Depends(get_auth_provider)],
+    personal_token_provider: Annotated[PersonalTokenAuthProvider, Depends(get_personal_token_provider)],
     access_token: Annotated[str | None, Depends(oauth2_schema)],
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(personal_token_schema)],
+    uow: Annotated[UnitOfWork, Depends()],
 ) -> User:
     result = await personal_token_provider.get_optional_user(
         access_token=credentials.credentials if credentials else access_token,
@@ -47,15 +50,16 @@ async def get_user_via_any_credentials_source(
     return await real_auth_provider.get_current_user(
         access_token=access_token,
         request=request,
+        uow=uow,
     )
 
 
 async def get_user_via_personal_token(
     request: Request,
-    auth_provider: Annotated[PersonalTokenAuthProvider, Depends()],
+    personal_token_provider: Annotated[PersonalTokenAuthProvider, Depends(get_auth_provider)],
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(personal_token_schema)],
 ) -> User:
-    result = await auth_provider.get_current_user(
+    result = await personal_token_provider.get_current_user(
         access_token=credentials.credentials if credentials else None,
         request=request,
     )
@@ -67,12 +71,14 @@ async def get_user_via_personal_token(
 
 async def get_user_via_access_token_or_cookie(
     request: Request,
-    auth_provider: Annotated[AuthProvider, Depends()],
+    auth_provider: Annotated[AuthProvider, Depends(get_auth_provider)],
     access_token: Annotated[str | None, Depends(oauth2_schema)],
+    uow: Annotated[UnitOfWork, Depends()],
 ) -> User:
     return await auth_provider.get_current_user(
         access_token=access_token,
         request=request,
+        uow=uow,
     )
 
 

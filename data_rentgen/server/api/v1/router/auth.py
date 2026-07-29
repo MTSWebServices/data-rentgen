@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
 from data_rentgen.db.models.user import User
-from data_rentgen.dependencies import Stub
 from data_rentgen.server.errors.registration import get_error_responses
 from data_rentgen.server.errors.schemas.invalid_request import InvalidRequestSchema
 from data_rentgen.server.errors.schemas.logout import LogoutErrorSchema
@@ -19,6 +18,8 @@ from data_rentgen.server.errors.schemas.not_implemented import NotImplementedErr
 from data_rentgen.server.providers.auth import AuthProvider
 from data_rentgen.server.schemas.v1.auth import AuthTokenSchema
 from data_rentgen.server.services import PersonalTokenPolicy, get_user
+from data_rentgen.server.services.auth import get_auth_provider
+from data_rentgen.services.uow import UnitOfWork
 
 router = APIRouter(
     prefix="/auth",
@@ -39,12 +40,14 @@ router = APIRouter(
     ),
 )
 async def token(
-    auth_provider: Annotated[AuthProvider, Depends(Stub(AuthProvider))],
+    uow: Annotated[UnitOfWork, Depends()],
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    auth_provider: Annotated[AuthProvider, Depends(get_auth_provider)],
 ) -> AuthTokenSchema:
     user_token = await auth_provider.get_token_password_grant(
         login=form_data.username,
         password=form_data.password,
+        uow=uow,
     )
     return AuthTokenSchema.model_validate(user_token)
 
@@ -64,10 +67,11 @@ async def token(
 async def auth_callback(
     request: Request,
     code: str,
-    auth_provider: Annotated[AuthProvider, Depends(Stub(AuthProvider))],
+    auth_provider: Annotated[AuthProvider, Depends(get_auth_provider)],
 ):
     code_grant = await auth_provider.get_token_authorization_code_grant(
         code=code,
+        request=request,
     )
     request.session["access_token"] = code_grant["access_token"]
     request.session["refresh_token"] = code_grant["refresh_token"]
@@ -90,7 +94,7 @@ async def auth_callback(
 async def logout(
     request: Request,
     current_user: Annotated[User, Depends(get_user(personal_token_policy=PersonalTokenPolicy.DENY))],
-    auth_provider: Annotated[AuthProvider, Depends(Stub(AuthProvider))],
+    auth_provider: Annotated[AuthProvider, Depends(get_auth_provider)],
 ):
     await auth_provider.logout(user=current_user, request=request)
     return Response(status_code=HTTPStatus.NO_CONTENT)

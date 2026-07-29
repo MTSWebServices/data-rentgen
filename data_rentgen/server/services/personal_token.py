@@ -2,18 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
 from data_rentgen.db.models import PersonalToken, User
-from data_rentgen.dependencies.stub import Stub
 from data_rentgen.dto.pagination import PaginationDTO
 from data_rentgen.exceptions import ActionNotAllowedError, EntityNotFoundError
-from data_rentgen.server.settings.auth.personal_token import PersonalTokenSettings
 from data_rentgen.services.uow import UnitOfWork
 from data_rentgen.utils.uuid import generate_new_uuid
+
+if TYPE_CHECKING:
+    from data_rentgen.server.settings.auth.personal_token import PersonalTokenSettings
 
 
 @dataclass(slots=True)
@@ -30,10 +31,10 @@ class PersonalTokenService:
     def __init__(
         self,
         uow: Annotated[UnitOfWork, Depends()],
-        settings: Annotated[PersonalTokenSettings, Depends(Stub(PersonalTokenSettings))],
+        request: Request,
     ):
         self._uow = uow
-        self._settings = settings
+        self._settings: PersonalTokenSettings = request.app.state.settings.auth.personal_tokens
 
     async def __aenter__(self):
         await self._uow.__aenter__()
