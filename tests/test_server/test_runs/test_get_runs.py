@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta, timezone
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid6 import uuid7
 

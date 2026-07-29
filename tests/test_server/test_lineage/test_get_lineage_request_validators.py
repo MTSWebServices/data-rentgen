@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta, timezone
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from data_rentgen.utils.uuid import generate_new_uuid
 from tests.fixtures.mocks import MockedUser

@@ -2,7 +2,7 @@ import logging
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from data_rentgen.db.models import User
 from data_rentgen.server.settings import ServerApplicationSettings as Settings

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.openlineage.run_event import OpenLineageRunEvent

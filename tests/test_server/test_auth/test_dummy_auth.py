@@ -2,7 +2,7 @@ from collections.abc import Callable
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from data_rentgen.db.models import User
 from tests.fixtures.mocks import MockedUser

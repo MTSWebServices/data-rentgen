@@ -4,7 +4,7 @@ from http import HTTPStatus
 
 import pytest
 from dirty_equals import IsDate
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.fixtures.mocks import MockedUser

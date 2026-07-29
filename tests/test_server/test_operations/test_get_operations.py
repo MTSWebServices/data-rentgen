@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from data_rentgen.db.models import Run
 from data_rentgen.utils.uuid import generate_new_uuid

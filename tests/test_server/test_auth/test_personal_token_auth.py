@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import PersonalToken, User
