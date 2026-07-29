@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 import logging
+import time
 from typing import Any, NoReturn
 
 from fastapi import FastAPI, Request
+from jwcrypto import jwk
 from jwcrypto.common import JWException
 from keycloak import KeycloakOpenID, KeycloakOperationError
 from starlette.middleware.sessions import SessionMiddleware
@@ -34,6 +36,8 @@ class KeycloakAuthProvider(AuthProvider):
             client_secret_key=self.settings.keycloak.client_secret.get_secret_value(),
             verify=self.settings.keycloak.verify_ssl,
         )
+        self._key: jwk.JWKSet | None = None
+        self._key_expiration: float = time.monotonic()
 
     @classmethod
     def setup(cls, app: FastAPI) -> FastAPI:
@@ -108,9 +112,24 @@ class KeycloakAuthProvider(AuthProvider):
         async with uow:
             return await uow.user.get_or_create(UserDTO(name=login))
 
+    async def _get_key(self) -> jwk.JWKSet:
+        # avoid sending requests to Keycloak for every received token
+        if self._key is not None and self._key_expiration > time.monotonic():
+            return self._key
+
+        key = jwk.JWKSet()
+        certs = await self.keycloak_openid.a_certs()
+        for cert in certs["keys"]:
+            key.add(jwk.JWK(**cert))
+
+        self._key = key
+        self._key_expiration = time.monotonic() + self.settings.keycloak.cert_cache_ttl.total_seconds()
+        return self._key
+
     async def decode_token(self, access_token: str) -> dict[str, Any] | None:
         try:
-            return await self.keycloak_openid.a_decode_token(token=access_token)
+            key = await self._get_key()
+            return await self.keycloak_openid.a_decode_token(token=access_token, key=key)
         except (KeycloakOperationError, JWException) as err:
             logger.debug("Access token is invalid or expired: %s", err)
             return None
