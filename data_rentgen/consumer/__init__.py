@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import data_rentgen
 from data_rentgen.consumer.settings import ConsumerApplicationSettings
 from data_rentgen.consumer.subscribers import runs_events_subscriber
-from data_rentgen.db.factory import session_generator
+from data_rentgen.db.factory import create_session_factory
 from data_rentgen.logging import setup_logging
 
 __all__ = [
@@ -109,8 +109,14 @@ def broker_factory(settings: ConsumerApplicationSettings) -> KafkaBroker:
 
     dependency_provider.override(DefaultPublisher, get_publisher)
 
+    session_factory = create_session_factory(settings.database)
+
+    async def session_generator():
+        async with session_factory() as session:
+            yield session
+
     # Override session generator
-    dependency_provider.override(AsyncSession, session_generator(settings.database))
+    dependency_provider.override(AsyncSession, session_generator)
     return broker
 
 

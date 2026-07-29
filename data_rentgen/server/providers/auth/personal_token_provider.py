@@ -3,15 +3,13 @@
 import logging
 from datetime import UTC, datetime, timedelta
 from pprint import pformat
-from typing import Annotated, Any, Literal
+from typing import Literal
 from uuid import UUID
 
 from cachetools import LRUCache, TTLCache
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 
-from data_rentgen.db.factory import AsyncSession
 from data_rentgen.db.models import PersonalToken, User
-from data_rentgen.dependencies import Stub
 from data_rentgen.exceptions.auth import AuthorizationError
 from data_rentgen.exceptions.entity import EntityNotFoundError
 from data_rentgen.server.services.personal_token import PersonalTokenService
@@ -55,31 +53,21 @@ class PersonalTokenAuthProvider:
 
     def __init__(
         self,
-        settings: Annotated[PersonalTokenSettings, Depends(Stub(PersonalTokenSettings))],
-        token_cache: Annotated[PersonalTokenCache, Depends(Stub(PersonalTokenCache))],
+        settings: PersonalTokenSettings,
     ) -> None:
         self._settings = settings
-        self._token_cache = token_cache
+        self._token_cache = PersonalTokenCache(
+            maxsize=settings.cache_size,
+            ttl_seconds=settings.cache_ttl_seconds,
+        )
 
     @classmethod
     def setup(cls, app: FastAPI) -> FastAPI:
         settings = PersonalTokenSettings.model_validate(
             app.state.settings.auth.personal_tokens,
         )
-        token_cache = PersonalTokenCache(
-            maxsize=settings.cache_size,
-            ttl_seconds=settings.cache_ttl_seconds,
-        )
         logger.info("Initializing %s provider with settings:\n%s", cls.__name__, pformat(settings))
-
-        async def get_settings():
-            return settings
-
-        async def get_token_cache():
-            return token_cache
-
-        app.dependency_overrides[PersonalTokenSettings] = get_settings
-        app.dependency_overrides[PersonalTokenCache] = get_token_cache
+        app.state.personal_token_auth_provider = cls(settings)
         return app
 
     def generate_jwt(
@@ -179,11 +167,10 @@ class PersonalTokenAuthProvider:
 
         # checking session in cache is fast, creating new session is slow,
         # let's postpone it using a hack
-        session_generator = request.app.dependency_overrides[AsyncSession]
-        async for session in session_generator():
+        async with request.app.state.session_factory() as session:
             personal_token_service = PersonalTokenService(
                 uow=UnitOfWork(session),
-                settings=self._settings,
+                request=request,
             )
             try:
                 await personal_token_service.get(user, token.id)
@@ -196,22 +183,3 @@ class PersonalTokenAuthProvider:
         else:
             self._token_cache.add_token(token.id)
         return is_revoked
-
-    async def get_token_password_grant(
-        self,
-        login: str,
-        password: str,
-    ) -> dict[str, Any]:
-        msg = "Password grant is not supported by PersonalTokenAuthProvider"
-        raise NotImplementedError(msg)
-
-    async def get_token_authorization_code_grant(
-        self,
-        code: str,
-    ) -> dict[str, Any]:
-        msg = "Authorization code grant is not supported by PersonalTokenAuthProvider"
-        raise NotImplementedError(msg)
-
-    async def logout(self, user: User, request: Request) -> None:
-        msg = "Logout method is not implemented for PersonalTokenAuthProvider"
-        raise NotImplementedError(msg)

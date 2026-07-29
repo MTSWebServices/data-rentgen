@@ -3,12 +3,11 @@
 import logging
 from pprint import pformat
 from time import time
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 
 from data_rentgen.db.models import User
-from data_rentgen.dependencies import Stub
 from data_rentgen.dto import UserDTO
 from data_rentgen.exceptions.auth import AuthorizationError
 from data_rentgen.server.providers.auth.base_provider import AuthProvider
@@ -24,11 +23,9 @@ class DummyAuthProvider(AuthProvider):
 
     def __init__(
         self,
-        settings: Annotated[DummyAuthProviderSettings, Depends(Stub(DummyAuthProviderSettings))],
-        unit_of_work: Annotated[UnitOfWork, Depends()],
+        settings: DummyAuthProviderSettings,
     ) -> None:
         self._settings = settings
-        self._uow = unit_of_work
 
     @classmethod
     def setup(cls, app: FastAPI) -> FastAPI:
@@ -37,11 +34,7 @@ class DummyAuthProvider(AuthProvider):
         )
         logger.info("Using %s provider with settings:\n%s", cls.__name__, pformat(settings))
 
-        async def get_settings():
-            return settings
-
-        app.dependency_overrides[AuthProvider] = cls
-        app.dependency_overrides[DummyAuthProviderSettings] = get_settings
+        app.state.auth_provider = cls(settings=settings)
         return app
 
     def generate_jwt(
@@ -79,7 +72,7 @@ class DummyAuthProvider(AuthProvider):
             msg = "Invalid token"
             raise AuthorizationError(msg) from e
 
-    async def get_current_user(self, access_token: str | None, request: Request) -> User:
+    async def get_current_user(self, access_token: str | None, request: Request, uow: UnitOfWork) -> User:
         if not access_token:
             msg = "Missing Authorization header"
             raise AuthorizationError(msg)
@@ -93,14 +86,15 @@ class DummyAuthProvider(AuthProvider):
         self,
         login: str,
         password: str,
+        uow: UnitOfWork,
     ) -> dict[str, Any]:
         if not login:
             msg = "Missing auth credentials"
             raise AuthorizationError(msg)
 
         logger.debug("Get/create user %r in database", login)
-        async with self._uow:
-            user = await self._uow.user.get_or_create(UserDTO(name=login))
+        async with uow:
+            user = await uow.user.get_or_create(UserDTO(name=login))
 
         logger.debug("User with id %r found", user.id)
         logger.debug("Generate access token for user id %r", user.id)
@@ -111,10 +105,7 @@ class DummyAuthProvider(AuthProvider):
             "expires_at": expires_at,
         }
 
-    async def get_token_authorization_code_grant(
-        self,
-        code: str,
-    ) -> dict[str, Any]:
+    async def get_token_authorization_code_grant(self, code: str, request: Request) -> dict[str, Any]:
         msg = "Authorization code grant is not supported by DummyAuthProvider"
         raise NotImplementedError(msg)
 

@@ -8,11 +8,9 @@ import anyio
 from fastapi import FastAPI
 from faststream._internal._compat import ExceptionGroup
 from faststream.kafka import KafkaBroker
-from faststream.kafka.publisher import DefaultPublisher
-from sqlalchemy.ext.asyncio import AsyncSession
 
 import data_rentgen
-from data_rentgen.db.factory import session_generator
+from data_rentgen.db.factory import create_session_factory
 from data_rentgen.http2kafka.router import router as openlineage_router
 from data_rentgen.http2kafka.settings import Http2KafkaApplicationSettings
 from data_rentgen.logging import setup_logging
@@ -81,7 +79,9 @@ def application_factory(settings: Http2KafkaApplicationSettings) -> FastAPI:
     application.include_router(monitoring_router)
     application.include_router(openlineage_router)
 
+    # Other auth providers are not supported
     PersonalTokenAuthProvider.setup(application)
+    application.state.auth_provider = application.state.personal_token_auth_provider
 
     # Reusing Server source code
     apply_exception_handlers(application)
@@ -89,22 +89,8 @@ def application_factory(settings: Http2KafkaApplicationSettings) -> FastAPI:
 
     broker = broker_factory(settings)
     application.state.broker = broker
-    publisher = broker.publisher(settings.producer.main_topic)
-
-    # if dependency is a sync function, FastAPI runs it using asyncio.to_thread
-    async def get_settings():
-        return settings
-
-    async def get_publisher():
-        return publisher
-
-    application.dependency_overrides.update(
-        {
-            Http2KafkaApplicationSettings: get_settings,
-            DefaultPublisher: get_publisher,
-            AsyncSession: session_generator(settings.database),  # type: ignore[dict-item]
-        },
-    )
+    application.state.publisher = broker.publisher(settings.producer.main_topic)
+    application.state.session_factory = create_session_factory(settings.database)
     return application
 
 

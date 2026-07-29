@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.repositories.column_lineage import ColumnLineageRepository
@@ -27,13 +28,17 @@ from data_rentgen.db.repositories.sql_query import SQLQueryRepository
 from data_rentgen.db.repositories.tag import TagRepository
 from data_rentgen.db.repositories.tag_value import TagValueRepository
 from data_rentgen.db.repositories.user import UserRepository
-from data_rentgen.dependencies import Stub
+
+
+async def get_session(request: Request) -> AsyncGenerator[AsyncSession]:
+    async with request.app.state.session_factory() as session:
+        yield session
 
 
 class UnitOfWork:
     def __init__(
         self,
-        session: Annotated[AsyncSession, Depends(Stub(AsyncSession))],
+        session: Annotated[AsyncSession, Depends(get_session)],
     ):
         self._session = session
         self.location = LocationRepository(session)

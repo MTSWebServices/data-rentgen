@@ -1,15 +1,14 @@
 # SPDX-FileCopyrightText: 2024-present MTS PJSC
 # SPDX-License-Identifier: Apache-2.0
 import logging
-from typing import Annotated, Any, NoReturn
+from typing import Any, NoReturn
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from jwcrypto.common import JWException
 from keycloak import KeycloakOpenID, KeycloakOperationError
 from starlette.middleware.sessions import SessionMiddleware
 
 from data_rentgen.db.models import User
-from data_rentgen.dependencies import Stub
 from data_rentgen.dto import UserDTO
 from data_rentgen.exceptions.auth import AuthorizationError, LogoutError
 from data_rentgen.exceptions.redirect import RedirectError
@@ -25,11 +24,9 @@ class KeycloakAuthProvider(AuthProvider):
 
     def __init__(
         self,
-        settings: Annotated[KeycloakAuthProviderSettings, Depends(Stub(KeycloakAuthProviderSettings))],
-        unit_of_work: Annotated[UnitOfWork, Depends()],
+        settings: KeycloakAuthProviderSettings,
     ) -> None:
         self.settings = settings
-        self._uow = unit_of_work
         self.keycloak_openid = KeycloakOpenID(
             server_url=str(self.settings.keycloak.api_url).rstrip("/") + "/",
             client_id=self.settings.keycloak.client_id,
@@ -45,12 +42,7 @@ class KeycloakAuthProvider(AuthProvider):
         )
         logger.info("Using %s provider with settings:\n%s", cls.__name__, settings)
 
-        async def get_settings():
-            return settings
-
-        app.dependency_overrides[AuthProvider] = cls
-        app.dependency_overrides[KeycloakAuthProviderSettings] = get_settings
-
+        app.state.auth_provider = cls(settings)
         app.add_middleware(
             SessionMiddleware,
             secret_key=settings.cookie.secret_key.get_secret_value(),
@@ -63,6 +55,7 @@ class KeycloakAuthProvider(AuthProvider):
         self,
         login: str,
         password: str,
+        uow: UnitOfWork,
     ) -> dict[str, Any]:
         msg = "Password grant is not supported by KeycloakAuthProvider"
         raise NotImplementedError(msg)
@@ -70,6 +63,7 @@ class KeycloakAuthProvider(AuthProvider):
     async def get_token_authorization_code_grant(
         self,
         code: str,
+        request: Request,
     ) -> dict[str, Any]:
         try:
             return await self.keycloak_openid.a_token(
@@ -82,7 +76,7 @@ class KeycloakAuthProvider(AuthProvider):
             msg = "Failed to get token"
             raise AuthorizationError(msg) from e
 
-    async def get_current_user(self, access_token: str | None, request: Request) -> User:
+    async def get_current_user(self, access_token: str | None, request: Request, uow: UnitOfWork) -> User:
         # we ignore explicit token passed via Authorization header
         access_token = request.session.get("access_token")
         if not access_token:
@@ -110,7 +104,9 @@ class KeycloakAuthProvider(AuthProvider):
         if not login:
             msg = "Invalid token"
             raise AuthorizationError(msg)
-        return await self._uow.user.get_or_create(UserDTO(name=login))
+
+        async with uow:
+            return await uow.user.get_or_create(UserDTO(name=login))
 
     async def decode_token(self, access_token: str) -> dict[str, Any] | None:
         try:

@@ -16,7 +16,6 @@ from data_rentgen.server.schemas.v1 import (
 )
 from data_rentgen.server.services import LineageService, OperationService, get_user
 from data_rentgen.server.utils.lineage_response import build_lineage_response
-from data_rentgen.services import UnitOfWork
 
 router = APIRouter(
     prefix="/operations",
@@ -28,7 +27,6 @@ router = APIRouter(
 @router.get("", summary="Paginated list of Operations")
 async def operations(
     query_args: Annotated[OperationQueryV1, Query()],
-    unit_of_work: Annotated[UnitOfWork, Depends()],
     operation_service: Annotated[OperationService, Depends()],
     current_user: Annotated[User, Depends(get_user())],
 ) -> PageResponseV1[OperationDetailedResponseV1]:

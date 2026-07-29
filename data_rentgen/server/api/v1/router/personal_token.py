@@ -24,7 +24,12 @@ from data_rentgen.server.schemas.v1 import (
     PersonalTokenResponseV1,
     PersonalTokenScopeV1,
 )
-from data_rentgen.server.services import PersonalTokenPolicy, PersonalTokenService, get_user
+from data_rentgen.server.services import (
+    PersonalTokenPolicy,
+    PersonalTokenService,
+    get_personal_token_provider,
+    get_user,
+)
 
 router = APIRouter(
     prefix="/personal-tokens",
@@ -53,7 +58,7 @@ async def create_personal_token(
     token_params: PersonalTokenCreateRequestV1,
     current_user: Annotated[User, Depends(get_user(personal_token_policy=PersonalTokenPolicy.DENY))],
     user_token_service: Annotated[PersonalTokenService, Depends()],
-    personal_token_auth_provider: Annotated[PersonalTokenAuthProvider, Depends()],
+    personal_token_auth_provider: Annotated[PersonalTokenAuthProvider, Depends(get_personal_token_provider)],
 ) -> PersonalTokenCreatedDetailedResponseV1:
     async with user_token_service:
         token = await user_token_service.create(
@@ -84,7 +89,7 @@ async def reset_personal_token(
     new_token_params: PersonalTokenResetRequestV1,
     current_user: Annotated[User, Depends(get_user(personal_token_policy=PersonalTokenPolicy.DENY))],
     user_token_service: Annotated[PersonalTokenService, Depends()],
-    personal_token_auth_provider: Annotated[PersonalTokenAuthProvider, Depends()],
+    personal_token_auth_provider: Annotated[PersonalTokenAuthProvider, Depends(get_personal_token_provider)],
 ) -> PersonalTokenCreatedDetailedResponseV1:
     async with user_token_service:
         old_token = await user_token_service.revoke(current_user, token_id)
