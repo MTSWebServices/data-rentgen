@@ -38,7 +38,7 @@ class PersonalTokenSettings(BaseModel):
             Can be any string. It is recommended to generate random value for every application instance, e.g.:
 
             ```shell
-            pwgen 32 1
+            python -c 'import secrets; print(secrets.token_hex(16))'
             ```
             """,
         ),
