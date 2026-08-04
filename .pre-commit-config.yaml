@@ -101,6 +101,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: towncrier
+        name: towncrier
+        entry: towncrier build --draft
+        language: system
+        types: [markdown]
+        pass_filenames: false
+        priority: 9
 
       - id: ruff-format
         name: ruff-format
@@ -140,3 +147,4 @@ ci:
     - docker-compose-check  # cannot run on pre-commit.ci
     - ruff-format # checked with Github Actions
     - ruff-check # checked with Github Actions
+    - towncrier # checked with Github Actions
