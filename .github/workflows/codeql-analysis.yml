@@ -43,8 +43,11 @@ jobs:
           export UV=$(which uv)
           make venv-install
 
-      - name: Run mypy
-        run: uv run mypy ./data_rentgen --config-file ./pyproject.toml
+      - name: Run linters
+        run: |
+          uv run ruff format --check
+          uv run ruff check
+          uv run -m mypy data_rentgen
 
   codeql:
     name: CodeQL

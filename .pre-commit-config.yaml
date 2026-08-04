@@ -99,20 +99,28 @@ repos:
       - id: uv-lock
         priority: 9
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.1
-    hooks:
-      - id: ruff-format
-        priority: 9
-      - id: ruff-check
-        args: [--fix]
-        priority: 10
-
   - repo: local
     hooks:
+
+      - id: ruff-format
+        name: ruff-format
+        language: system
+        entry: ruff format .
+        types: [python]
+        pass_filenames: false
+        priority: 9
+
+      - id: ruff-check
+        name: ruff-check
+        language: system
+        entry: ruff check --fix
+        types: [python]
+        pass_filenames: false
+        priority: 10
+
       - id: mypy
         name: mypy
-        entry: mypy ./data_rentgen --config-file ./pyproject.toml
+        entry: mypy data_rentgen
         language: python
         require_serial: true
         pass_filenames: false
@@ -130,3 +138,5 @@ ci:
     - mypy  # checked with Github Actions
     - chmod  # failing in pre-commit.ci
     - docker-compose-check  # cannot run on pre-commit.ci
+    - ruff-format # checked with Github Actions
+    - ruff-check # checked with Github Actions
