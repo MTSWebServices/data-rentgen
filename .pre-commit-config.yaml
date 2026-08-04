@@ -27,22 +27,6 @@ repos:
       - id: trailing-whitespace
         priority: 4
 
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0
-    hooks:
-      - id: python-check-blanket-noqa
-        priority: 0
-      - id: python-check-mock-methods
-        priority: 0
-      - id: python-no-eval
-        priority: 0
-      - id: python-no-log-warn
-        priority: 0
-      - id: python-use-type-annotations
-        priority: 0
-      - id: text-unicode-replacement-char
-        priority: 0
-
   - repo: https://github.com/IamTheFij/docker-pre-commit
     rev: v3.0.1
     hooks:
