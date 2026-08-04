@@ -67,7 +67,7 @@ exclude = ["mddocs", "tests"]
 
 [project.optional-dependencies]
 server = [
-  "fastapi~=0.140.13",
+  "fastapi~=0.141.1",
   "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
   "pyjwt~=2.13.0",
@@ -80,7 +80,7 @@ consumer = [
   "cramjam~=2.11.0",
 ]
 http2kafka = [
-  "fastapi~=0.140.13",
+  "fastapi~=0.141.1",
   "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
   "faststream[kafka,cli]~=0.7.2",
@@ -113,9 +113,9 @@ test = [
   "gevent~=26.5",
 ]
 dev = [
-  "prek~=0.4.10",
-  "ruff~=0.16.0",
   "mypy~=2.3.0",
+  "prek~=0.4.12",
+  "ruff~=0.16.1",
   "sqlalchemy[mypy]~=2.0.51",
   "types-pyyaml~=6.0.12",
   "types-python-dateutil~=2.9.0",
