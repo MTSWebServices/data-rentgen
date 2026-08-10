@@ -9,7 +9,7 @@ sbom-creation:
     name: ${UV_IMAGE}
     entrypoint: ['']
   script:
-    - uv export --all-extras --no-dev --no-group test --no-group docs --link-mode=copy --format cyclonedx1.5 > sbom.cyclonedx.json
+    - uv export --all-extras --no-dev --no-group test --no-group mddocs --link-mode=copy --format cyclonedx1.5 > sbom.cyclonedx.json
   artifacts:
     paths:
       - sbom.cyclonedx.json

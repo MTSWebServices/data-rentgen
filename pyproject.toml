@@ -55,7 +55,7 @@ include = ["data_rentgen*"]
 exclude = ["mddocs", "tests"]
 
 [tool.setuptools.package-data]
-"*" = ["py.typed", "*.yml",  "*.ini", "VERSION"]
+"*" = ["py.typed", "*.ini", "VERSION"]
 
 [project.urls]  # Optional
 "Homepage" = "https://github.com/MTSWebServices/data-rentgen"
