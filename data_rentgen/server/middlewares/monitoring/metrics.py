@@ -34,11 +34,15 @@ def apply_monitoring_metrics_middleware(app: FastAPI, settings: MonitoringSettin
         return app
 
     skip_paths = DEFAULT_SKIP_PATHS | settings.skip_paths
+    labels = settings.labels.copy()
+    labels.setdefault("version", app.version)
+
     app.add_middleware(
         PrometheusMiddleware,
         app_name=slugify(app.title),
         skip_paths=sorted(skip_paths),
-        **settings.model_dump(exclude={"enabled", "skip_paths"}),
+        labels=labels,
+        **settings.model_dump(exclude={"enabled", "skip_paths", "labels"}),
     )
     app.include_router(router)
     return app
