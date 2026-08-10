@@ -133,7 +133,6 @@ mddocs = [
   "mkdocs-literate-nav~=0.6.1",
   "mkdocs-towncrier~=0.1.5",
   "towncrier~=25.8.0",
-  "setuptools<84",
 ]
 
 [tool.uv]
