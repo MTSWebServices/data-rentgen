@@ -755,7 +755,7 @@ requires-dist = [
     { name = "coloredlogs", specifier = "~=15.0.1" },
     { name = "cramjam", marker = "extra == 'consumer'", specifier = "~=2.11.0" },
     { name = "cramjam", marker = "extra == 'http2kafka'", specifier = "~=2.11.0" },
-    { name = "faker", marker = "extra == 'seed'", specifier = ">=40.21,<40.37" },
+    { name = "faker", marker = "extra == 'seed'" },
     { name = "fastapi", marker = "extra == 'http2kafka'", specifier = "~=0.141.1" },
     { name = "fastapi", marker = "extra == 'server'", specifier = "~=0.141.1" },
     { name = "faststream", extras = ["cli", "kafka"], marker = "extra == 'http2kafka'", specifier = "~=0.7.2" },
