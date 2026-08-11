@@ -41,6 +41,10 @@ class AuthSettings(BaseModel):
     @classmethod
     def _validate_provider(cls, value: type) -> type[AuthProvider]:
         if not issubclass(value, AuthProvider):
-            msg = f"Class {value.__qualname__} is not a subclass of {AuthProvider}"
+            msg = f"Class {value} is not a subclass of {AuthProvider}"
             raise TypeError(msg)
         return value
+
+    # prevent leaking provider secrets
+    def __repr_args__(self):
+        return [("provider", self.provider)]

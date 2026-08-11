@@ -2,11 +2,34 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import textwrap
+from typing import Annotated
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, PostgresDsn, UrlConstraints
+from sqlalchemy import make_url
 
 from data_rentgen.logging import DEFAULT_LOGGING_SETTINGS, LoggingSettings
 from data_rentgen.settings import BaseSettings
+
+
+def validate_url(value: PostgresDsn):
+    if not value.path or len(value.path) <= 1:
+        msg = "Database URL must contain database name"
+        raise ValueError(msg)
+
+    split = urlsplit(str(value))
+    if not split.username or not split.password:
+        msg = "Database URL must contain username and password"
+        raise ValueError(msg)
+
+    return value
+
+
+PostgresURL = Annotated[
+    PostgresDsn,
+    UrlConstraints(allowed_schemes=["postgresql+asyncpg", "postgresql+psycopg"], host_required=True),
+    AfterValidator(validate_url),
+]
 
 
 class DatabaseSettings(BaseModel):
@@ -29,7 +52,7 @@ class DatabaseSettings(BaseModel):
     ```
     """
 
-    url: str = Field(
+    url: PostgresURL = Field(
         description=textwrap.dedent(
             """
             Database connection URL.
@@ -38,12 +61,22 @@ class DatabaseSettings(BaseModel):
 
             !!! warning
 
-                Only async drivers are supported, e.g. `asyncpg`
+                Only async drivers are supported, e.g. `asyncpg` or `psycopg`
             """,
         ),
     )
 
     model_config = ConfigDict(extra="allow")
+
+    def __repr_args__(self):
+        safe_url = make_url(str(self.url)).render_as_string(
+            hide_password=True,
+        )
+        extra = super().__repr_args__()
+        return [
+            ("url", safe_url),
+            *[item for item in extra if item[0] != "url"],
+        ]
 
 
 class DatabaseApplicationSettings(BaseSettings):

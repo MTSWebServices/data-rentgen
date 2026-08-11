@@ -4,6 +4,7 @@ import logging
 import time
 from typing import Any, NoReturn
 
+from devtools import pformat
 from fastapi import FastAPI, Request
 from jwcrypto import jwk
 from jwcrypto.common import JWException
@@ -44,7 +45,7 @@ class KeycloakAuthProvider(AuthProvider):
         settings = KeycloakAuthProviderSettings.model_validate(
             app.state.settings.auth.model_dump(exclude={"provider"}),
         )
-        logger.info("Using %s provider with settings:\n%s", cls.__name__, settings)
+        logger.info("Using %s provider with settings:\n%s", cls.__name__, pformat(settings))
 
         app.state.auth_provider = cls(settings)
         app.add_middleware(

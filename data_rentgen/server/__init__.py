@@ -4,6 +4,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from devtools import pformat
 from fastapi import FastAPI
 
 import data_rentgen
@@ -55,5 +56,5 @@ def application_factory(settings: ServerApplicationSettings) -> FastAPI:
 def get_application():
     settings = ServerApplicationSettings()
     setup_logging(settings.logging)
-    logger.info("Starting Data.Rentgen server with settings:\n%r", settings)
+    logger.info("Starting Data.Rentgen server with settings:\n%s", pformat(settings))
     return application_factory(settings=settings)

@@ -65,7 +65,7 @@ This is done by adding a specific filter to logging handler:
 logging:
     filters:
         correlation_id:
-            class: asgi_correlation_id.CorrelationIdFilter
+            (): asgi_correlation_id.CorrelationIdFilter
             uuid_length: 32
             default_value: '-'
 ```

@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import anyio
+from devtools import pformat
 from fast_depends import dependency_provider
 from faststream import ContextRepo, FastStream
 from faststream._internal._compat import ExceptionGroup
@@ -157,5 +158,5 @@ def application_factory(settings: ConsumerApplicationSettings) -> AsgiFastStream
 def get_application():
     settings = ConsumerApplicationSettings()
     setup_logging(settings.logging)
-    logger.info("Starting Data.Rentgen consumer with settings:\n%r", settings)
+    logger.info("Starting Data.Rentgen consumer with settings:\n%s", pformat(settings))
     return application_factory(settings=settings)

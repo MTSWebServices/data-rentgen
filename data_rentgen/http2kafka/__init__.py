@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import anyio
+from devtools import pformat
 from fastapi import FastAPI
 from faststream._internal._compat import ExceptionGroup
 from faststream.kafka import KafkaBroker
@@ -97,5 +98,5 @@ def application_factory(settings: Http2KafkaApplicationSettings) -> FastAPI:
 def get_application():
     settings = Http2KafkaApplicationSettings()
     setup_logging(settings.logging)
-    logger.info("Starting Data.Rentgen HTTP2Kafka with settings:\n%r", settings)
+    logger.info("Starting Data.Rentgen HTTP2Kafka with settings:\n%s", pformat(settings))
     return application_factory(settings=settings)

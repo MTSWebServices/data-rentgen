@@ -47,6 +47,7 @@ dependencies = [
   "python-dateutil~=2.9.0.post0",
   "packaging~=26.0",
   "cachetools~=7.1.1",
+  "devtools~=0.12.2",
 ]
 dynamic = ["version"]
 
