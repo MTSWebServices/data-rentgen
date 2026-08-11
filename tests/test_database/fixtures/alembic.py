@@ -30,7 +30,7 @@ PROJECT_PATH = Path(__file__).parent.parent.parent.parent.joinpath("data_rentgen
 def empty_db_url(db_settings: DatabaseSettings) -> Generator[str, None, None]:
     """Create new test DB to run migrations"""
     new_db = secrets.token_hex(8)
-    original_url = urlparse(db_settings.url)
+    original_url = urlparse(str(db_settings.url))
 
     # updating original url with temp database name, and use it only for running migrations
     # sqlalchemy-utils does not support asyncio, so using sync action instead

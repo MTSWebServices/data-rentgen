@@ -27,7 +27,7 @@ def test_all_application_settings_are_loaded_from_default_yaml_file(
         dedent(
             """\
             database:
-              url: postgresql+asyncpg://yaml@localhost:5432/data_rentgen
+              url: postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen
             kafka:
               bootstrap_servers: [yaml:9092]
             server:
@@ -45,10 +45,10 @@ def test_all_application_settings_are_loaded_from_default_yaml_file(
     http2kafka_settings = Http2KafkaApplicationSettings()
     database_settings = DatabaseApplicationSettings()
 
-    assert server_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
-    assert consumer_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
-    assert http2kafka_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
-    assert database_settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
+    assert str(server_settings.database.url) == "postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen"
+    assert str(consumer_settings.database.url) == "postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen"
+    assert str(http2kafka_settings.database.url) == "postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen"
+    assert str(database_settings.database.url) == "postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen"
     assert consumer_settings.kafka.bootstrap_servers == ["yaml:9092"]
     assert http2kafka_settings.kafka.bootstrap_servers == ["yaml:9092"]
     assert server_settings.server.debug is True
@@ -66,7 +66,7 @@ def test_yaml_file_overrides_environment(
         dedent(
             """\
             database:
-              url: postgresql+asyncpg://yaml@localhost:5432/data_rentgen
+              url: postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen
             """,
         ),
         encoding="utf-8",
@@ -74,12 +74,12 @@ def test_yaml_file_overrides_environment(
     monkeypatch.setenv("DATA_RENTGEN_CONFIG_FILE", str(config_path))
     monkeypatch.setenv(
         "DATA_RENTGEN__DATABASE__URL",
-        "postgresql+asyncpg://env@localhost:5432/data_rentgen",
+        "postgresql+asyncpg://env:env@localhost:5432/data_rentgen",
     )
 
     settings = DatabaseApplicationSettings()
 
-    assert settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
+    assert str(settings.database.url) == "postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen"
 
 
 def test_environment_fills_values_missing_from_yaml_file(
@@ -92,7 +92,7 @@ def test_environment_fills_values_missing_from_yaml_file(
         dedent(
             """\
             database:
-              url: postgresql+asyncpg://yaml@localhost:5432/data_rentgen
+              url: postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen
             """,
         ),
         encoding="utf-8",
@@ -101,7 +101,7 @@ def test_environment_fills_values_missing_from_yaml_file(
 
     settings = DatabaseApplicationSettings()
 
-    assert settings.database.url == "postgresql+asyncpg://yaml@localhost:5432/data_rentgen"
+    assert str(settings.database.url) == "postgresql+asyncpg://yaml:yaml@localhost:5432/data_rentgen"
 
 
 def test_settings_can_be_loaded_from_environment_without_yaml_file(
@@ -112,9 +112,9 @@ def test_settings_can_be_loaded_from_environment_without_yaml_file(
     monkeypatch.setenv("DATA_RENTGEN_CONFIG_FILE", str(tmp_path / "missing.yml"))
     monkeypatch.setenv(
         "DATA_RENTGEN__DATABASE__URL",
-        "postgresql+asyncpg://env@localhost:5432/data_rentgen",
+        "postgresql+asyncpg://env:env@localhost:5432/data_rentgen",
     )
 
     settings = DatabaseApplicationSettings()
 
-    assert settings.database.url == "postgresql+asyncpg://env@localhost:5432/data_rentgen"
+    assert str(settings.database.url) == "postgresql+asyncpg://env:env@localhost:5432/data_rentgen"

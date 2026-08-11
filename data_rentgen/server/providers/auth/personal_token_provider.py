@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 from datetime import UTC, datetime, timedelta
-from pprint import pformat
 from typing import Literal
 from uuid import UUID
 
 from cachetools import LRUCache, TTLCache
+from devtools import pformat
 from fastapi import FastAPI, Request
 
 from data_rentgen.db.models import PersonalToken, User
