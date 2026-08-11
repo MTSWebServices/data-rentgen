@@ -58,13 +58,15 @@ def make_asgi_app_multiprocess() -> ASGIApp:
 def broker_factory(settings: ConsumerApplicationSettings) -> KafkaBroker:
     middlewares = []
     if settings.monitoring.enabled:
-        monitoring_settings = settings.monitoring.model_dump(exclude_unset=True, by_alias=True)
-        app_name = monitoring_settings.get("custom_labels", {}).pop("app_name", "data-rentgen-consumer")
+        labels = settings.monitoring.labels.copy()
+        app_name = labels.pop("app_name", "data-rentgen-consumer")
+        labels.setdefault("version", data_rentgen.__version__)
         middlewares.append(
             KafkaPrometheusMiddleware(
                 registry=REGISTRY,
                 app_name=app_name,
-                **monitoring_settings,
+                custom_labels=labels,  # type: ignore[arg-type]
+                **settings.monitoring.model_dump(exclude={"labels"}, exclude_unset=True),
             ),
         )
 
