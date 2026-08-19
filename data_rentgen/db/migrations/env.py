@@ -19,7 +19,7 @@ if config.config_file_name is not None:
 
 if not config.get_main_option("sqlalchemy.url"):
     # read application settings only if sqlalchemy.url is not being passed via cli arguments
-    config.set_main_option("sqlalchemy.url", str(DatabaseApplicationSettings().database.url))
+    config.set_main_option("sqlalchemy.url", str(DatabaseApplicationSettings().database.url).replace("%", "%%"))
 
 target_metadata = (Base.metadata,)
 
@@ -47,9 +47,9 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url", "")
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url.replace("%", "%%"),
+        url=url,
         target_metadata=target_metadata,  # type: ignore[arg-type]
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
