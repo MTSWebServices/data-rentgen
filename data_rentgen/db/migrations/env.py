@@ -47,9 +47,9 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option("sqlalchemy.url", "")
     context.configure(
-        url=url,
+        url=url.replace("%", "%%"),
         target_metadata=target_metadata,  # type: ignore[arg-type]
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
