@@ -3,7 +3,6 @@
 
 import textwrap
 from typing import Annotated
-from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, PostgresDsn, UrlConstraints
 from sqlalchemy import make_url
@@ -13,12 +12,12 @@ from data_rentgen.settings import BaseSettings
 
 
 def validate_url(value: PostgresDsn):
-    if not value.path or len(value.path) <= 1:
+    url = make_url(str(value))
+    if not url.database:
         msg = "Database URL must contain database name"
         raise ValueError(msg)
 
-    split = urlsplit(str(value))
-    if not split.username or not split.password:
+    if not url.username or not url.password:
         msg = "Database URL must contain username and password"
         raise ValueError(msg)
 
@@ -27,7 +26,7 @@ def validate_url(value: PostgresDsn):
 
 PostgresURL = Annotated[
     PostgresDsn,
-    UrlConstraints(allowed_schemes=["postgresql+asyncpg", "postgresql+psycopg"], host_required=True),
+    UrlConstraints(allowed_schemes=["postgresql+asyncpg", "postgresql+psycopg"], default_port=5432, host_required=True),
     AfterValidator(validate_url),
 ]
 
@@ -56,6 +55,12 @@ class DatabaseSettings(BaseModel):
         description=textwrap.dedent(
             """
             Database connection URL.
+
+            Mandatory components:
+
+            * host
+            * username (urlencoded)
+            * password (urlencoded)
 
             See [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/core/engines.html#backend-specific-urls)
 
