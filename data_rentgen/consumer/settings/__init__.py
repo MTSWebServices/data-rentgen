@@ -46,6 +46,7 @@ class ConsumerApplicationSettings(BaseSettings):
         description="[Logging settings][configuration-consumer-logging]",
     )
     kafka: KafkaSettings = Field(
+        default_factory=KafkaSettings,  # type: ignore[arg-type]
         description="[Kafka settings][configuration-consumer-kafka]",
     )
     consumer: ConsumerSettings = Field(
