@@ -1,6 +1,5 @@
 #!make
 
-VERSION = develop
 VIRTUAL_ENV ?= .venv
 PYTHON = ${VIRTUAL_ENV}/bin/python
 PIP = ${VIRTUAL_ENV}/bin/pip
@@ -8,6 +7,8 @@ UV ?= ${VIRTUAL_ENV}/bin/uv
 PYTEST = ${VIRTUAL_ENV}/bin/pytest
 COVERAGE = ${VIRTUAL_ENV}/bin/coverage
 GITHUB_RUN_ID ?= unknown
+VERSION := $(shell cat data_rentgen/VERSION)
+DATE := $(shell date --rfc-3339=date)
 
 # Fix docker build and docker compose build using different backends
 COMPOSE_DOCKER_CLI_BUILD = 1
@@ -146,13 +147,18 @@ docs-serve: ##@Docs Run docs server
 	PYTHONPATH=. DISABLE_MKDOCS_2_WARNING=true ${VIRTUAL_ENV}/bin/mkdocs serve --config-file mddocs/mkdocs.yml
 
 docs-generate-changelog: ##@Docs Generate changelog
+	echo "Building changelog for ${VERSION}"
 	cp "mddocs/docs/changelog/RELEASE_TEMPLATE.md" "mddocs/docs/changelog/temp_RELEASE_TEMPLATE.md"
-	${UV} run towncrier build "--version=$(shell cat data_rentgen/VERSION)" --yes
-	mv "mddocs/docs/changelog/RELEASE_TEMPLATE.md" "mddocs/docs/changelog/$(shell cat data_rentgen/VERSION).md"
+	${UV} run towncrier build "--version=${VERSION}" --yes
+	mv "mddocs/docs/changelog/RELEASE_TEMPLATE.md" "mddocs/docs/changelog/${VERSION}.md"
 	mv "mddocs/docs/changelog/temp_RELEASE_TEMPLATE.md" "mddocs/docs/changelog/RELEASE_TEMPLATE.md"
-	awk '!/towncrier release notes start/' "mddocs/docs/changelog/$(shell cat data_rentgen/VERSION).md" | sed '/./,$$!d' > temp && mv temp "mddocs/docs/changelog/$(shell cat data_rentgen/VERSION).md"
-	sed "s#\(.*NEXT_RELEASE.*\)#\1\n- [$(shell cat data_rentgen/VERSION)][$(shell cat data_rentgen/VERSION)]#" "mddocs/docs/changelog/index.md" > temp && mv temp "mddocs/docs/changelog/index.md"
-	sed "s#\(.*NEXT_RELEASE.*\)#\1\n    * [$(shell cat data_rentgen/VERSION)](changelog/$(shell cat data_rentgen/VERSION).md)#" "mddocs/docs/nav.md" > temp && mv temp "mddocs/docs/nav.md"
+
+	# Remove content above the version number heading in the `${VERSION}.md` file
+	awk '!/towncrier release notes start/' "mddocs/docs/changelog/${VERSION}.md" | sed '/./,$$!d' > temp && mv temp "mddocs/docs/changelog/${VERSION}.md"
+
+	# Update Changelog Index and Navigation
+	sed "s#\(.*NEXT_RELEASE.*\)#\1\n- [${VERSION} (${DATE})][${VERSION}]#" "mddocs/docs/changelog/index.md" > temp && mv temp "mddocs/docs/changelog/index.md"
+	sed "s#\(.*NEXT_RELEASE.*\)#\1\n    * [${VERSION}](changelog/${VERSION}.md)#" "mddocs/docs/nav.md" > temp && mv temp "mddocs/docs/nav.md"
 
 docs-openapi: ##@Docs Generate OpenAPI schema
 	${PYTHON} -m data_rentgen.server.scripts.export_openapi_schema mddocs/docs/_static/openapi_server.json
