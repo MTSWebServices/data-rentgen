@@ -78,14 +78,14 @@ server = [
 ]
 consumer = [
   "faststream[kafka,cli,prometheus]~=0.7.2",
-  "cramjam~=2.11.0",
+  "cramjam>=2.11,<2.13",
 ]
 http2kafka = [
   "fastapi~=0.141.1",
   "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
   "faststream[kafka,cli]~=0.7.2",
-  "cramjam~=2.11.0",
+  "cramjam>=2.11,<2.13",
 ]
 postgres = [
   "asyncpg~=0.31.0",
@@ -100,7 +100,7 @@ seed = [
 [dependency-groups]
 test = [
   "pytest~=9.1.1",
-  "httpx2~=2.10.0",
+  "httpx2>=2.10,<2.13",
   "pytest-asyncio~=1.4.0",
   "pytest-randomly~=4.1.0",
   "pytest-deadfixtures~=3.1.0",
