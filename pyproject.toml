@@ -32,18 +32,18 @@ keywords = ["Lineage", "FastAPI", "REST", "FastStream"]
 requires-python = ">=3.12"
 dependencies = [
   "pydantic~=2.13.4",
-  "pydantic-settings>=2.14.2,<2.16.0",
+  "pydantic-settings~=2.15.0",
   "pydantic-settings-logging~=0.1.1",
-  "typing-extensions>=4.15,<4.17",
-  "alembic>=1.18.4,<1.20.0",
+  "typing-extensions~=4.16.0",
+  "alembic~=1.19.1",
   "sqlalchemy~=2.0.51",
-  "sqlalchemy-utils~=0.42.0",
+  "sqlalchemy-utils~=0.42.1",
   "greenlet~=3.5.2",
-  "uvicorn>=0.51,<0.53",
+  "uvicorn~=0.52.4",
   "pyyaml~=6.0.3",
-  "python-json-logger>=4.1,<4.3",
+  "python-json-logger~=4.2.0",
   "coloredlogs~=15.0.1",
-  "uuid6~=2025.0.0",
+  "uuid6~=2025.0.1",
   "python-dateutil~=2.9.0.post0",
   "packaging~=26.0",
   "cachetools~=7.1.1",
@@ -78,14 +78,14 @@ server = [
 ]
 consumer = [
   "faststream[kafka,cli,prometheus]~=0.7.2",
-  "cramjam>=2.11,<2.13",
+  "cramjam~=2.12.0",
 ]
 http2kafka = [
   "fastapi~=0.141.1",
   "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
   "faststream[kafka,cli]~=0.7.2",
-  "cramjam>=2.11,<2.13",
+  "cramjam~=2.12.0",
 ]
 postgres = [
   "asyncpg~=0.31.0",
@@ -100,7 +100,7 @@ seed = [
 [dependency-groups]
 test = [
   "pytest~=9.1.1",
-  "httpx2>=2.10,<2.13",
+  "httpx2~=2.12.0",
   "pytest-asyncio~=1.4.0",
   "pytest-randomly~=4.1.0",
   "pytest-deadfixtures~=3.1.0",
