@@ -62,7 +62,7 @@ class KeycloakAuthProvider(AuthProvider):
         password: str,
         uow: UnitOfWork,
     ) -> dict[str, Any]:
-        msg = "Password grant is not supported by KeycloakAuthProvider"
+        msg = f"Password grant is not supported by {self.__class__.__name__}"
         raise NotImplementedError(msg)
 
     async def get_token_authorization_code_grant(

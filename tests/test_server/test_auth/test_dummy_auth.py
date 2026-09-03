@@ -1,10 +1,14 @@
+import time
 from collections.abc import Callable
 from http import HTTPStatus
 
 import pytest
 from httpx2 import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from data_rentgen.db.models import User
+from data_rentgen.server.settings.auth.jwt import JWTSettings
 from tests.fixtures.mocks import MockedUser
 
 pytestmark = [pytest.mark.server, pytest.mark.asyncio]
@@ -76,7 +80,7 @@ async def test_dummy_auth_logout_not_implemented(
     assert response.json() == {
         "error": {
             "code": "not_implemented",
-            "message": "Logout method is not implemented for DummyAuthProvider",
+            "message": "Logout method is not supported by DummyAuthProvider",
             "details": None,
         },
     }
@@ -84,20 +88,30 @@ async def test_dummy_auth_logout_not_implemented(
 
 async def test_dummy_auth_login(
     test_client: AsyncClient,
+    async_session: AsyncSession,
     access_token_jwt_decoder: Callable[[str], dict],
+    access_token_settings: JWTSettings,
 ):
+    before = time.time()
     response = await test_client.post("v1/auth/token", data={"username": "test", "password": "test"})
+    after = time.time()
+
+    assert response.status_code == HTTPStatus.OK, response.json()
 
     data = response.json()
     assert data["token_type"] == "bearer"
     assert data["access_token"]
-    assert data["expires_at"]
+    assert before <= data["expires_at"] <= after + access_token_settings.expire_seconds
 
     claims = access_token_jwt_decoder(data["access_token"])
-    assert claims["iss"]
-    assert claims["preferred_username"] == "test"
-    assert claims["sub_id"]
-    assert claims["nbf"]
-    assert claims["iat"]
-    assert claims["exp"]
+    query = select(User).where(User.name == "test").limit(1)
+    user = await async_session.scalar(query)
+    assert user
+
+    assert claims["iss"] == "data-rentgen"
+    assert claims["preferred_username"] == user.name
+    assert claims["sub_id"] == user.id
+    assert before <= claims["nbf"] <= after
+    assert before <= claims["iat"] <= after
+    assert claims["exp"] == data["expires_at"]
     assert "jti" not in claims

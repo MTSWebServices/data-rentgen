@@ -106,9 +106,9 @@ class DummyAuthProvider(AuthProvider):
         }
 
     async def get_token_authorization_code_grant(self, code: str, request: Request) -> dict[str, Any]:
-        msg = "Authorization code grant is not supported by DummyAuthProvider"
+        msg = f"Authorization code grant is not supported by {self.__class__.__name__}"
         raise NotImplementedError(msg)
 
     async def logout(self, user: User, request: Request) -> None:
-        msg = "Logout method is not implemented for DummyAuthProvider"
+        msg = f"Logout method is not supported by {self.__class__.__name__}"
         raise NotImplementedError(msg)

@@ -7,7 +7,6 @@ import pytest
 from data_rentgen.db.models import PersonalToken, User
 from data_rentgen.server.settings import ServerApplicationSettings
 from data_rentgen.server.settings.auth.jwt import JWTSettings
-from data_rentgen.server.settings.auth.personal_token import PersonalTokenSettings
 from data_rentgen.server.utils.jwt import decode_jwt, sign_jwt
 
 
@@ -59,7 +58,7 @@ def access_token_generator(access_token_settings: JWTSettings) -> Callable[[User
 
 
 @pytest.fixture
-def access_token_jwt_decoder(access_token_settings: PersonalTokenSettings) -> Callable[[str], dict]:
+def access_token_jwt_decoder(access_token_settings: JWTSettings) -> Callable[[str], dict]:
     def _decoder(jwt_string: str) -> dict:
         return decode_jwt(
             token=jwt_string.replace("access_token_", ""),
