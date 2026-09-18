@@ -161,7 +161,7 @@ async def test_http2kafka_openlineage_wrong_token(
         "error": {
             "code": "unauthorized",
             "message": "Invalid token",
-            "details": "Signature verification failed",
+            "details": "Invalid crypto padding",
         },
     }
 

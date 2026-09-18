@@ -40,7 +40,7 @@ async def test_dummy_auth_invalid_token(
         "error": {
             "code": "unauthorized",
             "message": "Invalid token",
-            "details": "Signature verification failed",
+            "details": "Invalid crypto padding",
         },
     }
 
