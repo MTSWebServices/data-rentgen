@@ -46,7 +46,7 @@ dependencies = [
   "uuid6~=2025.0.1",
   "python-dateutil~=2.9.0.post0",
   "packaging~=26.0",
-  "cachetools~=7.1.1",
+  "cachetools>=7.1.1,<7.3.0",
   "devtools~=0.12.2",
 ]
 dynamic = ["version"]
@@ -128,7 +128,7 @@ mddocs = [
   "mkdocs-material~=9.7.6",
   "mkdocstrings[python]~=1.0.3",
   "mkdocs-autorefs~=1.4.4",
-  "pymdown-extensions~=11.0",
+  "pymdown-extensions>=11,<13",
   "griffe-inherited-docstrings~=1.1.3",
   "griffe-pydantic~=1.3.1",
   "mkdocs-literate-nav~=0.6.1",
