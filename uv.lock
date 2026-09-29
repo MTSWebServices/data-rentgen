@@ -902,11 +902,11 @@ provides-extras = ["server", "consumer", "http2kafka", "postgres", "gssapi", "se
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy", specifier = "~=2.3.0" },
-    { name = "prek", specifier = ">=0.4.12,<0.6.0" },
-    { name = "ruff", specifier = "~=0.16.1" },
+    { name = "prek", specifier = "~=0.5.4" },
+    { name = "ruff", specifier = "~=0.16.9" },
     { name = "sqlalchemy", extras = ["mypy"], specifier = "~=2.0.54" },
-    { name = "types-cachetools", specifier = "~=7.0.0.20260503" },
-    { name = "types-jwcrypto", specifier = ">=1.5,<1.7" },
+    { name = "types-cachetools", specifier = "~=7.0.0" },
+    { name = "types-jwcrypto", specifier = "~=1.6.1" },
     { name = "types-python-dateutil", specifier = "~=2.9.0" },
     { name = "types-pyyaml", specifier = "~=6.0.12" },
 ]
