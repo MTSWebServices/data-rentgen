@@ -433,7 +433,7 @@ def test_extractors_extract_dataset_awsglue():
     assert symlinks_dto == []
 
 
-def test_extractors_extract_dataset_unknown():
+def test_extractors_extract_dataset_no_schema():
     dataset = OpenLineageDataset(
         namespace="some-namespace",
         name="some.name",
@@ -447,6 +447,24 @@ def test_extractors_extract_dataset_unknown():
             addresses={"unknown://some-namespace"},
         ),
         name="some.name",
+    )
+    assert symlinks_dto == []
+
+
+def test_extractors_extract_dataset_no_netloc():
+    dataset = OpenLineageDataset(
+        namespace="hdfs://",
+        name="/some/path",
+    )
+
+    dataset_dto, symlinks_dto = GenericExtractor().extract_dataset_and_symlinks(dataset)
+    assert dataset_dto == DatasetDTO(
+        location=LocationDTO(
+            type="hdfs",
+            name="unknown",
+            addresses={"hdfs://unknown"},
+        ),
+        name="/some/path",
     )
     assert symlinks_dto == []
 
