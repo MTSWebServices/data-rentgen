@@ -28,7 +28,7 @@ from data_rentgen.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
-PARTITION_GRANULARITY_PATERN = re.compile(r"(\w+)_y(\d{4})(?:_m(\d{1,2})(?:_d(\d{1,2}))?)?")
+PARTITION_GRANULARITY_PATERN = re.compile(r"(\w+)_y(\d{4})(?:_m(\d{1,2})(?:_d?(\d{1,2}))?)?")
 
 PARTITIONED_TABLES = [
     Run.__tablename__,
@@ -46,10 +46,10 @@ POSTGRES_GET_PARTITIONS_QUERY = (
     "ORDER BY relname"
 )
 
-granularity_output_format = {
-    "year": "_y%Y",
-    "month": "_y%Y_m%m",
-    "day": "_y%Y_m%m_d%d",
+granularity_range = {
+    "year": relativedelta(years=1),
+    "month": relativedelta(months=1),
+    "day": relativedelta(days=1),
 }
 
 
@@ -86,13 +86,14 @@ def get_parser() -> ArgumentParser:
 @dataclass(slots=True)
 class TablePartition:
     name: str
+    qualified_name: str
     begin_date: date
     granularity: Literal["year", "month", "day"] = field(default="year")
     is_attached: bool = True
 
     @property
-    def qualified_name(self):
-        return self.name + self.begin_date.strftime(granularity_output_format[self.granularity])
+    def end_date(self) -> date:
+        return self.begin_date + granularity_range[self.granularity]
 
 
 async def get_partitioned_tables(session: AsyncSession) -> dict[str, list[TablePartition]]:
@@ -126,6 +127,7 @@ async def get_partitioned_tables(session: AsyncSession) -> dict[str, list[TableP
         tables[name].append(
             TablePartition(
                 name=name,
+                qualified_name=tabel_name,
                 begin_date=date(year, month, day),
                 granularity=granularity,
                 is_attached=is_attached,
@@ -136,7 +138,7 @@ async def get_partitioned_tables(session: AsyncSession) -> dict[str, list[TableP
 
 def filter_partitions(tables: dict[str, list[TablePartition]], keep_after: date) -> dict[str, list[TablePartition]]:
     return {
-        table_name: [partition for partition in partitions if partition.begin_date < keep_after]
+        table_name: [partition for partition in partitions if partition.end_date <= keep_after]
         for table_name, partitions in tables.items()
     }
 
