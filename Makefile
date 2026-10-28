@@ -38,8 +38,16 @@ venv-cleanup: ##@Env Cleanup venv
 	${PIP} install uv
 
 venv-install: ##@Env Install requirements to venv
-	${UV} sync --inexact --no-install-project --frozen --all-extras --all-groups --no-extra gssapi $(ARGS)
+	${UV} sync --inexact --no-install-project --frozen --all-extras --no-extra gssapi $(ARGS) --all-groups
 
+venv-install-test: ##@Env Install requirements to venv (test-only)
+	${UV} sync --inexact --no-install-project --frozen --all-extras --no-extra gssapi $(ARGS) --group test
+
+venv-install-dev: ##@Env Install requirements to venv (dev-only)
+	${UV} sync --inexact --no-install-project --frozen --all-extras --no-extra gssapi $(ARGS) --group dev
+
+venv-install-docs: ##@Env Install requirements to venv (docs)
+	${UV} sync --inexact --no-install-project --frozen --all-extras --no-extra gssapi $(ARGS) --group mddocs
 
 db: db-start db-upgrade db-partitions ##@DB Prepare database (in docker)
 
