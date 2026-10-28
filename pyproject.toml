@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Typing :: Typed",
 ]
 keywords = ["Lineage", "FastAPI", "REST", "FastStream"]
@@ -76,14 +77,14 @@ server = [
   "python-keycloak~=7.1.1",
 ]
 consumer = [
-  "faststream[kafka,cli,prometheus]~=0.7.2",
+  "faststream[kafka,cli,prometheus]~=0.7.9",
   "cramjam~=2.14.0",
 ]
 http2kafka = [
   "fastapi~=0.162.0",
   "starlette-exporter~=0.24.0",
   "asgi-correlation-id~=5.0.0",
-  "faststream[kafka,cli]~=0.7.2",
+  "faststream[kafka,cli]~=0.7.9",
   "cramjam~=2.14.0",
 ]
 postgres = [
