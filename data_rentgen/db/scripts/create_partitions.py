@@ -57,7 +57,7 @@ class Granularity(StrEnum):
 
     def to_format(self) -> str:
         if self == Granularity.DAY:
-            return "y%Y_m%m_%d"
+            return "y%Y_m%m_d%d"
         if self == Granularity.MONTH:
             return "y%Y_m%m"
         return "y%Y"

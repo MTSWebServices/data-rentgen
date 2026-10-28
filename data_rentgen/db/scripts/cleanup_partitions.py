@@ -98,7 +98,7 @@ class TablePartition:
 
 async def get_partitioned_tables(session: AsyncSession) -> dict[str, list[TablePartition]]:
     tables: dict[str, list[TablePartition]] = defaultdict(list)
-    table_prefixes = [table_name + "%" for table_name in PARTITIONED_TABLES]
+    table_prefixes = [table_name + "_y%" for table_name in PARTITIONED_TABLES]
     result = await session.execute(text(POSTGRES_GET_PARTITIONS_QUERY), {"table_prefixes": table_prefixes})
     table_names = result.all()
     if not table_names:
