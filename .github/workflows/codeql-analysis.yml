@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           export UV=$(which uv)
-          make venv-install
+          make venv-install-dev
 
       - name: Run linters
         run: |

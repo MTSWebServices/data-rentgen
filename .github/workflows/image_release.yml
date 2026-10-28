@@ -7,9 +7,6 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
 
-env:
-  DEFAULT_PYTHON: '3.14'
-
 jobs:
   release:
     name: Build & push image to Dockerhub
@@ -31,11 +28,6 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v7
-
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
 
       - name: Get version
         id: get_version
