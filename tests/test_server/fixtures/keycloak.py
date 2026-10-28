@@ -211,6 +211,13 @@ def mock_keycloak_certs(server_app_settings, rsa_keys, respx_mock):
     def encode_number_base64(n: int):
         return base64.b64encode(n.to_bytes((n.bit_length() + 7) // 8, byteorder="big")).decode("utf-8")
 
+    def encode_number_base64url(n: int):
+        return (
+            base64.b64encode(n.to_bytes((n.bit_length() + 7) // 8, byteorder="big"), altchars=b"-_")
+            .decode("utf-8")
+            .strip("=")
+        )
+
     # return public key in Keycloak JWK format
     # https://github.com/marcospereirampj/python-keycloak/pull/704/changes
     public_key = rsa_keys["public_key"]
@@ -221,7 +228,7 @@ def mock_keycloak_certs(server_app_settings, rsa_keys, respx_mock):
                 "kty": "RSA",
                 "alg": "RS256",
                 "use": "sig",
-                "n": encode_number_base64(public_key.public_numbers().n),
+                "n": encode_number_base64url(public_key.public_numbers().n),
                 "e": encode_number_base64(public_key.public_numbers().e),
             },
         ]

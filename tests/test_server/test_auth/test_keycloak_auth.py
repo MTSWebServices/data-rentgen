@@ -69,6 +69,7 @@ async def test_keycloak_auth(
     mock_keycloak_well_known,
     mock_keycloak_realm,
     mock_keycloak_certs,
+    mock_keycloak_token_refresh,
 ):
     session_cookie = create_session_cookie(user)
     response = await test_client.get(
