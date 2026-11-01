@@ -43,7 +43,7 @@ dependencies = [
   "python-json-logger~=4.2.0",
   "coloredlogs~=15.0.1",
   "uuid6~=2025.0.1",
-  "python-dateutil~=2.9.0.post0",
+  "python-dateutil>=2.9,<3.1",
   "packaging~=26.0",
   "cachetools~=7.2.0",
   "devtools~=0.13.0",
@@ -98,7 +98,7 @@ seed = [
 
 [dependency-groups]
 test = [
-  "pytest~=9.1.1",
+  "pytest>=9.1.1,<9.3.0",
   "httpx2~=2.16.0",
   "pytest-asyncio~=1.4.0",
   "pytest-randomly~=5.0.0",
