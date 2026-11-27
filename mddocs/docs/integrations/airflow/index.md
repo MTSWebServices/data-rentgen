@@ -5,7 +5,7 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
 ## Requirements
 
 - [Apache Airflow](https://airflow.apache.org/) 2.x or 3.x
-- OpenLineage 1.19.0 or higher, recommended 1.34.0+
+- OpenLineage 1.19.0 or higher
 - OpenLineage integration for Airflow (see below)
 - Running [message-broker][message-broker]
 - (Optional) [http2kafka][http2kafka]
@@ -24,14 +24,14 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
     === "KafkaTransport"
 
         ```console
-        $ pip install "apache-airflow-providers-openlineage>=2.6.1" "openlineage-python[kafka]>=1.40.1" zstd
+        $ pip install "apache-airflow-providers-openlineage>=1.9.0" "openlineage-python[kafka]>=1.19.0" zstd
         ...
         ```
 
     === "HttpTransport (requires HTTP2Kafka)"
 
         ```console
-        $ pip install "apache-airflow-providers-openlineage>=2.6.1"
+        $ pip install "apache-airflow-providers-openlineage>=1.9.0"
         ...
         ```
 
@@ -40,14 +40,14 @@ Using [OpenLineage integration with Apache Airflow](https://openlineage.io/docs/
     === "KafkaTransport"
 
         ```console
-        $ pip install "openlineage-airflow>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
+        $ pip install "openlineage-airflow>=1.19.0" "openlineage-python[kafka]>=1.19.0" zstd
         ...
         ```
 
     === "HttpTransport (requires HTTP2Kafka)"
 
         ```console
-        $ pip install "openlineage-airflow>=1.40.1"
+        $ pip install "openlineage-airflow>=1.19.0"
         ...
         ```
 

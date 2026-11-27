@@ -5,7 +5,7 @@ Using [OpenLineage integration with Apache Flink 2.x](https://openlineage.io/doc
 ## Requirements
 
 - [Apache Flink](https://flink.apache.org/) 2.x
-- OpenLineage 1.31.0 or higher, recommended 1.40.1+
+- OpenLineage 1.31.0 or higher
 - Running [message-broker][message-broker]
 - (Optional) [http2kafka][http2kafka]
 

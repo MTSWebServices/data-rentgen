@@ -5,7 +5,7 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 ## Requirements
 
 - [dbt](https://www.getdbt.com/) 1.3 or higher
-- OpenLineage 1.19.0 or higher, recommended 1.40.1+
+- OpenLineage 1.19.0 or higher
 - Running [message-broker][message-broker]
 - (Optional) [http2kafka][http2kafka]
 
@@ -24,14 +24,14 @@ Using [OpenLineage integration with dbt](https://openlineage.io/docs/integration
 === "KafkaTransport"
 
     ```console
-    $ pip install "openlineage-dbt>=1.40.1" "openlineage-python[kafka]>=1.40.1" zstd
+    $ pip install "openlineage-dbt>=1.19.0" "openlineage-python[kafka]>=1.19.0" zstd
     ...
     ```
 
 === "HttpTransport (requires HTTP2Kafka)"
 
     ```console
-    $ pip install "openlineage-dbt>=1.40.1"
+    $ pip install "openlineage-dbt>=1.19.0"
     ...
     ```
 

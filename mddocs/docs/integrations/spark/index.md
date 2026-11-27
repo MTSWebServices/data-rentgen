@@ -5,7 +5,7 @@ Using [OpenLineage integration with Apache Spark](https://openlineage.io/docs/in
 ## Requirements
 
 - [Apache Spark](https://spark.apache.org/) 3.x or higher
-- OpenLineage 1.23.0 or higher, recommended 1.40.1+
+- OpenLineage 1.23.0 or higher
 - Running [message-broker][message-broker]
 - (Optional) [http2kafka][http2kafka]
 
@@ -78,9 +78,9 @@ Using [OpenLineage integration with Apache Spark](https://openlineage.io/docs/in
         .config(
             "spark.jars.packages",
             # For KafkaTransport
-            "io.openlineage:openlineage-spark_2.12:1.34.0,org.apache.kafka:kafka-clients:3.9.0",
+            "io.openlineage:openlineage-spark_2.12:1.42.0,org.apache.kafka:kafka-clients:3.9.0",
             # For HttpTransport
-            #"io.openlineage:openlineage-spark_2.12:1.40.1",
+            #"io.openlineage:openlineage-spark_2.12:1.42.0",
         )
         .config(
             "spark.extraListeners",
@@ -109,7 +109,7 @@ Add OpenLineage integration package, setup `OpenLineageSparkListener` in SparkSe
         # install OpenLineage integration and Kafka client
         .config(
             "spark.jars.packages",
-            "io.openlineage:openlineage-spark_2.12:1.40.1,org.apache.kafka:kafka-clients:3.9.0",
+            "io.openlineage:openlineage-spark_2.12:1.42.0,org.apache.kafka:kafka-clients:3.9.0",
         )
         .config(
             "spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener"
@@ -167,7 +167,7 @@ Add OpenLineage integration package, setup `OpenLineageSparkListener` in SparkSe
         # install OpenLineage integration and Kafka client
         .config(
             "spark.jars.packages",
-            "io.openlineage:openlineage-spark_2.12:1.40.1",
+            "io.openlineage:openlineage-spark_2.12:1.42.0",
         )
         .config(
             "spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener"

@@ -5,7 +5,7 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 ## Requirements
 
 - [Apache Flink](https://flink.apache.org/) 1.x
-- OpenLineage 1.31.0 or higher, recommended 1.40.1+
+- OpenLineage 1.31.0 or higher
 - Running [message-broker][message-broker]
 - (Optional) [http2kafka][http2kafka]
 
@@ -25,7 +25,7 @@ Using [OpenLineage integration with Apache Flink 1.x](https://openlineage.io/doc
 
     ```groovy title="build.gradle"
 
-    implementation "io.openlineage:openlineage-flink:1.40.1"
+    implementation "io.openlineage:openlineage-flink:1.42.0"
     // For KafkaTransport only
     implementation "org.apache.kafka:kafka-clients:3.9.0"
     ```

@@ -5,7 +5,7 @@ Using [OpenLineage integration with Apache Hive](https://openlineage.io/docs/int
 ## Requirements
 
 - [Apache Hive](https://hive.apache.org/) 3.1.3 (4.0 is not yet supported)
-- OpenLineage 1.34.0 or higher, recommended 1.40.1+
+- OpenLineage 1.34.0 or higher
 - Running [message-broker][message-broker]
 - (Optional) [http2kafka][http2kafka]
 
@@ -13,16 +13,16 @@ Using [OpenLineage integration with Apache Hive](https://openlineage.io/docs/int
 
 - **Hive CLI** is not supported. HiveServer2 is required.
 
-- As for OpenLineage 1.40.1 version only these queries are parsed as containing lineage:
+- As for OpenLineage 1.55.0 version only these queries are parsed as containing lineage:
 
     - `CREATE TABLE .. AS SELECT ...`
     - `INSERT INTO ... SELECT ...`
+    - `LOAD DATA`, `EXPORT`, `IMPORT`
 
     Other query types are ignored by OpenLineage integration, including:
 
     - `CREATE TABLE ...`, `ALTER TABLE ...`, `TRUNCATE TABLE ...`, `DROP TABLE ...`.
-    - `INSERT INTO ... VALUES ...`, `UPDATE`, `DELETE`, `MERGE`.
-    - `LOAD DATA`, `EXPORT`, `IMPORT`.
+    - `INSERT INTO ... VALUES ...`, `UPDATE`, `DELETE`, `MERGE`
     - `SELECT` data directly to JDBC client.
 
 - Hive sends events when user session started, but not when stopped. So all Hive sessions in Data.Rentgen are in `STARTED` status.
@@ -74,6 +74,10 @@ Change `hive-site.xml` configuration file:
         <!-- Enable OpenLineage integration based on Hive hooks -->
         <property>
             <name>hive.server2.session.hook</name>
+            <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+        </property>
+        <property>
+            <name>hive.exec.pre.hooks</name>
             <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
         </property>
         <property>
