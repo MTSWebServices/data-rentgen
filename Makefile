@@ -109,9 +109,6 @@ test-broker-start: ##@TestBroker Start broker
 test-ci: test-db test-broker ##@Test Run CI tests
 	${COVERAGE} run -m pytest --junitxml=reports/junit/${GITHUB_RUN_ID}.xml $(PYTEST_ARGS)
 
-test-check-fixtures: ##@Test Check declared fixtures
-	${PYTEST} --dead-fixtures $(PYTEST_ARGS)
-
 test-cleanup: ##@Test Cleanup tests dependencies
 	docker compose -f docker-compose.test.yml --profile all down --remove-orphans $(ARGS)
 

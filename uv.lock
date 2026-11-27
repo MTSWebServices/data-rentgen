@@ -271,11 +271,11 @@ wheels = [
 
 [[package]]
 name = "cachetools"
-version = "7.2.8"
+version = "8.0.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/93/6f/faa5e0606769105e70e0478031a8f9a6b729e329f42ce2462585c6d9aa52/cachetools-7.2.8.tar.gz", hash = "sha256:3f9b146b2160975da273e7c23ec882f3996b65df608150d52083c07de0682075", size = 47821, upload-time = "2026-10-31T21:37:51.986Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/28/eb1ac766e4c0c439506a654186de8e2cfcd99035218a9393986103a0fdf0/cachetools-8.0.2.tar.gz", hash = "sha256:30ac523adfc118b51d2b2e7bad8a0ddb31370dfe2700c7f10ca224f36ccf81e0", size = 51441, upload-time = "2026-11-18T21:18:28.225Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/35/2fb720060bb278759da35f2076fab1af4e9d66e3add080e6b40d6e25ba48/cachetools-7.2.8-py3-none-any.whl", hash = "sha256:09b04a85741d0019b3fb7d02b7ee9933a422fa6923af92a0fd63b893b695830c", size = 19646, upload-time = "2026-10-31T21:37:50.278Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/35/0dca79b22cd3ad3fc4bfbd91ea85f259903e7ce5fe956647916df8f691f4/cachetools-8.0.2-py3-none-any.whl", hash = "sha256:502bf3c17c6e35d78ccdaa70da8c7001b28634541f5cde0dee33c93bb252277d", size = 19334, upload-time = "2026-11-18T21:18:26.889Z" },
 ]
 
 [[package]]
@@ -879,9 +879,10 @@ dev = [
     { name = "prek" },
     { name = "ruff" },
     { name = "sqlalchemy", extra = ["asyncio", "mypy"] },
-    { name = "types-cachetools" },
     { name = "types-jwcrypto" },
+    { name = "types-psycopg2" },
     { name = "types-python-dateutil" },
+    { name = "types-pytz" },
     { name = "types-pyyaml" },
 ]
 mddocs = [
@@ -905,7 +906,6 @@ test = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-clarity" },
-    { name = "pytest-deadfixtures" },
     { name = "pytest-pretty" },
     { name = "pytest-randomly" },
     { name = "pytest-rerunfailures" },
@@ -918,14 +918,14 @@ requires-dist = [
     { name = "asgi-correlation-id", marker = "extra == 'http2kafka'", specifier = "~=5.0.0" },
     { name = "asgi-correlation-id", marker = "extra == 'server'", specifier = "~=5.0.0" },
     { name = "asyncpg", marker = "extra == 'postgres'", specifier = "~=0.32.0" },
-    { name = "cachetools", specifier = "~=7.2.0" },
+    { name = "cachetools", specifier = "~=8.0.2" },
     { name = "coloredlogs", specifier = "~=15.0.1" },
     { name = "cramjam", marker = "extra == 'consumer'", specifier = "~=2.14.0" },
     { name = "cramjam", marker = "extra == 'http2kafka'", specifier = "~=2.14.0" },
     { name = "devtools", specifier = "~=0.13.0" },
     { name = "faker", marker = "extra == 'seed'" },
-    { name = "fastapi", marker = "extra == 'http2kafka'", specifier = "~=0.162.0" },
-    { name = "fastapi", marker = "extra == 'server'", specifier = "~=0.162.0" },
+    { name = "fastapi", marker = "extra == 'http2kafka'", specifier = "~=0.165.0" },
+    { name = "fastapi", marker = "extra == 'server'", specifier = "~=0.165.0" },
     { name = "faststream", extras = ["cli", "kafka"], marker = "extra == 'http2kafka'", specifier = "~=0.7.9" },
     { name = "faststream", extras = ["cli", "kafka", "prometheus"], marker = "extra == 'consumer'", specifier = "~=0.7.9" },
     { name = "gssapi", marker = "extra == 'gssapi'", specifier = ">=1.12.0" },
@@ -935,7 +935,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = "~=2.16.1" },
     { name = "pydantic-settings-logging", specifier = "~=0.1.1" },
     { name = "pyjwt", marker = "extra == 'server'", specifier = "~=2.15.1" },
-    { name = "python-dateutil", specifier = ">=2.9,<3.1" },
+    { name = "python-dateutil", specifier = "~=4.0.0" },
     { name = "python-json-logger", specifier = "~=4.2.0" },
     { name = "python-keycloak", marker = "extra == 'server'", specifier = "~=7.1.1" },
     { name = "python-multipart", marker = "extra == 'server'", specifier = "~=0.0.20" },
@@ -956,10 +956,11 @@ dev = [
     { name = "prek", specifier = "~=0.5.5" },
     { name = "ruff", specifier = "~=0.17.0" },
     { name = "sqlalchemy", extras = ["asyncio", "mypy"], specifier = "~=2.1.4" },
-    { name = "types-cachetools", specifier = "~=7.0.0" },
-    { name = "types-jwcrypto", specifier = "~=1.6.1" },
-    { name = "types-python-dateutil", specifier = "~=2.9.0" },
-    { name = "types-pyyaml", specifier = "~=6.0.12" },
+    { name = "types-jwcrypto" },
+    { name = "types-psycopg2" },
+    { name = "types-python-dateutil" },
+    { name = "types-pytz" },
+    { name = "types-pyyaml" },
 ]
 mddocs = [
     { name = "griffe-inherited-docstrings", specifier = "~=1.1.3" },
@@ -970,7 +971,7 @@ mddocs = [
     { name = "mkdocs-material", specifier = "~=9.8.0" },
     { name = "mkdocs-towncrier", specifier = "~=0.1.5" },
     { name = "mkdocstrings", extras = ["python"], specifier = "~=1.0.3" },
-    { name = "pymdown-extensions", specifier = "~=12.3" },
+    { name = "pymdown-extensions", specifier = "~=13.1.2" },
     { name = "towncrier", specifier = "~=26.9.0" },
 ]
 test = [
@@ -979,12 +980,11 @@ test = [
     { name = "gevent", specifier = "~=26.5" },
     { name = "httpx2", specifier = "~=2.16.0" },
     { name = "psycopg2-binary", specifier = "~=2.9.11" },
-    { name = "pytest", specifier = ">=9.1.1,<9.3.0" },
-    { name = "pytest-asyncio", specifier = "~=1.4.0" },
+    { name = "pytest", specifier = "~=9.2.0" },
+    { name = "pytest-asyncio", specifier = "~=1.5.0" },
     { name = "pytest-clarity", specifier = "~=1.0.1" },
-    { name = "pytest-deadfixtures", specifier = "~=3.1.0" },
     { name = "pytest-pretty", specifier = "~=1.3.0" },
-    { name = "pytest-randomly", specifier = "~=5.0.0" },
+    { name = "pytest-randomly", specifier = "~=5.1.0" },
     { name = "pytest-rerunfailures", specifier = "~=16.3" },
     { name = "respx", specifier = "~=0.23.1" },
 ]
@@ -1074,7 +1074,7 @@ pydantic = [
 
 [[package]]
 name = "fastapi"
-version = "0.162.7"
+version = "0.165.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -1085,9 +1085,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ea/82/6b9764e52f89a8aaf68a5005093bcb8fdcadcb6ba30571def786c0d3bfc0/fastapi-0.162.7.tar.gz", hash = "sha256:b7503029c8ef2d2d5fea9049294cf8d0f2805c6621f4677ede269fce19f01efb", size = 535511, upload-time = "2026-11-13T17:47:18.517Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/f9/e7820ef181026fea100bde02d811445bf8e883362d7092b6928767147056/fastapi-0.165.0.tar.gz", hash = "sha256:dd94d4128319c1e1d50535ab023ab698f850a4d2822f0e181747b46f4ff3c0ab", size = 557984, upload-time = "2026-11-18T19:15:37.076Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/49/2d76050f652082f1435f34a8ac9af6207b9aed8b81cde42e0bb121fa7c5a/fastapi-0.162.7-py3-none-any.whl", hash = "sha256:fa3be857122ec8d91d4d234e86ac19acf4ef23f5c6c3dfcce78ec0c27c0c5ab4", size = 152411, upload-time = "2026-11-13T17:47:16.598Z" },
+    { url = "https://files.pythonhosted.org/packages/c4/c1/3b74c030262a1b38b1fee180f80b4007bbc11c9ac12028cb18c7bcecaec9/fastapi-0.165.0-py3-none-any.whl", hash = "sha256:896f48462042bb4f162147eb8fac7e858753dc1f486765709baf105d70e4fc5b", size = 159475, upload-time = "2026-11-18T19:15:35.345Z" },
 ]
 
 [[package]]
@@ -2265,15 +2265,15 @@ wheels = [
 
 [[package]]
 name = "pymdown-extensions"
-version = "12.3"
+version = "13.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/fe/ac50ee24a80a1b344e643f6fb626063cc7041b978cd1dd9a7f9963ae1cd1/pymdown_extensions-12.3.tar.gz", hash = "sha256:a7f2a4e0bc60c6e6babfa7922cfb3b01cd640eb00fb208f3c582e12bae00ea67", size = 870532, upload-time = "2026-10-14T22:40:43.252Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/68/6da10ec6620ea74b621437f2d20df2e96f1c44dc3976c7136de4ebd0cc68/pymdown_extensions-13.1.2.tar.gz", hash = "sha256:724701395585d027fb18a6ad3377636570bac4f2917ed809f06cbc811d7e60bb", size = 902399, upload-time = "2026-11-20T18:44:39.775Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/d0/758afe732c2da502c051b4d03ff88daa3c0fc1a1e671e6c5a6318177bab4/pymdown_extensions-12.3-py3-none-any.whl", hash = "sha256:345493a8e3497e24382902903a1c43a28e34a52f2b7571a1c9641429b820ca74", size = 277597, upload-time = "2026-10-14T22:40:41.543Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/4d/bef5fe206736149372215c13663d95eb13a377dca8bf95d4043afe088322/pymdown_extensions-13.1.2-py3-none-any.whl", hash = "sha256:20eec6babdadcdb47b5a91b3e69ff9f846d506e887125dcb027518c47d412693", size = 286286, upload-time = "2026-11-20T18:44:38.081Z" },
 ]
 
 [[package]]
@@ -2303,15 +2303,15 @@ wheels = [
 
 [[package]]
 name = "pytest-asyncio"
-version = "1.4.1.post1"
+version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/73/7f/c60a4338420b33453d4f814ac0c930abd399f162b9bdd21af4b9e363037f/pytest_asyncio-1.4.1.post1.tar.gz", hash = "sha256:f582d9ea4a1c082195abe8bd29a1fe106aeb1cd435e3dad2d3bc2749935c36a2", size = 145360, upload-time = "2026-11-01T18:26:03.732Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/de/80724f9b5b9eca1a654179cae6edc51aaa0a355a9834a736e2a188b91780/pytest_asyncio-1.5.0.tar.gz", hash = "sha256:92c8fa83ca419fd0d4bd6a34df6520dae435841d3733c319343249492adf37f7", size = 146227, upload-time = "2026-11-12T16:35:49.845Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/de/adbc7578959cfab07e5e7c05cf6d54224a51e7667ea2c07458b6bc571e75/pytest_asyncio-1.4.1.post1-py3-none-any.whl", hash = "sha256:0755e488cc0a2b9bd2eab7292cc6390d4cbb8390f1020745647bae5a708e0165", size = 17140, upload-time = "2026-11-01T18:26:02.168Z" },
+    { url = "https://files.pythonhosted.org/packages/27/2d/e600d8f47597a803641704aba367c7266cd621f86561ec36da9888f160ec/pytest_asyncio-1.5.0-py3-none-any.whl", hash = "sha256:557f255ee03cc84f84a8d5f438bc9c6e0f714bf86970ae743c7ecb5a38d7e07d", size = 17215, upload-time = "2026-11-12T16:35:48.446Z" },
 ]
 
 [[package]]
@@ -2324,18 +2324,6 @@ dependencies = [
     { name = "rich" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/52/5c/cafa97944de55738a6a2c5a7cee00d073cb80495032d2b112c4546525eca/pytest-clarity-1.0.1.tar.gz", hash = "sha256:505fe345fad4fe11c6a4187fe683f2c7c52c077caa1e135f3e483fe112db7772", size = 4891, upload-time = "2021-06-11T18:16:18.372Z" }
-
-[[package]]
-name = "pytest-deadfixtures"
-version = "3.1.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7b/b5/6fc6a3096e5bc3124c61af17c53d09290a5bfbca51fb8b94068d1e770d0e/pytest_deadfixtures-3.1.0.tar.gz", hash = "sha256:a8010e771183176fa9d918c8c49293ca5568597c8e1453ed2bbd41bcee67bde5", size = 9294, upload-time = "2026-01-15T20:05:40.825Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/d0/67f83859706d11717498e1ef5e75f1c61835fd972c902f5bc9cbd9cb5659/pytest_deadfixtures-3.1.0-py2.py3-none-any.whl", hash = "sha256:898ba131c7472bd05551b73e2b99a51898fc3b8255c0589cf8b3c3c804e8f502", size = 7070, upload-time = "2026-01-15T20:05:39.599Z" },
-]
 
 [[package]]
 name = "pytest-pretty"
@@ -2352,14 +2340,14 @@ wheels = [
 
 [[package]]
 name = "pytest-randomly"
-version = "5.0.0"
+version = "5.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/01/3b/6a40e1b9d925651e601e056a97f60d8a1daeddeac03d5609be60cb4362ce/pytest_randomly-5.0.0.tar.gz", hash = "sha256:e9c575a5873ef168ddbe340ed9e97ce9edb4492ccc821e4b2ac6bb1f0ed515d2", size = 8542, upload-time = "2026-09-01T22:34:20.441Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/59/d9f088bdf2bdafd7b5305d2be5f2e73d330756e092c448e4e534a30d9bda/pytest_randomly-5.1.0.tar.gz", hash = "sha256:cdf8af20419969d273b97c8e7c8d688200807e815bdc733cf2a6af183080ad58", size = 9010, upload-time = "2026-11-08T23:48:13.168Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/b4/47e939285caad9a623d021512912ac08dc92a467ad075d179f43729d2934/pytest_randomly-5.0.0-py3-none-any.whl", hash = "sha256:8a0d4703115c0c25b38b6e129fc16b1947b9643ff26a41bc1d185d7e5a7689c1", size = 8920, upload-time = "2026-09-01T22:34:19.227Z" },
+    { url = "https://files.pythonhosted.org/packages/67/ef/9979eae8db530930873d15fb16043ef6d72b5042f2636de4d85568eb3df4/pytest_randomly-5.1.0-py3-none-any.whl", hash = "sha256:fb9004e6821422291087d0294fd62f45ff304094db11fbdff8f2fe1ed20764d8", size = 8969, upload-time = "2026-11-08T23:48:11.833Z" },
 ]
 
 [[package]]
@@ -2377,15 +2365,14 @@ wheels = [
 
 [[package]]
 name = "python-dateutil"
-version = "3.0.0"
+version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "six" },
     { name = "tzdata" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0e/df/f15f80383f152452d8985b36d95cb8751f901a3e0ff4cd27f7e118f168e2/python_dateutil-3.0.0.tar.gz", hash = "sha256:7ebcb3c29a92f3ceafe79a7a48a5c45677e9e004bbeec5742ac0bbb00560b7a2", size = 271066, upload-time = "2026-10-21T23:41:45.075Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/18/39/b3927f3616f6223832f9b760e4208e8a7c7e1dea2b4d9ad7d32a5d214c3a/python_dateutil-4.0.0.tar.gz", hash = "sha256:d7295ff14fdc0f92f662100bfb6c551d160ca090f2939f1ec5b9794265c03f06", size = 250419, upload-time = "2026-11-01T07:02:42.426Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/17/cebee01d1c0c1441174cf0456ddc91b280d79acb65340c05e41d77866ee8/python_dateutil-3.0.0-py2.py3-none-any.whl", hash = "sha256:3c79630202e4152c6add678446984236efe4f57e84d8e892aab0637bab82e9fd", size = 94659, upload-time = "2026-10-21T23:41:43.431Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/a9/52b89563d154433d79b51ed1eb4842bf7334cb2696891a7fe135618853d7/python_dateutil-4.0.0-py3-none-any.whl", hash = "sha256:a5e246f79eb80475e691bf93862cead98decd8a498cf53ba0516fcdc0f50dc1c", size = 92853, upload-time = "2026-11-01T07:02:40.797Z" },
 ]
 
 [[package]]
@@ -2760,15 +2747,6 @@ wheels = [
 ]
 
 [[package]]
-name = "types-cachetools"
-version = "7.0.0.20260713"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/34/64/66d7efdb36ecf6826aca5415e59fe2df96e97d24157147e53acfbe8dda11/types_cachetools-7.0.0.20260713.tar.gz", hash = "sha256:f1acf079e9c66a81e096a897ef0b261a82117cf856834e37b4bd0c9a116a076a", size = 10199, upload-time = "2026-07-13T05:22:21.845Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/c7/d3525c9dbdc1be7786bad46655ef051b6e7993f656d304719ec40079c91c/types_cachetools-7.0.0.20260713-py3-none-any.whl", hash = "sha256:6db9bcc7a3840d39e91c04117d85a9d0937eacc9d14d12a873e2b01a2d24a71d", size = 9615, upload-time = "2026-07-13T05:22:20.76Z" },
-]
-
-[[package]]
 name = "types-greenlet"
 version = "3.5.0.20260518"
 source = { registry = "https://pypi.org/simple" }
@@ -2790,12 +2768,30 @@ wheels = [
 ]
 
 [[package]]
+name = "types-psycopg2"
+version = "2.9.21.20261122"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/06/98/c4d772d148d8c048ec7ac5baecccadb74b80971f6e03b32101c9ba2e9e5f/types_psycopg2-2.9.21.20261122.tar.gz", hash = "sha256:4c045b8b0add828c75f00d7d602a5375ccd433521582af1a78bb153795e7d80c", size = 28016, upload-time = "2026-11-22T08:57:54.855Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/68/688d4b554aac5f59630f56c773acb27f3f48ccf4450556d275e500e0c1c4/types_psycopg2-2.9.21.20261122-py3-none-any.whl", hash = "sha256:2f8288d554d59c3091c4a5b781a087e52663866e4aadf3ab5aa7e4a7eb8bc5e8", size = 25080, upload-time = "2026-11-22T08:57:54.129Z" },
+]
+
+[[package]]
 name = "types-python-dateutil"
 version = "2.9.0.20261122"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9c/e1/061ae807e1d0dc1cd54ae2b43e04bbda4faa80d5ce2b81ed1bedd34d2c27/types_python_dateutil-2.9.0.20261122.tar.gz", hash = "sha256:1db0012e9e63028891e36fd8a9f685dc4e8cf89353fbefcf6b1eb55538e9f7ed", size = 17919, upload-time = "2026-11-22T08:59:23.569Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a1/46/38042f56835e926128d129e1d327bef8bf3803ec791af393f9f5e827bc96/types_python_dateutil-2.9.0.20261122-py3-none-any.whl", hash = "sha256:c2c257d7ce04f8ede622bb2452223461ee3016872f59d2351522723073e226ff", size = 18519, upload-time = "2026-11-22T08:59:22.835Z" },
+]
+
+[[package]]
+name = "types-pytz"
+version = "2026.6.0.20261122"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/16/c7146d7fdfb3a15896d8d46292b8aa06090a8a3fbcba7aed06133a3e70b6/types_pytz-2026.6.0.20261122.tar.gz", hash = "sha256:863e808dbabce6050733a89315d506f7cc4eca2f1e95dd4fa2a83c3f9416aa4c", size = 11140, upload-time = "2026-11-22T08:58:44.937Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/0f/91fb51c960df355d81a1b5651ce578a42ed3477e8be1a84bbbeffc3c52f4/types_pytz-2026.6.0.20261122-py3-none-any.whl", hash = "sha256:44f1e8a1b4f29669a13c8c5a4b93d6920cd43879889bd5a7c65181218e5ab171", size = 10182, upload-time = "2026-11-22T08:58:44.172Z" },
 ]
 
 [[package]]
